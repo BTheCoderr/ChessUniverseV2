@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess App with Betting</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <h1>Chess App with Betting</h1>
+      <div class="user-info">
+        <span id="username-display">Guest</span>
+        <span id="balance-display">Balance: 0</span>
+        <button id="profile-btn" class="btn hidden"><i class="fas fa-user"></i> Profile</button>
+        <button id="login-btn" class="btn">Login</button>
+        <button id="register-btn" class="btn">Register</button>
+        <button id="logout-btn" class="btn hidden">Logout</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+      <!-- Game Section -->
+      <div id="game-section" class="game-container">
+        <!-- Game Options -->
+        <div class="game-options">
+          <h2>Game Options</h2>
+          <div class="option-group">
+            <button id="new-game-btn" class="btn primary-btn">New Game</button>
+            <button id="play-ai-btn" class="btn">Play vs AI</button>
+            <button id="ai-vs-ai-btn" class="btn">AI vs AI</button>
+            <button id="find-opponent-btn" class="btn">Find Opponent</button>
+          </div>
+          
+          <div id="ai-options" class="option-group hidden">
+            <h3>AI Difficulty</h3>
+            <div class="slider-container">
+              <input type="range" id="ai-difficulty" min="1" max="20" value="10">
+              <span id="difficulty-value" class="slider-value">10</span>
+            </div>
+            <button id="start-ai-game-btn" class="btn primary-btn">Start Game</button>
+          </div>
+          
+          <div id="ai-vs-ai-options" class="option-group hidden">
+            <h3>AI Settings</h3>
+            <div class="slider-container">
+              <label for="ai-white-difficulty">White AI Difficulty:</label>
+              <input type="range" id="ai-white-difficulty" min="1" max="20" value="10">
+              <span id="white-difficulty-value" class="slider-value">10</span>
+            </div>
+            <div class="slider-container">
+              <label for="ai-black-difficulty">Black AI Difficulty:</label>
+              <input type="range" id="ai-black-difficulty" min="1" max="20" value="10">
+              <span id="black-difficulty-value" class="slider-value">10</span>
+            </div>
+            <div class="slider-container">
+              <label for="ai-move-speed">Move Speed (ms):</label>
+              <input type="range" id="ai-move-speed" min="500" max="3000" step="100" value="1000">
+              <span id="move-speed-value" class="slider-value">1000</span>
+            </div>
+            <button id="start-ai-vs-ai-btn" class="btn primary-btn">Start AI Match</button>
+          </div>
+          
+          <div id="betting-options" class="option-group hidden">
+            <h3>Place Your Bet</h3>
+            <div class="bet-amount">
+              <label for="bet-amount">Bet Amount:</label>
+              <input type="number" id="bet-amount" min="10" max="1000" value="100">
+            </div>
+            <button id="place-bet-btn" class="btn primary-btn">Place Bet</button>
+          </div>
+          
+          <div class="option-group">
+            <div class="settings-container">
+              <label for="sound-toggle">
+                <input type="checkbox" id="sound-toggle" checked>
+                Sound Effects
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Chessboard -->
+        <div class="board-container">
+          <div class="game-info">
+            <div id="white-player" class="player-info">
+              <span class="player-name">White</span>
+              <span class="player-time">10:00</span>
+            </div>
+            <div id="game-status">Waiting for game to start...</div>
+            <div id="black-player" class="player-info">
+              <span class="player-name">Black</span>
+              <span class="player-time">10:00</span>
+            </div>
+          </div>
+          
+          <div id="chessboard" class="chessboard"></div>
+          
+          <div class="game-controls">
+            <button id="resign-btn" class="btn danger-btn" disabled>Resign</button>
+            <button id="offer-draw-btn" class="btn" disabled>Offer Draw</button>
+          </div>
+        </div>
+        
+        <!-- Game History -->
+        <div class="game-history">
+          <h2>Move History</h2>
+          <div id="moves-list" class="moves-list"></div>
+        </div>
+      </div>
+      
+      <!-- Profile Section -->
+      <div id="profile-section" class="profile-container hidden">
+        <div class="profile-header">
+          <button id="back-to-game-btn" class="btn"><i class="fas fa-arrow-left"></i> Back to Game</button>
+          <h2>User Profile</h2>
+        </div>
+        
+        <div class="profile-content">
+          <div class="profile-stats">
+            <h3>Game Statistics</h3>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-value" id="games-played">0</div>
+                <div class="stat-label">Games Played</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="games-won">0</div>
+                <div class="stat-label">Wins</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="games-lost">0</div>
+                <div class="stat-label">Losses</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="games-tied">0</div>
+                <div class="stat-label">Draws</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="win-percentage">0%</div>
+                <div class="stat-label">Win Rate</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="total-earnings">0</div>
+                <div class="stat-label">Net Earnings</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="betting-history">
+            <h3>Betting History</h3>
+            <div class="history-table-container">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Opponent</th>
+                    <th>Bet Amount</th>
+                    <th>Outcome</th>
+                    <th>Profit/Loss</th>
+                  </tr>
+                </thead>
+                <tbody id="betting-history-table">
+                  <!-- Betting history will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Auth Modals -->
+    <div id="login-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Login</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-username">Username:</label>
+            <input type="text" id="login-username" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" required>
+          </div>
+          <button type="submit" class="btn primary-btn">Login</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="register-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Register</h2>
+        <form id="register-form">
+          <div class="form-group">
+            <label for="register-username">Username:</label>
+            <input type="text" id="register-username" required>
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email:</label>
+            <input type="email" id="register-email" required>
+          </div>
+          <div class="form-group">
+            <label for="register-password">Password:</label>
+            <input type="password" id="register-password" required>
+          </div>
+          <div class="form-group">
+            <label for="register-confirm-password">Confirm Password:</label>
+            <input type="password" id="register-confirm-password" required>
+          </div>
+          <button type="submit" class="btn primary-btn">Register</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Promotion Modal -->
+    <div id="promotion-modal" class="modal hidden">
+      <div class="modal-content promotion-content">
+        <h2>Choose Promotion</h2>
+        <div class="promotion-options">
+          <div class="promotion-piece" data-piece="q">
+            <img src="" alt="Queen" id="promote-queen">
+          </div>
+          <div class="promotion-piece" data-piece="r">
+            <img src="" alt="Rook" id="promote-rook">
+          </div>
+          <div class="promotion-piece" data-piece="b">
+            <img src="" alt="Bishop" id="promote-bishop">
+          </div>
+          <div class="promotion-piece" data-piece="n">
+            <img src="" alt="Knight" id="promote-knight">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Result Modal -->
+    <div id="game-result-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Game Over</h2>
+        <div id="result-message"></div>
+        <div id="betting-result"></div>
+        <div class="modal-buttons">
+          <button id="new-game-after-result" class="btn primary-btn">New Game</button>
+          <button id="view-profile-after-result" class="btn">View Profile</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Lobby Modal -->
+    <div id="lobby-modal" class="modal hidden">
+      <div class="modal-content lobby-content">
+        <span class="close-btn">&times;</span>
+        <h2>Find Opponent</h2>
+        <div class="lobby-options">
+          <div class="lobby-section">
+            <h3>Available Players</h3>
+            <div id="available-players" class="player-list">
+              <!-- Available players will be populated here -->
+              <div class="no-players-message">No players available at the moment.</div>
+            </div>
+          </div>
+          <div class="lobby-section">
+            <h3>Create a Game</h3>
+            <div class="form-group">
+              <label for="bet-amount-lobby">Bet Amount:</label>
+              <input type="number" id="bet-amount-lobby" min="10" max="1000" value="100">
+            </div>
+            <button id="create-game-btn" class="btn primary-btn">Create Game</button>
+          </div>
+        </div>
+        <div class="lobby-chat">
+          <h3>Lobby Chat</h3>
+          <div id="lobby-chat-messages" class="chat-messages"></div>
+          <div class="chat-input-container">
+            <input type="text" id="lobby-chat-input" placeholder="Type a message...">
+            <button id="send-lobby-chat-btn" class="btn primary-btn">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Game Chat -->
+    <div id="game-chat" class="chat-container hidden">
+      <div class="chat-header">
+        <h3>Game Chat</h3>
+        <button id="toggle-chat-btn" class="btn"><i class="fas fa-chevron-down"></i></button>
+      </div>
+      <div class="chat-body">
+        <div id="game-chat-messages" class="chat-messages"></div>
+        <div class="chat-input-container">
+          <input type="text" id="game-chat-input" placeholder="Type a message...">
+          <button id="send-game-chat-btn" class="btn primary-btn">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Elements -->
+  <audio id="move-sound" src="https://lichess1.org/assets/sound/standard/Move.mp3" preload="auto"></audio>
+  <audio id="capture-sound" src="https://lichess1.org/assets/sound/standard/Capture.mp3" preload="auto"></audio>
+  <audio id="check-sound" src="https://lichess1.org/assets/sound/standard/Check.mp3" preload="auto"></audio>
+  <audio id="castle-sound" src="https://lichess1.org/assets/sound/standard/Castle.mp3" preload="auto"></audio>
+  <audio id="promote-sound" src="https://lichess1.org/assets/sound/standard/Promote.mp3" preload="auto"></audio>
+  <audio id="game-end-sound" src="https://lichess1.org/assets/sound/standard/GenericNotify.mp3" preload="auto"></audio>
+  <audio id="error-sound" src="https://lichess1.org/assets/sound/standard/Error.mp3" preload="auto"></audio>
+  <audio id="chat-sound" src="https://lichess1.org/assets/sound/standard/NewChallenge.mp3" preload="auto"></audio>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html> 
