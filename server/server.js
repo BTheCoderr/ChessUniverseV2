@@ -28,7 +28,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'chess-app-secret-key-change-this-in-production',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   store: MongoStore.create({
     mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/chess-app',
     collectionName: 'sessions',
@@ -39,7 +39,7 @@ const sessionMiddleware = session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false, // set to true in production with HTTPS
     sameSite: 'lax'
   }
 });

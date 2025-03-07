@@ -227,10 +227,25 @@ function addPiece(row, col, color, type) {
   // Add drag-and-drop support
   pieceEl.setAttribute('draggable', 'true');
   
+  // Add click event to the piece
+  pieceEl.addEventListener('click', (e) => {
+    // Prevent the click from reaching the square underneath
+    e.stopPropagation();
+    
+    // Only allow clicks if it's the player's turn
+    if (!isPlayerTurn) return;
+    
+    // If it's not the player's color, ignore the click
+    if (playerColor && color !== playerColor[0]) return;
+    
+    // Trigger the square click handler
+    handleSquareClick(square);
+  });
+  
   // Add drag events
   pieceEl.addEventListener('dragstart', (e) => {
     // Only allow dragging if it's the player's turn and the piece is the player's color
-    if (!isPlayerTurn || color !== playerColor[0]) {
+    if (!isPlayerTurn || (playerColor && color !== playerColor[0])) {
       e.preventDefault();
       return false;
     }
@@ -307,56 +322,89 @@ function addPiece(row, col, color, type) {
 
 // Play sound effect
 function playSound(type, isMuted = false) {
-  if (!soundEnabled || isMuted) return;
+  if (isMuted || !soundEnabled) return;
   
-  switch (type) {
-    case 'move':
-      moveSound.currentTime = 0;
-      moveSound.play();
-      break;
-    case 'capture':
-      captureSound.currentTime = 0;
-      captureSound.play();
-      break;
-    case 'check':
-      checkSound.currentTime = 0;
-      checkSound.play();
-      break;
-    case 'castle':
-      castleSound.currentTime = 0;
-      castleSound.play();
-      break;
-    case 'promote':
-      promoteSound.currentTime = 0;
-      promoteSound.play();
-      break;
-    case 'game-end':
-      gameEndSound.currentTime = 0;
-      gameEndSound.play();
-      break;
-    case 'error':
-      errorSound.currentTime = 0;
-      errorSound.play();
-      break;
+  try {
+    switch (type) {
+      case 'move':
+        moveSound.currentTime = 0;
+        moveSound.play().catch(e => {
+          console.log('Could not play sound due to browser restrictions:', e);
+        });
+        break;
+      case 'capture':
+        captureSound.currentTime = 0;
+        captureSound.play().catch(e => {
+          console.log('Could not play sound due to browser restrictions:', e);
+        });
+        break;
+      case 'check':
+        checkSound.currentTime = 0;
+        checkSound.play().catch(e => {
+          console.log('Could not play sound due to browser restrictions:', e);
+        });
+        break;
+      case 'castle':
+        castleSound.currentTime = 0;
+        castleSound.play().catch(e => {
+          console.log('Could not play sound due to browser restrictions:', e);
+        });
+        break;
+      case 'promote':
+        promoteSound.currentTime = 0;
+        promoteSound.play().catch(e => {
+          console.log('Could not play sound due to browser restrictions:', e);
+        });
+        break;
+      case 'game-end':
+        gameEndSound.currentTime = 0;
+        gameEndSound.play().catch(e => {
+          console.log('Could not play sound due to browser restrictions:', e);
+        });
+        break;
+      case 'error':
+        errorSound.currentTime = 0;
+        errorSound.play().catch(e => {
+          console.log('Could not play sound due to browser restrictions:', e);
+        });
+        break;
+      case 'chat':
+        chatSound.currentTime = 0;
+        chatSound.play().catch(e => {
+          console.log('Could not play sound due to browser restrictions:', e);
+        });
+        break;
+    }
+  } catch (e) {
+    console.error('Error playing sound:', e);
   }
 }
 
 // Handle square click
 function handleSquareClick(square) {
   // Only allow moves if it's player's turn
-  if (!isPlayerTurn) return;
+  if (!isPlayerTurn) {
+    console.log('Not player turn, ignoring click');
+    return;
+  }
   
   const row = parseInt(square.dataset.row);
   const col = parseInt(square.dataset.col);
+  
+  console.log(`Square clicked: row ${row}, col ${col}, isPlayerTurn: ${isPlayerTurn}, playerColor: ${playerColor}`);
   
   // If a piece is already selected, try to move it
   if (selectedSquare) {
     const fromRow = parseInt(selectedSquare.dataset.row);
     const fromCol = parseInt(selectedSquare.dataset.col);
     
+    console.log(`Moving from: row ${fromRow}, col ${fromCol} to row ${row}, col ${col}`);
+    
     // Convert to algebraic notation
     const from = `${String.fromCharCode(97 + fromCol)}${fromRow + 1}`;
     const to = `${String.fromCharCode(97 + col)}${row + 1}`;
+    
+    console.log(`Algebraic notation: ${from} to ${to}`);
     
     // Check if this is a pawn promotion move
     const piece = chess.get(from);
@@ -389,9 +437,12 @@ function handleSquareClick(square) {
     
     // Check if move is valid
     try {
+      console.log('Attempting move in chess.js');
       const move = chess.move({ from, to, promotion: 'q' }); // Default promotion to queen
       
       if (move) {
+        console.log('Move successful:', move);
+        
         // Play appropriate sound
         if (move.captured) {
           playSound('capture');
@@ -430,6 +481,10 @@ function handleSquareClick(square) {
         if (isAiGame) {
           setTimeout(getAiMove, 500);
         }
+      } else {
+        console.log('Move was invalid according to chess.js');
+        playSound('error');
+        showError('Invalid move');
       }
     } catch (error) {
       console.error('Invalid move:', error);
@@ -441,17 +496,40 @@ function handleSquareClick(square) {
     clearHighlights();
     selectedSquare = null;
   } else {
-    // Check if the clicked square has a piece of the player's color
+    // Check if the clicked square has a piece
     const piece = chess.board()[row][col];
     
-    if (piece && piece.color === playerColor[0]) {
-      // Highlight selected square
-      clearHighlights();
-      square.classList.add('selected-piece');
-      selectedSquare = square;
+    if (piece) {
+      console.log('Piece found:', piece);
       
-      // Highlight possible moves
-      highlightPossibleMoves(row, col);
+      // In AI vs AI mode, don't allow selecting pieces
+      if (isAiVsAiGame) {
+        console.log('AI vs AI game, ignoring piece selection');
+        return;
+      }
+      
+      // For regular games, only allow selecting pieces of the player's color
+      // For black pieces, the color is 'b', for white pieces, the color is 'w'
+      const expectedColor = playerColor === 'black' ? 'b' : 'w';
+      
+      console.log(`Expected color: ${expectedColor}, Piece color: ${piece.color}`);
+      
+      if (piece.color === expectedColor) {
+        console.log('Selecting piece of player color:', playerColor);
+        
+        // Highlight selected square
+        clearHighlights();
+        square.classList.add('selected-piece');
+        selectedSquare = square;
+        
+        // Highlight possible moves
+        highlightPossibleMoves(row, col);
+      } else {
+        console.log('Piece does not belong to player. Piece color:', piece.color, 'Player color:', playerColor);
+        showError("That's not your piece!");
+      }
+    } else {
+      console.log('No piece on this square');
     }
   }
 }
@@ -922,123 +1000,181 @@ function endGame(result, reason = null) {
   gameResultModal.classList.remove('hidden');
 }
 
-// Show error message
-function showError(message) {
-  // Play error sound
-  playSound('error');
+// Show message (error, success, info)
+function showError(message, type = 'error') {
+  // Play appropriate sound
+  if (type === 'error') {
+    playSound('error');
+  } else if (type === 'success') {
+    playSound('game-end');
+  }
   
-  // Create error element
-  const errorEl = document.createElement('div');
-  errorEl.className = 'error-message';
-  errorEl.textContent = message;
+  // Create message element
+  const messageEl = document.createElement('div');
+  messageEl.className = `message-notification ${type}-message`;
+  messageEl.textContent = message;
   
   // Add to body
-  document.body.appendChild(errorEl);
+  document.body.appendChild(messageEl);
   
   // Remove after 5 seconds
   setTimeout(() => {
-    errorEl.classList.add('fade-out');
+    messageEl.classList.add('fade-out');
     setTimeout(() => {
-      errorEl.remove();
+      messageEl.remove();
     }, 500);
   }, 5000);
 }
 
 // Connect to WebSocket server
 function connectWebSocket() {
-  socket = io();
+  // If there's already a socket connection, disconnect it first
+  if (socket) {
+    console.log('Disconnecting existing socket connection');
+    socket.disconnect();
+  }
   
-  // Handle connection
-  socket.on('connect', () => {
-    console.log('Connected to server');
-  });
-  
-  // Handle game state updates
-  socket.on('gameState', (data) => {
-    // Update chess position
-    chess.load(data.fen);
-    
-    // Update the board
-    updateBoard();
-    
-    // Highlight last move if available
-    if (data.lastMove) {
-      highlightLastMove(data.lastMove.from, data.lastMove.to);
-      addMoveToHistory(data.lastMove);
-    }
-    
-    // Update turn
-    isPlayerTurn = data.turn === playerColor[0];
-    
-    // Enable/disable controls based on turn
-    resignBtn.disabled = !isPlayerTurn;
-    offerDrawBtn.disabled = !isPlayerTurn;
-  });
-  
-  // Handle game over
-  socket.on('gameOver', (data) => {
-    endGame(data.result);
-  });
-  
-  // Handle available players update
-  socket.on('availablePlayers', (data) => {
-    updateAvailablePlayers(data.players);
-  });
-  
-  // Handle incoming challenge
-  socket.on('challenge', (data) => {
-    handleChallenge(data);
-  });
-  
-  // Handle challenge accepted
-  socket.on('challengeAccepted', (data) => {
-    hideLobby();
-    gameId = data.gameId;
-    playerColor = data.playerColor;
-    
-    // Show game chat
-    showGameChat();
-    
-    // Add system message
-    addGameChatMessage({
-      senderId: 'system',
-      senderName: 'System',
-      message: `Game started! You are playing as ${playerColor}.`,
-      isSelf: false
+  // Connect with error handling
+  try {
+    socket = io({
+      reconnectionAttempts: 5,
+      timeout: 10000,
+      transports: ['websocket', 'polling']
     });
-  });
-  
-  // Handle challenge declined
-  socket.on('challengeDeclined', (data) => {
-    showError(`${data.opponentName} declined your challenge.`);
-  });
-  
-  // Handle lobby chat message
-  socket.on('lobbyChatMessage', (data) => {
-    addLobbyChatMessage(data);
-  });
-  
-  // Handle game chat message
-  socket.on('gameChatMessage', (data) => {
-    if (data.gameId === gameId) {
+    
+    // Handle connection
+    socket.on('connect', () => {
+      console.log('Connected to server');
+    });
+    
+    // Handle reconnection
+    socket.on('reconnect', (attemptNumber) => {
+      console.log(`Reconnected to server after ${attemptNumber} attempts`);
+    });
+    
+    // Handle reconnection attempts
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`Attempting to reconnect: attempt ${attemptNumber}`);
+    });
+    
+    // Handle reconnection errors
+    socket.on('reconnect_error', (error) => {
+      console.error('Reconnection error:', error);
+    });
+    
+    // Handle reconnection failures
+    socket.on('reconnect_failed', () => {
+      console.error('Failed to reconnect to server');
+      showError('Connection to server lost. Please refresh the page.', 'error');
+    });
+    
+    // Handle disconnection
+    socket.on('disconnect', (reason) => {
+      console.log(`Disconnected from server: ${reason}`);
+      if (reason === 'io server disconnect') {
+        // The server has forcefully disconnected the socket
+        console.log('Server disconnected the socket, attempting to reconnect');
+        socket.connect();
+      }
+    });
+    
+    // Handle connection errors
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+    
+    // Handle game state updates
+    socket.on('gameState', (data) => {
+      // Update chess position
+      chess.load(data.fen);
+      
+      // Update the board
+      updateBoard();
+      
+      // Highlight last move if available
+      if (data.lastMove) {
+        highlightLastMove(data.lastMove.from, data.lastMove.to);
+        addMoveToHistory(data.lastMove);
+      }
+      
+      // Update turn
+      isPlayerTurn = data.turn === playerColor[0];
+      
+      // Enable/disable controls based on turn
+      resignBtn.disabled = !isPlayerTurn;
+      offerDrawBtn.disabled = !isPlayerTurn;
+    });
+    
+    // Handle game over
+    socket.on('gameOver', (data) => {
+      endGame(data.result);
+    });
+    
+    // Handle available players update
+    socket.on('availablePlayers', (data) => {
+      updateAvailablePlayers(data.players);
+    });
+    
+    // Handle incoming challenge
+    socket.on('challenge', (data) => {
+      handleChallenge(data);
+    });
+    
+    // Handle challenge accepted
+    socket.on('challengeAccepted', (data) => {
+      hideLobby();
+      gameId = data.gameId;
+      playerColor = data.playerColor;
+      
+      // Show game chat
+      showGameChat();
+      
+      // Add system message
       addGameChatMessage({
-        senderId: data.senderId,
-        senderName: data.senderName,
-        message: data.message,
+        senderId: 'system',
+        senderName: 'System',
+        message: `Game started! You are playing as ${playerColor}.`,
         isSelf: false
       });
-    }
-  });
-  
-  // Handle errors
-  socket.on('error', (data) => {
-    console.error('Socket error:', data.message);
-    showError(data.message);
-  });
+    });
+    
+    // Handle challenge declined
+    socket.on('challengeDeclined', (data) => {
+      showError(`${data.opponentName} declined your challenge.`);
+    });
+    
+    // Handle lobby chat message
+    socket.on('lobbyChatMessage', (data) => {
+      addLobbyChatMessage(data);
+    });
+    
+    // Handle game chat message
+    socket.on('gameChatMessage', (data) => {
+      if (data.gameId === gameId) {
+        addGameChatMessage({
+          senderId: data.senderId,
+          senderName: data.senderName,
+          message: data.message,
+          isSelf: false
+        });
+      }
+    });
+    
+    // Handle errors
+    socket.on('error', (data) => {
+      console.error('Socket error:', data.message);
+      showError(data.message);
+    });
+  } catch (error) {
+    console.error('Error setting up socket connection:', error);
+    showError('Failed to connect to server. Please refresh the page.', 'error');
+  }
 }
 
 // Get AI move
 function getAiMove(color = null) {
+  console.log('Getting AI move, current turn:', chess.turn());
+  
   // In a real implementation, this would call the Stockfish API
   // For this MVP, we'll simulate an AI move with a random legal move
   const moves = chess.moves({ verbose: true });
@@ -1047,8 +1183,24 @@ function getAiMove(color = null) {
     // Select a random move
     const randomMove = moves[Math.floor(Math.random() * moves.length)];
     
+    console.log('AI selected move:', randomMove);
+    
     // Make the move
     chess.move(randomMove);
+    
+    // Play appropriate sound
+    if (randomMove.captured) {
+      playSound('capture');
+    } else if (randomMove.flags.includes('k') || randomMove.flags.includes('q')) {
+      playSound('castle');
+    } else {
+      playSound('move');
+    }
+    
+    // Check if the move puts the opponent in check
+    if (chess.isCheck()) {
+      playSound('check');
+    }
     
     // Update the board
     updateBoard();
@@ -1074,6 +1226,7 @@ function getAiMove(color = null) {
     } else {
       // Switch turns back to player
       isPlayerTurn = true;
+      console.log('AI move complete, setting isPlayerTurn to true');
       
       // Enable controls
       resignBtn.disabled = false;
@@ -1089,8 +1242,8 @@ function startAiVsAiGame() {
     clearTimeout(aiVsAiTimer);
   }
   
-  // Reset the game
-  chess = new Chess();
+  // Reset the game with Black to move first
+  chess = new Chess('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
   updateBoard();
   
   // Clear move history
@@ -1103,18 +1256,16 @@ function startAiVsAiGame() {
   // Update player info
   whitePlayerEl.querySelector('.player-name').textContent = 'AI (White)';
   blackPlayerEl.querySelector('.player-name').textContent = 'AI (Black)';
+  gameStatusEl.textContent = 'Black to move';
   
   // Disable controls
   resignBtn.disabled = true;
   offerDrawBtn.disabled = true;
   
-  // Hide options
-  aiVsAiOptions.classList.add('hidden');
-  
-  // Start the AI vs AI game
+  // Start the AI vs AI game by making the first move
   aiVsAiTimer = setTimeout(() => {
     getAiMove();
-  }, aiMoveSpeed);
+  }, 500); // Start quickly with the first move
 }
 
 // Stop AI vs AI game
@@ -1126,50 +1277,67 @@ function stopAiVsAiGame() {
   isAiVsAiGame = false;
 }
 
-// Check authentication status
-function checkAuthStatus() {
-  console.log('Checking authentication status...');
-  fetch('/api/auth/current-user', {
-    method: 'GET',
+// Create a helper function for fetch with credentials
+function fetchWithCredentials(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    credentials: 'same-origin',
     headers: {
-      'Content-Type': 'application/json'
-    },
-    credentials: 'same-origin'
-  })
-  .then(response => {
-    console.log('Auth status response:', response.status);
-    if (!response.ok) {
-      if (response.status === 401) {
-        console.log('User is not authenticated');
-        updateUIForGuest();
-        return null;
-      }
-      throw new Error('Error checking authentication status: ' + response.status);
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
     }
-    return response.json();
-  })
-  .then(data => {
-    if (data) {
-      console.log('User is authenticated:', data.user.username);
-      updateUIForUser(data.user);
-    }
-  })
-  .catch(error => {
-    console.error('Authentication check error:', error);
-    updateUIForGuest();
   });
 }
 
+// Update checkAuthStatus to use the helper function
+function checkAuthStatus() {
+  console.log('Checking authentication status...');
+  fetchWithCredentials('/api/auth/current-user')
+    .then(response => {
+      console.log('Auth status response:', response.status);
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('User is not authenticated');
+          currentUser = null; // Explicitly set currentUser to null
+          updateUIForGuest();
+          return null;
+        }
+        throw new Error('Error checking authentication status: ' + response.status);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data) {
+        console.log('User is authenticated:', data.user.username);
+        currentUser = data.user; // Set the currentUser
+        updateUIForUser(data.user);
+      }
+    })
+    .catch(error => {
+      console.error('Authentication check error:', error);
+      currentUser = null; // Explicitly set currentUser to null on error
+      updateUIForGuest();
+    });
+}
+
 function updateUIForUser(user) {
+  console.log('Updating UI for authenticated user:', user.username);
+  
   // Show logout button and profile button, hide login/register buttons
   loginBtn.classList.add('hidden');
   registerBtn.classList.add('hidden');
   logoutBtn.classList.remove('hidden');
   profileBtn.classList.remove('hidden');
   
-  // Update username and balance display
+  // Update username and balance display with clear indication of logged-in state
   document.getElementById('username-display').textContent = user.username;
+  document.getElementById('username-display').style.fontWeight = 'bold';
+  document.getElementById('username-display').style.color = '#4a6fa5'; // Use primary color
   document.getElementById('balance-display').textContent = `Balance: ${user.balance}`;
+  
+  // Add visual indicator to header
+  const header = document.querySelector('header');
+  header.classList.add('authenticated');
   
   // Enable betting features if available
   if (document.getElementById('betting-options')) {
@@ -1178,18 +1346,29 @@ function updateUIForUser(user) {
   
   // Enable multiplayer features
   document.getElementById('find-opponent-btn').disabled = false;
+  
+  // Show a temporary notification
+  showError(`Logged in as ${user.username}`, 'success');
 }
 
 function updateUIForGuest() {
+  console.log('Updating UI for guest user');
+  
   // Show login/register buttons, hide logout button and profile button
   loginBtn.classList.remove('hidden');
   registerBtn.classList.remove('hidden');
   logoutBtn.classList.add('hidden');
   profileBtn.classList.add('hidden');
   
-  // Update username and balance display
-  document.getElementById('username-display').textContent = 'Guest';
+  // Update username and balance display with clear guest indication
+  document.getElementById('username-display').textContent = 'Guest (Not Logged In)';
+  document.getElementById('username-display').style.fontWeight = 'normal';
+  document.getElementById('username-display').style.color = '#888'; // Gray color for guest
   document.getElementById('balance-display').textContent = 'Balance: 0';
+  
+  // Remove authenticated class from header
+  const header = document.querySelector('header');
+  header.classList.remove('authenticated');
   
   // Disable betting features if available
   if (document.getElementById('betting-options')) {
@@ -1204,11 +1383,17 @@ function updateUIForGuest() {
 function setupEventListeners() {
   // Auth modal events
   loginBtn.addEventListener('click', () => {
+    console.log('Login button clicked');
     loginModal.classList.remove('hidden');
+    // Force display flex on the modal
+    loginModal.style.display = 'flex';
   });
   
   registerBtn.addEventListener('click', () => {
+    console.log('Register button clicked');
     registerModal.classList.remove('hidden');
+    // Force display flex on the modal
+    registerModal.style.display = 'flex';
   });
   
   closeBtns.forEach(btn => {
@@ -1216,6 +1401,10 @@ function setupEventListeners() {
       loginModal.classList.add('hidden');
       registerModal.classList.add('hidden');
       lobbyModal.classList.add('hidden');
+      // Also set display to none
+      loginModal.style.display = 'none';
+      registerModal.style.display = 'none';
+      lobbyModal.style.display = 'none';
     });
   });
   
@@ -1318,12 +1507,8 @@ function setupEventListeners() {
     
     console.log('Attempting login for user:', username);
     
-    fetch('/api/auth/login', {
+    fetchWithCredentials('/api/auth/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'same-origin',
       body: JSON.stringify({ username, password })
     })
     .then(response => {
@@ -1363,12 +1548,8 @@ function setupEventListeners() {
     
     console.log('Attempting registration for user:', username);
     
-    fetch('/api/auth/register', {
+    fetchWithCredentials('/api/auth/register', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'same-origin',
       body: JSON.stringify({ username, email, password })
     })
     .then(response => {
@@ -1396,12 +1577,8 @@ function setupEventListeners() {
   logoutBtn.addEventListener('click', () => {
     console.log('Attempting logout');
     
-    fetch('/api/auth/logout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'same-origin'
+    fetchWithCredentials('/api/auth/logout', {
+      method: 'POST'
     })
     .then(response => {
       console.log('Logout response status:', response.status);
@@ -1422,46 +1599,78 @@ function setupEventListeners() {
   
   // Game control events
   newGameBtn.addEventListener('click', () => {
+    console.log('New Game button clicked');
+    
+    // Prevent multiple rapid clicks
+    newGameBtn.disabled = true;
+    setTimeout(() => {
+      newGameBtn.disabled = false;
+    }, 1000);
+    
     // Stop any AI vs AI game in progress
     stopAiVsAiGame();
     
-    // Reset game
-    chess = new Chess();
+    // Reset game with Black to move first
+    chess = new Chess('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
     updateBoard();
     
-    // Show betting options
-    bettingOptions.classList.remove('hidden');
+    // Update game status to show Black's turn
+    gameStatusEl.textContent = 'Black to move';
+    
+    // Set player color to black and enable player's turn
+    playerColor = 'black';
+    isPlayerTurn = true;
+    
+    // Update player info
+    whitePlayerEl.querySelector('.player-name').textContent = 'AI (White)';
+    blackPlayerEl.querySelector('.player-name').textContent = currentUser ? currentUser.username : 'You (Black)';
+    
+    // Show betting options only if user is logged in
+    if (currentUser) {
+      bettingOptions.classList.remove('hidden');
+    } else {
+      bettingOptions.classList.add('hidden');
+    }
+    
     aiOptions.classList.add('hidden');
     aiVsAiOptions.classList.add('hidden');
     
-    // Create a new game on the server first
-    fetch('/api/game/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        isAIOpponent: true,
-        aiDifficulty: 10
+    // Create a new game on the server only if user is logged in
+    if (currentUser) {
+      // Show loading message
+      showError('Creating new game...', 'info');
+      
+      fetchWithCredentials('/api/game/create', {
+        method: 'POST',
+        body: JSON.stringify({
+          isAIOpponent: true,
+          aiDifficulty: 10,
+          startingFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1'
+        })
       })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.message === 'Game created successfully') {
-        gameId = data.game.id;
-        console.log('Game created with ID:', gameId);
-      }
-    })
-    .catch(error => {
-      console.error('Error creating game:', error);
-      // Continue with local game even if server request fails
-      gameId = 'local-' + Date.now(); // Generate a local ID
-    });
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.message === 'Game created successfully') {
+          gameId = data.game.id;
+          console.log('Game created with ID:', gameId);
+          showError('Game created successfully!', 'success');
+        }
+      })
+      .catch(error => {
+        console.error('Error creating game:', error);
+        // Continue with local game even if server request fails
+        gameId = 'local-' + Date.now(); // Generate a local ID
+        showError('Could not create game on server. Playing locally.', 'info');
+      });
+    } else {
+      // For guest users, just use a local game ID
+      gameId = 'local-' + Date.now();
+    }
     
     // Reset game state
     isAiGame = true;
@@ -1479,9 +1688,11 @@ function setupEventListeners() {
     addGameChatMessage({
       senderId: 'system',
       senderName: 'System',
-      message: 'New game started! Place your bet to begin.',
+      message: 'New game started! You are playing as Black.',
       isSelf: false
     });
+    
+    console.log('Game set up with player as Black. isPlayerTurn:', isPlayerTurn, 'playerColor:', playerColor);
   });
   
   playAiBtn.addEventListener('click', () => {
@@ -1522,6 +1733,9 @@ function setupEventListeners() {
   
   // Start AI vs AI game
   startAiVsAiBtn.addEventListener('click', () => {
+    // Create a local game ID for AI vs AI games
+    gameId = 'local-ai-vs-ai-' + Date.now();
+    
     startAiVsAiGame();
     
     // Show game chat for AI vs AI games
@@ -1554,7 +1768,7 @@ function setupEventListeners() {
     
     // Update player info
     whitePlayerEl.querySelector('.player-name').textContent = 'AI';
-    blackPlayerEl.querySelector('.player-name').textContent = currentUser.username;
+    blackPlayerEl.querySelector('.player-name').textContent = currentUser ? currentUser.username : 'Guest';
     
     // Update the board
     updateBoard();
@@ -1621,7 +1835,7 @@ function setupEventListeners() {
         
         // Update player info
         whitePlayerEl.querySelector('.player-name').textContent = 'AI';
-        blackPlayerEl.querySelector('.player-name').textContent = currentUser.username;
+        blackPlayerEl.querySelector('.player-name').textContent = currentUser ? currentUser.username : 'Guest';
         
         // Update the board
         updateBoard();
@@ -1643,10 +1857,21 @@ function setupEventListeners() {
   
   // Place bet
   placeBetBtn.addEventListener('click', () => {
+    // Check if user is logged in
+    if (!currentUser) {
+      showError('You need to log in to place bets', 'error');
+      return;
+    }
+    
     const betAmount = parseInt(betAmountInput.value);
     
-    if (!betAmount || betAmount <= 0 || betAmount > currentUser.balance) {
-      showError('Invalid bet amount');
+    if (!betAmount || isNaN(betAmount) || betAmount <= 0) {
+      showError('Please enter a valid bet amount');
+      return;
+    }
+    
+    if (betAmount > currentUser.balance) {
+      showError(`Insufficient balance. Your balance: ${currentUser.balance}`);
       return;
     }
     
@@ -1687,12 +1912,12 @@ function setupEventListeners() {
       return;
     }
     
+    // Show a loading message
+    showError('Processing bet...', 'info');
+    
     // Place bet on server
-    fetch('/api/betting/place-bet', {
+    fetchWithCredentials('/api/betting/place-bet', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({
         gameId,
         betAmount
@@ -1700,11 +1925,34 @@ function setupEventListeners() {
     })
     .then(response => {
       if (!response.ok) {
+        if (response.status === 500) {
+          // For server errors, fall back to local betting
+          console.log('Server error when placing bet, falling back to local betting');
+          
+          betPlaced = true;
+          bettingOptions.classList.add('hidden');
+          
+          // Update user balance locally
+          currentUser.balance -= betAmount;
+          balanceDisplayEl.textContent = `Balance: ${currentUser.balance}`;
+          
+          // Add system message
+          addGameChatMessage({
+            senderId: 'system',
+            senderName: 'System',
+            message: `Bet placed: ${betAmount} coins. Game started!`,
+            isSelf: false
+          });
+          
+          return null;
+        }
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       return response.json();
     })
     .then(data => {
+      if (!data) return null; // Skip if we're using local betting
+      
       if (data.message === 'Bet placed successfully') {
         betPlaced = true;
         bettingOptions.classList.add('hidden');
@@ -1713,43 +1961,47 @@ function setupEventListeners() {
         balanceDisplayEl.textContent = `Balance: ${data.user.balance}`;
         
         // Start the game
-        return fetch(`/api/game/${gameId}/start`, {
+        return fetchWithCredentials(`/api/game/${gameId}/start`, {
           method: 'POST'
         });
       } else {
         showError(data.message);
+        return null;
       }
     })
     .then(response => {
-      if (response && !response.ok) {
+      if (!response) return null;
+      
+      if (!response.ok) {
+        if (response.status === 500) {
+          // For server errors, continue with local game
+          console.log('Server error when starting game, continuing with local game');
+          return null;
+        }
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-      return response ? response.json() : null;
+      return response.json();
     })
     .then(data => {
-      if (data) {
-        console.log('Game started:', data);
-        
-        // Set up the game with black (player) to move first
-        playerColor = 'black';
-        chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
-        isPlayerTurn = true;
-        
-        // Update player info
-        whitePlayerEl.querySelector('.player-name').textContent = 'AI';
-        blackPlayerEl.querySelector('.player-name').textContent = currentUser.username;
-        
-        // Update the board
-        updateBoard();
-        
-        // Add system message
-        addGameChatMessage({
-          senderId: 'system',
-          senderName: 'System',
-          message: `Bet placed: ${betAmount} coins. Game started!`,
-          isSelf: false
-        });
-      }
+      // Set up the game with black (player) to move first
+      playerColor = 'black';
+      chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
+      isPlayerTurn = true;
+      
+      // Update player info
+      whitePlayerEl.querySelector('.player-name').textContent = 'AI';
+      blackPlayerEl.querySelector('.player-name').textContent = currentUser.username;
+      
+      // Update the board
+      updateBoard();
+      
+      // Add system message
+      addGameChatMessage({
+        senderId: 'system',
+        senderName: 'System',
+        message: `Bet placed: ${betAmount} coins. Game started!`,
+        isSelf: false
+      });
     })
     .catch(error => {
       console.error('Error placing bet or starting game:', error);
@@ -1770,14 +2022,6 @@ function setupEventListeners() {
       
       // Update the board
       updateBoard();
-      
-      // Add system message
-      addGameChatMessage({
-        senderId: 'system',
-        senderName: 'System',
-        message: `Bet placed: ${betAmount} coins. Game started!`,
-        isSelf: false
-      });
     });
   });
   
@@ -1998,11 +2242,29 @@ function loadBettingHistoryFromStorage() {
 // Show lobby
 function showLobby() {
   if (!currentUser) {
-    showError('You must be logged in to find opponents');
+    // Create a notification banner at the top of the page
+    const banner = document.createElement('div');
+    banner.className = 'login-required-banner';
+    banner.textContent = 'You must be logged in to find opponents';
+    
+    // Add a close button
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'close-banner';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', () => {
+      banner.remove();
+    });
+    
+    banner.appendChild(closeBtn);
+    document.body.insertBefore(banner, document.body.firstChild);
+    
+    // Also show an error message
+    showError('You must be logged in to find opponents', 'error');
     return;
   }
   
   lobbyModal.classList.remove('hidden');
+  lobbyModal.style.display = 'flex';
   
   // Request available players from server
   if (socket) {

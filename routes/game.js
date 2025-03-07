@@ -16,7 +16,7 @@ const isAuthenticated = (req, res, next) => {
 // Create a new game
 router.post('/create', isAuthenticated, async (req, res) => {
   try {
-    const { opponentId, isAIOpponent, aiDifficulty } = req.body;
+    const { opponentId, isAIOpponent, aiDifficulty, startingFen } = req.body;
     
     // Validate opponent
     let opponent;
@@ -31,16 +31,37 @@ router.post('/create', isAuthenticated, async (req, res) => {
       }
     }
     
-    // Randomly assign colors
-    const isWhite = Math.random() >= 0.5;
+    // For AI games, the user is always the black player
+    let whitePlayer = null;
+    let blackPlayer = null;
+    let whiteIsAI = false;
+    let blackIsAI = false;
+    
+    if (isAIOpponent) {
+      // AI is white, user is black
+      whitePlayer = null; // AI doesn't have a user ID
+      blackPlayer = req.user._id;
+      whiteIsAI = true;
+      blackIsAI = false;
+    } else {
+      // Randomly assign colors for human vs human games
+      const isWhite = Math.random() >= 0.5;
+      whitePlayer = isWhite ? req.user._id : opponent._id;
+      blackPlayer = isWhite ? opponent._id : req.user._id;
+      whiteIsAI = false;
+      blackIsAI = false;
+    }
     
     // Create new game
     const newGame = new Game({
-      whitePlayer: isWhite ? req.user._id : (isAIOpponent ? null : opponent._id),
-      blackPlayer: isWhite ? (isAIOpponent ? null : opponent._id) : req.user._id,
+      whitePlayer,
+      blackPlayer,
       isAIOpponent,
+      whiteIsAI,
+      blackIsAI,
       aiDifficulty: isAIOpponent ? (aiDifficulty || 10) : undefined,
-      status: 'pending'
+      status: 'pending',
+      currentFen: startingFen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
     });
     
     await newGame.save();
@@ -89,10 +110,24 @@ router.post('/:id/start', isAuthenticated, async (req, res) => {
       return res.status(404).json({ message: 'Game not found' });
     }
     
-    // Check if user is a player in this game
-    const isPlayer = 
-      game.whitePlayer.equals(req.user._id) || 
-      game.blackPlayer.equals(req.user._id);
+    // Check if user is a player in this game or if it's an AI game
+    let isPlayer = false;
+    
+    if (game.isAIOpponent) {
+      // For AI games, the user must be the human player
+      if (game.whitePlayer && game.whitePlayer.equals(req.user._id)) {
+        isPlayer = true;
+      } else if (game.blackPlayer && game.blackPlayer.equals(req.user._id)) {
+        isPlayer = true;
+      }
+    } else {
+      // For human vs human games, the user must be one of the players
+      if (game.whitePlayer && game.whitePlayer.equals(req.user._id)) {
+        isPlayer = true;
+      } else if (game.blackPlayer && game.blackPlayer.equals(req.user._id)) {
+        isPlayer = true;
+      }
+    }
     
     if (!isPlayer && !game.isAIOpponent) {
       return res.status(403).json({ message: 'You are not a player in this game' });

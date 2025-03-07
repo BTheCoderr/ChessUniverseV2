@@ -4,14 +4,26 @@ const GameSchema = new mongoose.Schema({
   whitePlayer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: function() {
+      return !this.isAIOpponent || this.whiteIsAI === false;
+    }
   },
   blackPlayer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: function() {
+      return !this.isAIOpponent || this.blackIsAI === false;
+    }
   },
   isAIOpponent: {
+    type: Boolean,
+    default: false
+  },
+  whiteIsAI: {
+    type: Boolean,
+    default: false
+  },
+  blackIsAI: {
     type: Boolean,
     default: false
   },

@@ -72,6 +72,15 @@ header {
   padding: 10px 0;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.3s ease;
+}
+
+/* Add styles for authenticated header */
+header.authenticated {
+  background-color: rgba(74, 111, 165, 0.1);
+  border-bottom: 2px solid var(--primary-color);
+  padding: 12px 10px;
+  border-radius: 8px;
 }
 
 .user-info {
@@ -379,8 +388,8 @@ header {
   align-items: center;
 }
 
-.modal.hidden {
-  display: none;
+.modal:not(.hidden) {
+  display: flex;
 }
 
 .modal-content {
@@ -530,14 +539,12 @@ header {
   100% { opacity: 1; }
 }
 
-/* Error Message */
-.error-message {
+/* Message Notifications */
+.message-notification {
   position: fixed;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--danger-color);
-  color: white;
   padding: 10px 20px;
   border-radius: 4px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
@@ -546,7 +553,22 @@ header {
   transition: opacity 0.5s ease;
 }
 
-.error-message.fade-out {
+.error-message {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.success-message {
+  background-color: #28a745;
+  color: white;
+}
+
+.info-message {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.message-notification.fade-out {
   opacity: 0;
 }
 
@@ -884,4 +906,28 @@ header {
     width: 30%;
     height: 30%;
   }
+}
+
+/* Login Required Banner */
+.login-required-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #e74c3c;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  font-weight: bold;
+  z-index: 2000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.close-banner {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  cursor: pointer;
 } 

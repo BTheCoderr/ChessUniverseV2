@@ -15,10 +15,6 @@ const isAuthenticated = (req, res, next) => {
 
 // Place a bet on a game
 router.post('/place-bet', isAuthenticated, async (req, res) => {
-  // Start a transaction to ensure data consistency
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  
   try {
     const { gameId, betAmount } = req.body;
     
@@ -33,55 +29,70 @@ router.post('/place-bet', isAuthenticated, async (req, res) => {
       return res.status(400).json({ message: `Bet amount cannot exceed ${maxBet} coins` });
     }
     
-    // Find the game with session to lock it
-    const game = await Game.findById(gameId).session(session);
+    // Find the game
+    const game = await Game.findById(gameId);
     if (!game) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(404).json({ message: 'Game not found' });
     }
     
     // Check if game is in pending status
     if (game.status !== 'pending') {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'Bets can only be placed on pending games' });
     }
     
     // Check if a bet has already been placed
     if (game.betAmount > 0) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'A bet has already been placed on this game' });
     }
     
     // Check if user is a player in this game
-    const isWhitePlayer = game.whitePlayer.equals(req.user._id);
-    const isBlackPlayer = game.blackPlayer.equals(req.user._id);
+    let isPlayer = false;
+    if (game.whitePlayer && game.whitePlayer.equals(req.user._id)) {
+      isPlayer = true;
+    } else if (game.blackPlayer && game.blackPlayer.equals(req.user._id)) {
+      isPlayer = true;
+    }
     
-    if (!isWhitePlayer && !isBlackPlayer) {
-      await session.abortTransaction();
-      session.endSession();
+    if (!isPlayer && !game.isAIOpponent) {
       return res.status(403).json({ message: 'You are not a player in this game' });
     }
     
-    // Get fresh user data with session to ensure accurate balance
-    const user = await User.findById(req.user._id).session(session);
+    // Get fresh user data to ensure accurate balance
+    const user = await User.findById(req.user._id);
     
     // Check if user has enough balance
     if (user.balance < betAmount) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'Insufficient balance' });
     }
     
-    // Ensure both players have enough balance for the bet
-    const otherPlayerId = isWhitePlayer ? game.blackPlayer : game.whitePlayer;
-    const otherPlayer = await User.findById(otherPlayerId).session(session);
+    // For AI games, we only need to check the user's balance
+    if (game.isAIOpponent) {
+      // Update game with bet amount
+      game.betAmount = betAmount;
+      await game.save();
+      
+      // Deduct bet amount from user's balance
+      user.balance -= betAmount;
+      await user.save();
+      
+      return res.json({
+        message: 'Bet placed successfully',
+        game: {
+          id: game._id,
+          betAmount: game.betAmount
+        },
+        user: {
+          id: user._id,
+          balance: user.balance
+        }
+      });
+    }
+    
+    // For human vs human games, check the other player's balance
+    const otherPlayerId = game.whitePlayer.equals(req.user._id) ? game.blackPlayer : game.whitePlayer;
+    const otherPlayer = await User.findById(otherPlayerId);
     
     if (otherPlayer.balance < betAmount) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ 
         message: 'Your opponent does not have enough balance for this bet amount'
       });
@@ -89,18 +100,14 @@ router.post('/place-bet', isAuthenticated, async (req, res) => {
     
     // Update game with bet amount
     game.betAmount = betAmount;
-    await game.save({ session });
+    await game.save();
     
     // Deduct bet amount from both players' balances
     user.balance -= betAmount;
     otherPlayer.balance -= betAmount;
     
-    await user.save({ session });
-    await otherPlayer.save({ session });
-    
-    // Commit the transaction
-    await session.commitTransaction();
-    session.endSession();
+    await user.save();
+    await otherPlayer.save();
     
     res.json({
       message: 'Bet placed successfully',
@@ -114,10 +121,6 @@ router.post('/place-bet', isAuthenticated, async (req, res) => {
       }
     });
   } catch (error) {
-    // Abort transaction on error
-    await session.abortTransaction();
-    session.endSession();
-    
     console.error('Error placing bet:', error);
     res.status(500).json({ message: 'Server error' });
   }
