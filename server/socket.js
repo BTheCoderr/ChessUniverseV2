@@ -45,10 +45,12 @@ module.exports = function(server) {
   });
   
   io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.user.username} (${socket.user._id})`);
+    console.log(`User connected: ${socket.user.username} (${socket.user.guest ? 'Guest' : socket.user._id})`);
     
     // Store user's socket for reconnection
-    userSockets.set(socket.user._id.toString(), socket);
+    if (!socket.user.guest && socket.user._id) {
+      userSockets.set(socket.user._id.toString(), socket);
+    }
     
     // Handle player seeking a game
     socket.on('seek_game', async (data) => {
@@ -390,7 +392,12 @@ module.exports = function(server) {
     
     // Handle disconnection
     socket.on('disconnect', () => {
-      console.log(`User disconnected: ${socket.user.username} (${socket.user._id})`);
+      console.log(`User disconnected: ${socket.user.username} (${socket.user.guest ? 'Guest' : socket.user._id})`);
+      
+      // Skip the rest for guest users
+      if (socket.user.guest) {
+        return;
+      }
       
       const userId = socket.user._id.toString();
       

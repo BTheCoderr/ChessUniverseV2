@@ -2,6 +2,7 @@
 let chess = null;
 let board = [];
 let gameId = null;
+let currentGameId = null; // Add this line to initialize currentGameId
 let selectedSquare = null;
 let playerColor = 'white';
 let isPlayerTurn = false;
