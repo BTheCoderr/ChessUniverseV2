@@ -2293,53 +2293,61 @@ function resetTimers() {
 // Setup game event listeners
 function setupGameEventListeners() {
   // New Game button
-  newGameBtn.addEventListener('click', () => {
-    console.log('New Game button clicked');
-    
-    // Get the current level
-    let currentLevel = 1;
-    if (window.ChessRules) {
-      currentLevel = window.ChessRules.getGameLevel();
-    }
-    
-    // Initialize a new game with the current level
-    initGame(currentLevel);
-  });
+  if (newGameBtn) {
+    newGameBtn.addEventListener('click', () => {
+      console.log('New Game button clicked');
+      
+      // Get the current level
+      let currentLevel = 1;
+      if (window.ChessRules) {
+        currentLevel = window.ChessRules.getGameLevel();
+      }
+      
+      // Initialize a new game with the current level
+      initGame(currentLevel);
+    });
+  }
   
   // Play vs AI button
-  playAiBtn.addEventListener('click', () => {
-    console.log('Play vs AI button clicked');
-    
-    // Show AI options
-    aiOptions.classList.remove('hidden');
-    aiVsAiOptions.classList.add('hidden');
-    bettingOptions.classList.add('hidden');
-  });
+  if (playAiBtn && aiOptions) {
+    playAiBtn.addEventListener('click', () => {
+      console.log('Play vs AI button clicked');
+      
+      // Show AI options
+      aiOptions.classList.remove('hidden');
+      if (aiVsAiOptions) aiVsAiOptions.classList.add('hidden');
+      if (bettingOptions) bettingOptions.classList.add('hidden');
+    });
+  }
   
   // AI vs AI button
-  aiVsAiBtn.addEventListener('click', () => {
-    console.log('AI vs AI button clicked');
-    
-    // Show AI vs AI options
-    aiVsAiOptions.classList.remove('hidden');
-    aiOptions.classList.add('hidden');
-    bettingOptions.classList.add('hidden');
-  });
+  if (aiVsAiBtn && aiVsAiOptions) {
+    aiVsAiBtn.addEventListener('click', () => {
+      console.log('AI vs AI button clicked');
+      
+      // Show AI vs AI options
+      aiVsAiOptions.classList.remove('hidden');
+      if (aiOptions) aiOptions.classList.add('hidden');
+      if (bettingOptions) bettingOptions.classList.add('hidden');
+    });
+  }
   
   // Find Opponent button
-  findOpponentBtn.addEventListener('click', () => {
-    console.log('Find Opponent button clicked');
-    
-    // Show lobby
-    showLobby();
-  });
+  if (findOpponentBtn) {
+    findOpponentBtn.addEventListener('click', () => {
+      console.log('Find Opponent button clicked');
+      
+      // Show lobby
+      showLobby();
+    });
+  }
   
   // Profile button
   if (profileBtn) {
-  profileBtn.addEventListener('click', () => {
+    profileBtn.addEventListener('click', () => {
       console.log('Profile button clicked');
-    showProfile();
-  });
+      showProfile();
+    });
   }
   
   // Logout button
@@ -2351,179 +2359,96 @@ function setupGameEventListeners() {
       fetchWithCredentials('/api/auth/logout', {
         method: 'POST'
       })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
+      .then(response => response.json())
       .then(data => {
-        console.log('Logout successful:', data);
-        
-        // Update UI for guest
-        currentUser = null;
-        updateUIForGuest();
-        
-        // Show success message
-        showError('Logged out successfully', 'success');
+        if (data.success) {
+          // Update UI for guest
+          updateUIForGuest();
+          
+          // Show success message
+          showError('Logged out successfully', 'success');
+        }
       })
       .catch(error => {
-        console.error('Logout error:', error);
-        showError('Error logging out. Please try again.');
+        console.error('Error logging out:', error);
+        showError('Error logging out');
       });
     });
   }
-  
-  // Close buttons for modals
-  document.querySelectorAll('.close-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      console.log('Close button clicked');
-      
-      // Hide all modals
-      const modals = document.querySelectorAll('.modal');
-      modals.forEach(modal => {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-      });
-      
-      // Hide lobby specifically
-      hideLobby();
-    });
-  });
-  
-  // Create Game button in lobby
-  if (createGameBtn) {
-  createGameBtn.addEventListener('click', () => {
-      console.log('Create Game button clicked');
-      
-      // Get bet amount
-      const betAmount = parseInt(betAmountLobbyInput.value);
-      
-      // Validate bet amount
-      if (isNaN(betAmount) || betAmount <= 0) {
-        showError('Please enter a valid bet amount');
-        return;
-      }
-      
-      if (betAmount > (currentUser ? currentUser.balance : 0)) {
-        showError('Insufficient balance for this bet');
-        return;
-      }
-      
-      // Create game on server
-      if (socket) {
-      socket.emit('createGame', {
-        betAmount
-      });
-      
-        showError('Game created! Waiting for opponents...', 'info');
-      } else {
-        showError('Cannot create game: server connection not available');
-      }
-    });
-  }
-  
-  // Send Lobby Chat button
-  if (sendLobbyChatBtn) {
-    sendLobbyChatBtn.addEventListener('click', (e) => {
-      e.preventDefault(); // Prevent form submission
-      console.log('Send lobby chat button clicked');
-    sendLobbyChatMessage();
-  });
-  }
-  
-  // Lobby Chat Input - Enter key
-  if (lobbyChatInput) {
-  lobbyChatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault(); // Prevent form submission
-      sendLobbyChatMessage();
+}
+
+// Connect to WebSocket
+function connectWebSocket() {
+  try {
+    console.log('Connecting to WebSocket...');
+    
+    // Get token from localStorage or cookie
+    let token = '';
+    if (document.cookie.includes('jwt=')) {
+      token = document.cookie.split('jwt=')[1].split(';')[0];
     }
-  });
-  }
-  
-  // Level buttons
-  if (document.getElementById('level1-btn')) {
-    document.getElementById('level1-btn').addEventListener('click', () => {
-      initGame(1);
+    
+    // Connect to socket.io server
+    socket = io({
+      auth: {
+        token: token
+      },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
-  }
-  
-  if (document.getElementById('level2-btn')) {
-    document.getElementById('level2-btn').addEventListener('click', () => {
-      if (!document.getElementById('level2-btn').classList.contains('locked')) {
-        initGame(2);
-      } else {
-        showError('Complete Level 1 and the Magic Horse Challenge to unlock this level!');
-      }
-    });
-  }
-  
-  if (document.getElementById('level3-btn')) {
-    document.getElementById('level3-btn').addEventListener('click', () => {
-      if (!document.getElementById('level3-btn').classList.contains('locked')) {
-        initGame(3);
-      } else {
-        showError('Complete Level 2 and the Magic Horse Challenge to unlock this level!');
-      }
-    });
-  }
-  
-  if (document.getElementById('level4-btn')) {
-    document.getElementById('level4-btn').addEventListener('click', () => {
-      if (!document.getElementById('level4-btn').classList.contains('locked')) {
-        initGame(4);
-      } else {
-        showError('Complete Level 3 and the Magic Horse Challenge to unlock this level!');
-      }
-    });
-  }
-  
-  if (document.getElementById('battle-chess-btn')) {
-    document.getElementById('battle-chess-btn').addEventListener('click', () => {
-      if (!document.getElementById('battle-chess-btn').classList.contains('locked')) {
-        initBattleChess();
-      } else {
-        showError('Complete Level 4 to unlock Battle Chess!');
-      }
-    });
-  }
-  
-  if (document.getElementById('custom-setup-btn')) {
-    document.getElementById('custom-setup-btn').addEventListener('click', () => {
-      if (!document.getElementById('custom-setup-btn').classList.contains('locked')) {
-        initCustomSetup();
-      } else {
-        showError('Win 3 Battle Chess games to unlock Custom Setup!');
-      }
-    });
-  }
-  
-  // AI options
-  if (startAiGameBtn) {
-    startAiGameBtn.addEventListener('click', () => {
-      console.log('Start AI Game button clicked');
+    
+    // Connection events
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      showError('Connected to server', 'success');
       
-      // Hide AI options
-      aiOptions.classList.add('hidden');
+      // Check if we need to reconnect to a game
+      if (currentGameId) {
+        socket.emit('reconnect_game', { gameId: currentGameId });
+      }
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+      // Continue as guest if authentication fails
+      showError('Connected as guest', 'info');
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      showError('Disconnected from server', 'error');
+    });
+    
+    // Game events
+    socket.on('game_start', (data) => {
+      console.log('Game started:', data);
       
-      // Get AI difficulty
-      const aiDifficulty = parseInt(aiDifficultySlider.value);
+      // Hide lobby
+      hideLobby();
       
-      // Initialize a new game with AI
+      // Store game ID
+      currentGameId = data.gameId;
+      
+      // Initialize game
       chess = new Chess();
       
       // Set up the board with black to move first
       chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
       
       // Set up the game
-      isAiGame = true;
-      isPlayerTurn = true;
-      playerColor = 'black';
+      isAiGame = false;
+      isPlayerTurn = data.color === 'black';
+      playerColor = data.color;
       
       // Update player info
-      whitePlayerEl.querySelector('.player-name').textContent = 'AI';
-      blackPlayerEl.querySelector('.player-name').textContent = currentUser ? currentUser.username : 'You';
+      if (whitePlayerEl && blackPlayerEl) {
+        const whiteNameEl = whitePlayerEl.querySelector('.player-name');
+        const blackNameEl = blackPlayerEl.querySelector('.player-name');
+        
+        if (whiteNameEl) whiteNameEl.textContent = data.color === 'white' ? currentUser.username : data.opponent.username;
+        if (blackNameEl) blackNameEl.textContent = data.color === 'black' ? currentUser.username : data.opponent.username;
+      }
       
       // Create the board
       createBoard();
@@ -2535,378 +2460,21 @@ function setupGameEventListeners() {
       updateGameStatus();
       
       // Enable controls
-      resignBtn.disabled = false;
-      offerDrawBtn.disabled = false;
-      
-      // Show success message
-      showError('Game started against AI', 'success');
-    });
-  }
-  
-  // AI vs AI options
-  if (startAiVsAiBtn) {
-    startAiVsAiBtn.addEventListener('click', () => {
-      console.log('Start AI vs AI button clicked');
-      
-      // Hide AI vs AI options
-      aiVsAiOptions.classList.add('hidden');
-      
-      // Start AI vs AI game
-      startAiVsAiGame();
-      
-      // Show success message
-      showError('AI vs AI game started', 'success');
-    });
-  }
-  
-  // Tournament buttons
-  document.getElementById('tournaments-btn').addEventListener('click', showTournaments);
-  document.getElementById('tournament-back-btn').addEventListener('click', hideTournaments);
-  document.getElementById('create-tournament-btn').addEventListener('click', () => {
-    document.getElementById('create-tournament-modal').classList.remove('hidden');
-    document.getElementById('create-tournament-modal').style.display = 'flex';
-  });
-  
-  // Tournament filter and refresh
-  document.getElementById('tournament-status-filter').addEventListener('change', loadTournaments);
-  document.getElementById('tournament-variant-filter').addEventListener('change', loadTournaments);
-  document.getElementById('tournament-refresh-btn').addEventListener('click', loadTournaments);
-  
-  // Tournament modals
-  document.getElementById('create-tournament-close').addEventListener('click', () => {
-    document.getElementById('create-tournament-modal').classList.add('hidden');
-    document.getElementById('create-tournament-modal').style.display = 'none';
-  });
-  
-  document.getElementById('tournament-details-close').addEventListener('click', () => {
-    document.getElementById('tournament-details-modal').classList.add('hidden');
-    document.getElementById('tournament-details-modal').style.display = 'none';
-  });
-  
-  // Tournament form submission
-  document.getElementById('create-tournament-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const formData = {
-      name: document.getElementById('tournament-name').value,
-      description: document.getElementById('tournament-description').value,
-      gameVariant: document.getElementById('tournament-variant').value,
-      entryFee: parseInt(document.getElementById('tournament-fee').value, 10),
-      maxParticipants: parseInt(document.getElementById('tournament-max-participants').value, 10),
-      registrationStart: document.getElementById('tournament-reg-start').value,
-      registrationEnd: document.getElementById('tournament-reg-end').value,
-      tournamentStart: document.getElementById('tournament-start').value
-    };
-    
-    createTournament(formData);
-  });
-  
-  // Join tournament button in details modal
-  document.getElementById('join-tournament-btn').addEventListener('click', (e) => {
-    const tournamentId = e.target.dataset.id;
-    if (tournamentId) {
-      joinTournament(tournamentId);
-    }
-  });
-  
-  // View bracket button in details modal
-  const viewBracketBtn = document.getElementById('view-bracket-btn');
-  if (viewBracketBtn) {
-    viewBracketBtn.addEventListener('click', (e) => {
-      const tournamentId = e.target.dataset.id;
-      if (tournamentId) {
-        viewTournamentBracket(tournamentId);
-      }
-    });
-  } else {
-    console.warn('View bracket button not found');
-  }
-  
-  // Magic Horse Challenge button
-  document.getElementById('magic-horse-btn').addEventListener('click', () => {
-    showMagicHorseChallenge();
-    loadMagicHorseProgress();
-  });
-  
-  // Play button to return to game section
-  document.getElementById('play-btn').addEventListener('click', () => {
-    hideTournaments();
-    hideMagicHorseChallenge();
-  });
-  
-  // Setup Magic Horse Challenge event listeners
-  setupMagicHorseEventListeners();
-  
-  // Auth event listeners
-  loginBtn.addEventListener('click', () => {
-    loginModal.classList.remove('hidden');
-    loginModal.style.display = 'flex';
-  });
-  
-  registerBtn.addEventListener('click', () => {
-    registerModal.classList.remove('hidden');
-    registerModal.style.display = 'flex';
-  });
-  
-  logoutBtn.addEventListener('click', () => {
-    fetchWithCredentials('/api/auth/logout', { method: 'POST' })
-      .then(response => response.json())
-      .then(data => {
-        currentUser = null;
-        updateUIForGuest();
-        showError(data.message, 'success');
-      })
-      .catch(error => {
-        console.error('Logout error:', error);
-        showError('Error logging out. Please try again.');
-      });
-  });
-  
-  // Close modal buttons
-  closeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const modal = btn.closest('.modal');
-      modal.classList.add('hidden');
-      modal.style.display = 'none';
-    });
-  });
-  
-  // Login form submission
-  loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
-    
-    fetchWithCredentials('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password })
-    })
-    .then(response => {
-      if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.message || 'Login failed');
-          });
-      }
-      return response.json();
-    })
-    .then(data => {
-        // Use the new updateUIAfterLogin function
-        updateUIAfterLogin(data.user);
-        showError(data.message, 'success');
-    })
-    .catch(error => {
-      console.error('Login error:', error);
-        showError(error.message || 'Login failed. Please check your credentials.');
-    });
-  });
-  
-  // Register form submission
-  registerForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('register-username').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const confirmPassword = document.getElementById('register-confirm-password').value;
-    
-    if (password !== confirmPassword) {
-      showError('Passwords do not match');
-      return;
-    }
-    
-    fetchWithCredentials('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ username, email, password })
-    })
-    .then(response => {
-      if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.message || 'Registration failed');
-          });
-      }
-      return response.json();
-    })
-    .then(data => {
-        // Use the new updateUIAfterLogin function
-        updateUIAfterLogin(data.user);
-        showError(data.message, 'success');
-    })
-    .catch(error => {
-      console.error('Registration error:', error);
-        showError(error.message || 'Registration failed. Please try again.');
-    });
-  });
-}
-
-// Connect to WebSocket server
-function connectWebSocket() {
-  // Check if socket.io is available
-  if (typeof io === 'undefined') {
-    console.error('Socket.io is not loaded. WebSocket functionality will be disabled.');
-    return;
-  }
-
-  try {
-    // If there's already a socket connection, disconnect it first
-    if (socket) {
-      console.log('Disconnecting existing socket connection');
-      socket.disconnect();
-    }
-    
-    // Connect with error handling
-    socket = io({
-      reconnectionAttempts: 5,
-      timeout: 10000,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      randomizationFactor: 0.5,
-      transports: ['polling', 'websocket'] // Try polling first, then websocket
-    });
-    
-    // Handle connection
-    socket.on('connect', () => {
-      console.log('Connected to server');
-    });
-    
-    // Handle reconnection
-    socket.on('reconnect', (attemptNumber) => {
-      console.log(`Reconnected to server after ${attemptNumber} attempts`);
-    });
-    
-    // Handle reconnection attempts
-    socket.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`Attempting to reconnect: attempt ${attemptNumber}`);
-      // Try to use polling if websocket fails
-      if (attemptNumber > 1) {
-        socket.io.opts.transports = ['polling', 'websocket'];
-      }
-    });
-    
-    // Handle reconnection errors
-    socket.on('reconnect_error', (error) => {
-      console.error('Reconnection error:', error);
-    });
-    
-    // Handle reconnection failures
-    socket.on('reconnect_failed', () => {
-      console.error('Failed to reconnect to server');
-      showError('Connection to server lost. Please refresh the page.', 'error');
-    });
-    
-    // Handle disconnection
-    socket.on('disconnect', (reason) => {
-      console.log(`Disconnected from server: ${reason}`);
-      if (reason === 'io server disconnect') {
-        // The server has forcefully disconnected the socket
-        console.log('Server disconnected the socket, attempting to reconnect');
-        socket.connect();
-      }
-    });
-    
-    // Handle connection errors
-    socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
-      // Don't show error to user for every connection error
-      // as it might be annoying during reconnection attempts
-    });
-    
-    // Handle game state updates
-    socket.on('gameState', (data) => {
-      // Update chess position
-      chess.load(data.fen);
-      
-      // Update the board
-      updateBoard();
-      
-      // Highlight last move if available
-      if (data.lastMove) {
-        highlightLastMove(data.lastMove.from, data.lastMove.to);
-        addMoveToHistory(data.lastMove);
-      }
-      
-      // Update turn
-      isPlayerTurn = data.turn === playerColor[0];
-      
-      // Enable/disable controls based on turn
-      resignBtn.disabled = !isPlayerTurn;
-      offerDrawBtn.disabled = !isPlayerTurn;
-      
-      // Update spectator bets if available
-      if (data.game && data.game.spectatorBets) {
-        updateSpectatorBetsList(data.game.spectatorBets);
-      }
-    });
-    
-    // Handle game over
-    socket.on('gameOver', (data) => {
-      // Update spectator bets if available
-      if (data.game && data.game.spectatorBets) {
-        updateSpectatorBetsList(data.game.spectatorBets);
-      }
-      
-      endGame(data.result);
-    });
-    
-    // Handle available players update
-    socket.on('availablePlayers', (data) => {
-      updateAvailablePlayers(data.players);
-    });
-    
-    // Handle incoming challenge
-    socket.on('challenge', (data) => {
-      handleChallenge(data);
-    });
-    
-    // Handle challenge accepted
-    socket.on('challengeAccepted', (data) => {
-      hideLobby();
-      gameId = data.gameId;
-      playerColor = data.playerColor;
+      if (resignBtn) resignBtn.disabled = false;
+      if (offerDrawBtn) offerDrawBtn.disabled = false;
       
       // Show game chat
-    showGameChat();
-    
-    // Add system message
-    addGameChatMessage({
-      senderId: 'system',
-      senderName: 'System',
-        message: `Game started! You are playing as ${playerColor}.`,
-      isSelf: false
-    });
-  });
-  
-    // Handle challenge declined
-    socket.on('challengeDeclined', (data) => {
-      showError(`${data.opponentName} declined your challenge.`);
+      showGameChat();
+      
+      // Show success message
+      showError('Game started against ' + data.opponent.username, 'success');
     });
     
-    // Handle lobby chat message
-    socket.on('lobbyChatMessage', (data) => {
-      addLobbyChatMessage(data);
-    });
+    // More socket event handlers...
     
-    // Handle game chat message
-    socket.on('gameChatMessage', (data) => {
-      if (data.gameId === gameId) {
-        addGameChatMessage({
-          senderId: data.senderId,
-          senderName: data.senderName,
-          message: data.message,
-          isSelf: false
-        });
-      }
-    });
-    
-    // Handle errors
-    socket.on('error', (data) => {
-      console.error('Socket error:', data.message);
-      showError(data.message);
-    });
   } catch (error) {
-    console.error('Error setting up socket connection:', error);
-    console.log('Continuing without WebSocket functionality');
+    console.error('Error connecting to WebSocket:', error);
+    showError('Error connecting to server');
   }
 }
 
@@ -4233,5 +3801,393 @@ function checkTutorial() {
   if (!localStorage.getItem('tutorialShown')) {
     // Wait a bit before showing the tutorial
     setTimeout(showTutorial, 1000);
+  }
+}
+
+// Setup all event listeners
+function setupEventListeners() {
+  try {
+    console.log('Setting up event listeners');
+    
+    // Close buttons for modals
+    const closeBtns = document.querySelectorAll('.close-btn');
+    if (closeBtns && closeBtns.length > 0) {
+      closeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          console.log('Close button clicked');
+          
+          // Hide all modals
+          const modals = document.querySelectorAll('.modal');
+          modals.forEach(modal => {
+            modal.classList.add('hidden');
+          });
+          
+          // Hide lobby specifically
+          if (typeof hideLobby === 'function') {
+            hideLobby();
+          }
+        });
+      });
+    }
+    
+    // Create Game button in lobby
+    const createGameBtn = document.getElementById('create-game-btn');
+    const betAmountLobbyInput = document.getElementById('bet-amount-lobby');
+    if (createGameBtn && betAmountLobbyInput) {
+      createGameBtn.addEventListener('click', () => {
+        console.log('Create Game button clicked');
+        
+        // Get bet amount
+        const betAmount = parseInt(betAmountLobbyInput.value);
+        
+        // Validate bet amount
+        if (isNaN(betAmount) || betAmount <= 0) {
+          showError('Please enter a valid bet amount');
+          return;
+        }
+        
+        if (betAmount > (currentUser ? currentUser.balance : 0)) {
+          showError('Insufficient balance for this bet');
+          return;
+        }
+        
+        // Create game on server
+        if (socket) {
+          socket.emit('createGame', {
+            betAmount
+          });
+          
+          showError('Game created! Waiting for opponents...', 'info');
+        } else {
+          showError('Cannot create game: server connection not available');
+        }
+      });
+    }
+    
+    // Send Lobby Chat button
+    const sendLobbyChatBtn = document.getElementById('send-lobby-chat-btn');
+    if (sendLobbyChatBtn) {
+      sendLobbyChatBtn.addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent form submission
+        console.log('Send lobby chat button clicked');
+        sendLobbyChatMessage();
+      });
+    }
+    
+    // Lobby Chat Input - Enter key
+    const lobbyChatInput = document.getElementById('lobby-chat-input');
+    if (lobbyChatInput) {
+      lobbyChatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault(); // Prevent form submission
+          sendLobbyChatMessage();
+        }
+      });
+    }
+    
+    // Level buttons
+    const level1Btn = document.getElementById('level1-btn');
+    if (level1Btn) {
+      level1Btn.addEventListener('click', () => {
+        initGame(1);
+      });
+    }
+    
+    const level2Btn = document.getElementById('level2-btn');
+    if (level2Btn) {
+      level2Btn.addEventListener('click', () => {
+        if (!level2Btn.classList.contains('locked')) {
+          initGame(2);
+        } else {
+          showError('Complete Level 1 and the Magic Horse Challenge to unlock this level!');
+        }
+      });
+    }
+    
+    const level3Btn = document.getElementById('level3-btn');
+    if (level3Btn) {
+      level3Btn.addEventListener('click', () => {
+        if (!level3Btn.classList.contains('locked')) {
+          initGame(3);
+        } else {
+          showError('Complete Level 2 and the Magic Horse Challenge to unlock this level!');
+        }
+      });
+    }
+    
+    const level4Btn = document.getElementById('level4-btn');
+    if (level4Btn) {
+      level4Btn.addEventListener('click', () => {
+        if (!level4Btn.classList.contains('locked')) {
+          initGame(4);
+        } else {
+          showError('Complete Level 3 and the Magic Horse Challenge to unlock this level!');
+        }
+      });
+    }
+    
+    const battleChessBtn = document.getElementById('battle-chess-btn');
+    if (battleChessBtn) {
+      battleChessBtn.addEventListener('click', () => {
+        if (!battleChessBtn.classList.contains('locked')) {
+          initBattleChess();
+        } else {
+          showError('Complete Level 4 to unlock Battle Chess!');
+        }
+      });
+    }
+    
+    const customSetupBtn = document.getElementById('custom-setup-btn');
+    if (customSetupBtn) {
+      customSetupBtn.addEventListener('click', () => {
+        if (!customSetupBtn.classList.contains('locked')) {
+          initCustomSetup();
+        } else {
+          showError('Win 3 Battle Chess games to unlock Custom Setup!');
+        }
+      });
+    }
+    
+    // AI options
+    const startAiGameBtn = document.getElementById('start-ai-game-btn');
+    const aiDifficultySlider = document.getElementById('ai-difficulty');
+    if (startAiGameBtn && aiDifficultySlider) {
+      startAiGameBtn.addEventListener('click', () => {
+        console.log('Start AI Game button clicked');
+        
+        // Hide AI options
+        if (aiOptions) aiOptions.classList.add('hidden');
+        
+        // Get AI difficulty
+        const aiDifficulty = parseInt(aiDifficultySlider.value);
+        
+        // Initialize a new game with AI
+        chess = new Chess();
+        
+        // Set up the board with black to move first
+        chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
+        
+        // Set up the game
+        isAiGame = true;
+        isPlayerTurn = true;
+        playerColor = 'black';
+        
+        // Update player info
+        if (whitePlayerEl && blackPlayerEl) {
+          const whiteNameEl = whitePlayerEl.querySelector('.player-name');
+          const blackNameEl = blackPlayerEl.querySelector('.player-name');
+          
+          if (whiteNameEl) whiteNameEl.textContent = 'AI';
+          if (blackNameEl) blackNameEl.textContent = currentUser ? currentUser.username : 'You';
+        }
+        
+        // Create the board
+        createBoard();
+        
+        // Update the board
+        updateBoard();
+        
+        // Update game status
+        updateGameStatus();
+        
+        // Enable controls
+        if (resignBtn) resignBtn.disabled = false;
+        if (offerDrawBtn) offerDrawBtn.disabled = false;
+        
+        // Show success message
+        showError('Game started against AI', 'success');
+      });
+    }
+    
+    // AI vs AI options
+    const startAiVsAiBtn = document.getElementById('start-ai-vs-ai-btn');
+    if (startAiVsAiBtn) {
+      startAiVsAiBtn.addEventListener('click', () => {
+        console.log('Start AI vs AI button clicked');
+        
+        // Hide AI vs AI options
+        if (aiVsAiOptions) aiVsAiOptions.classList.add('hidden');
+        
+        // Start AI vs AI game
+        startAiVsAiGame();
+        
+        // Show success message
+        showError('AI vs AI game started', 'success');
+      });
+    }
+    
+    // Tournament buttons
+    const tournamentsBtn = document.getElementById('tournaments-btn');
+    if (tournamentsBtn) {
+      tournamentsBtn.addEventListener('click', showTournaments);
+    }
+    
+    const tournamentBackBtn = document.getElementById('tournament-back-btn');
+    if (tournamentBackBtn) {
+      tournamentBackBtn.addEventListener('click', hideTournaments);
+    }
+    
+    const createTournamentBtn = document.getElementById('create-tournament-btn');
+    if (createTournamentBtn) {
+      createTournamentBtn.addEventListener('click', () => {
+        const createTournamentModal = document.getElementById('create-tournament-modal');
+        if (createTournamentModal) {
+          createTournamentModal.classList.remove('hidden');
+        }
+      });
+    }
+    
+    // Tournament filter and refresh
+    const tournamentStatusFilter = document.getElementById('tournament-status-filter');
+    if (tournamentStatusFilter) {
+      tournamentStatusFilter.addEventListener('change', loadTournaments);
+    }
+    
+    const tournamentVariantFilter = document.getElementById('tournament-variant-filter');
+    if (tournamentVariantFilter) {
+      tournamentVariantFilter.addEventListener('change', loadTournaments);
+    }
+    
+    const tournamentRefreshBtn = document.getElementById('tournament-refresh-btn');
+    if (tournamentRefreshBtn) {
+      tournamentRefreshBtn.addEventListener('click', loadTournaments);
+    }
+    
+    // Magic Horse Challenge button
+    const magicHorseBtn = document.getElementById('magic-horse-btn');
+    if (magicHorseBtn) {
+      magicHorseBtn.addEventListener('click', () => {
+        showMagicHorseChallenge();
+        loadMagicHorseProgress();
+      });
+    }
+    
+    // Play button to return to game section
+    const playBtn = document.getElementById('play-btn');
+    if (playBtn) {
+      playBtn.addEventListener('click', () => {
+        hideTournaments();
+        hideMagicHorseChallenge();
+      });
+    }
+    
+    // Setup Magic Horse Challenge event listeners
+    if (typeof setupMagicHorseEventListeners === 'function') {
+      setupMagicHorseEventListeners();
+    }
+    
+    // Auth event listeners
+    if (loginBtn) {
+      loginBtn.addEventListener('click', () => {
+        if (loginModal) {
+          loginModal.classList.remove('hidden');
+        }
+      });
+    }
+    
+    if (registerBtn) {
+      registerBtn.addEventListener('click', () => {
+        if (registerModal) {
+          registerModal.classList.remove('hidden');
+        }
+      });
+    }
+    
+    // Login form submission
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const loginUsername = document.getElementById('login-username');
+        const loginPassword = document.getElementById('login-password');
+        
+        if (!loginUsername || !loginPassword) {
+          showError('Login form elements not found');
+          return;
+        }
+        
+        const username = loginUsername.value;
+        const password = loginPassword.value;
+        
+        fetchWithCredentials('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ username, password })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.message || 'Login failed');
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Use the updateUIAfterLogin function
+          if (typeof updateUIAfterLogin === 'function') {
+            updateUIAfterLogin(data.user);
+          }
+          showError(data.message, 'success');
+        })
+        .catch(error => {
+          console.error('Login error:', error);
+          showError(error.message || 'Login failed. Please check your credentials.');
+        });
+      });
+    }
+    
+    // Register form submission
+    if (registerForm) {
+      registerForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const registerUsername = document.getElementById('register-username');
+        const registerEmail = document.getElementById('register-email');
+        const registerPassword = document.getElementById('register-password');
+        const registerConfirmPassword = document.getElementById('register-confirm-password');
+        
+        if (!registerUsername || !registerEmail || !registerPassword || !registerConfirmPassword) {
+          showError('Register form elements not found');
+          return;
+        }
+        
+        const username = registerUsername.value;
+        const email = registerEmail.value;
+        const password = registerPassword.value;
+        const confirmPassword = registerConfirmPassword.value;
+        
+        if (password !== confirmPassword) {
+          showError('Passwords do not match');
+          return;
+        }
+        
+        fetchWithCredentials('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({ username, email, password })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.message || 'Registration failed');
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Use the updateUIAfterLogin function
+          if (typeof updateUIAfterLogin === 'function') {
+            updateUIAfterLogin(data.user);
+          }
+          showError(data.message, 'success');
+        })
+        .catch(error => {
+          console.error('Registration error:', error);
+          showError(error.message || 'Registration failed. Please try again.');
+        });
+      });
+    }
+    
+    console.log('Event listeners setup complete');
+  } catch (error) {
+    console.error('Error setting up event listeners:', error);
   }
 }

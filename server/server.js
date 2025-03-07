@@ -24,31 +24,27 @@ const socketSetup = require('./socket');
 // Create Express app
 const app = express();
 const server = http.createServer(app);
-const io = socketio(server);
+
+// Initialize socket.io
+const io = socketSetup(server);
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Session configuration
+// Session middleware
 const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || 'chess-app-secret-key-change-this-in-production',
+  secret: process.env.SESSION_SECRET || 'chess-universe-secret',
   resave: false,
   saveUninitialized: true,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
   store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/chess-app',
-    collectionName: 'sessions',
-    ttl: 60 * 60 * 24, // 1 day
-    autoRemove: 'native',
-    touchAfter: 24 * 3600 // time period in seconds
-  }),
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24, // 1 day
-    httpOnly: true,
-    secure: false, // set to true in production with HTTPS
-    sameSite: 'lax'
-  }
+    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/chess-universe'
+  })
 });
 
 app.use(sessionMiddleware);

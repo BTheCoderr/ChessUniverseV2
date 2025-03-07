@@ -16,20 +16,31 @@ module.exports = function(server) {
     try {
       const token = socket.handshake.auth.token;
       if (!token) {
-        return next(new Error('Authentication error: Token required'));
+        // Allow connection without authentication for guest users
+        socket.user = { guest: true, username: 'Guest' };
+        return next();
       }
       
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.id).select('-password');
-      
-      if (!user) {
-        return next(new Error('Authentication error: User not found'));
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
+        
+        if (!user) {
+          socket.user = { guest: true, username: 'Guest' };
+          return next();
+        }
+        
+        socket.user = user;
+        next();
+      } catch (jwtError) {
+        console.error('JWT verification error:', jwtError);
+        socket.user = { guest: true, username: 'Guest' };
+        return next();
       }
-      
-      socket.user = user;
-      next();
     } catch (error) {
-      return next(new Error('Authentication error: ' + error.message));
+      console.error('Socket authentication error:', error);
+      socket.user = { guest: true, username: 'Guest' };
+      return next();
     }
   });
   
