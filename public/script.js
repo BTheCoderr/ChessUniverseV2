@@ -1128,54 +1128,76 @@ function stopAiVsAiGame() {
 
 // Check authentication status
 function checkAuthStatus() {
-  fetch('/api/auth/current-user')
-    .then(response => {
-      if (response.ok) {
-        return response.json();
+  console.log('Checking authentication status...');
+  fetch('/api/auth/current-user', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    credentials: 'same-origin'
+  })
+  .then(response => {
+    console.log('Auth status response:', response.status);
+    if (!response.ok) {
+      if (response.status === 401) {
+        console.log('User is not authenticated');
+        updateUIForGuest();
+        return null;
       }
-      throw new Error('Not authenticated');
-    })
-    .then(data => {
-      // User is logged in
-      currentUser = data.user;
-      usernameDisplayEl.textContent = currentUser.username;
-      balanceDisplayEl.textContent = `Balance: ${currentUser.balance}`;
-      
-      // Show logout button and profile button, hide login/register buttons
-      loginBtn.classList.add('hidden');
-      registerBtn.classList.add('hidden');
-      logoutBtn.classList.remove('hidden');
-      profileBtn.classList.remove('hidden');
-      
-      // Enable game controls
-      newGameBtn.disabled = false;
-      playAiBtn.disabled = false;
-      findOpponentBtn.disabled = false;
-      
-      // Load betting history from local storage
-      loadBettingHistoryFromStorage();
-    })
-    .catch(error => {
-      // User is not logged in
-      currentUser = null;
-      usernameDisplayEl.textContent = 'Guest';
-      balanceDisplayEl.textContent = 'Balance: 0';
-      
-      // Show login/register buttons, hide logout button and profile button
-      loginBtn.classList.remove('hidden');
-      registerBtn.classList.remove('hidden');
-      logoutBtn.classList.add('hidden');
-      profileBtn.classList.add('hidden');
-      
-      // Disable game controls
-      newGameBtn.disabled = true;
-      playAiBtn.disabled = true;
-      findOpponentBtn.disabled = true;
-      
-      // Reset betting history
-      bettingHistory = [];
-      totalEarnings = 0;
-    });
+      throw new Error('Error checking authentication status: ' + response.status);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data) {
+      console.log('User is authenticated:', data.user.username);
+      updateUIForUser(data.user);
+    }
+  })
+  .catch(error => {
+    console.error('Authentication check error:', error);
+    updateUIForGuest();
+  });
+}
+
+function updateUIForUser(user) {
+  // Show logout button and profile button, hide login/register buttons
+  loginBtn.classList.add('hidden');
+  registerBtn.classList.add('hidden');
+  logoutBtn.classList.remove('hidden');
+  profileBtn.classList.remove('hidden');
+  
+  // Update username and balance display
+  document.getElementById('username-display').textContent = user.username;
+  document.getElementById('balance-display').textContent = `Balance: ${user.balance}`;
+  
+  // Enable betting features if available
+  if (document.getElementById('betting-options')) {
+    document.getElementById('betting-options').classList.remove('hidden');
+  }
+  
+  // Enable multiplayer features
+  document.getElementById('find-opponent-btn').disabled = false;
+}
+
+function updateUIForGuest() {
+  // Show login/register buttons, hide logout button and profile button
+  loginBtn.classList.remove('hidden');
+  registerBtn.classList.remove('hidden');
+  logoutBtn.classList.add('hidden');
+  profileBtn.classList.add('hidden');
+  
+  // Update username and balance display
+  document.getElementById('username-display').textContent = 'Guest';
+  document.getElementById('balance-display').textContent = 'Balance: 0';
+  
+  // Disable betting features if available
+  if (document.getElementById('betting-options')) {
+    document.getElementById('betting-options').classList.add('hidden');
+  }
+  
+  // Disable multiplayer features
+  document.getElementById('find-opponent-btn').disabled = true;
 }
 
 // Setup event listeners
@@ -1294,30 +1316,34 @@ function setupEventListeners() {
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
     
+    console.log('Attempting login for user:', username);
+    
     fetch('/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'same-origin',
       body: JSON.stringify({ username, password })
     })
     .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
+      console.log('Login response status:', response.status);
+      return response.json().then(data => {
+        if (!response.ok) {
+          throw new Error(data.message || `HTTP error! Status: ${response.status}`);
+        }
+        return data;
+      });
     })
     .then(data => {
-      if (data.message === 'Login successful') {
-        loginModal.classList.add('hidden');
-        checkAuthStatus();
-      } else {
-        showError(data.message);
-      }
+      console.log('Login successful:', data.message);
+      loginModal.classList.add('hidden');
+      document.getElementById('login-form').reset();
+      checkAuthStatus();
     })
     .catch(error => {
       console.error('Login error:', error);
-      showError('Error logging in. Please try again.');
+      showError(error.message || 'Error logging in. Please try again.');
     });
   });
   
@@ -1335,54 +1361,62 @@ function setupEventListeners() {
       return;
     }
     
+    console.log('Attempting registration for user:', username);
+    
     fetch('/api/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'same-origin',
       body: JSON.stringify({ username, email, password })
     })
     .then(response => {
+      console.log('Registration response status:', response.status);
+      return response.json().then(data => {
+        if (!response.ok) {
+          throw new Error(data.message || `HTTP error! Status: ${response.status}`);
+        }
+        return data;
+      });
+    })
+    .then(data => {
+      console.log('Registration successful:', data.message);
+      registerModal.classList.add('hidden');
+      document.getElementById('register-form').reset();
+      checkAuthStatus();
+    })
+    .catch(error => {
+      console.error('Registration error:', error);
+      showError(error.message || 'Error registering. Please try again.');
+    });
+  });
+  
+  // Logout button
+  logoutBtn.addEventListener('click', () => {
+    console.log('Attempting logout');
+    
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    })
+    .then(response => {
+      console.log('Logout response status:', response.status);
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       return response.json();
     })
     .then(data => {
-      if (data.message === 'Registration successful') {
-        registerModal.classList.add('hidden');
-        checkAuthStatus();
-      } else {
-        showError(data.message);
-      }
-    })
-    .catch(error => {
-      console.error('Registration error:', error);
-      showError('Error registering. Please try again.');
-    });
-  });
-  
-  // Logout button
-  logoutBtn.addEventListener('click', () => {
-    fetch('/api/auth/logout', {
-      method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.message === 'Logout successful') {
-        checkAuthStatus();
-        
-        // If on profile page, go back to game
-        if (!profileSection.classList.contains('hidden')) {
-          hideProfile();
-        }
-        
-        // Hide game chat
-        hideGameChat();
-      }
+      console.log('Logout successful:', data.message);
+      checkAuthStatus();
     })
     .catch(error => {
       console.error('Logout error:', error);
+      showError('Error logging out. Please try again.');
     });
   });
   
@@ -1575,6 +1609,31 @@ function setupEventListeners() {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       return response ? response.json() : null;
+    })
+    .then(data => {
+      if (data) {
+        console.log('Game started:', data);
+        
+        // Set up the game with black (player) to move first
+        playerColor = 'black';
+        chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
+        isPlayerTurn = true;
+        
+        // Update player info
+        whitePlayerEl.querySelector('.player-name').textContent = 'AI';
+        blackPlayerEl.querySelector('.player-name').textContent = currentUser.username;
+        
+        // Update the board
+        updateBoard();
+        
+        // Add system message
+        addGameChatMessage({
+          senderId: 'system',
+          senderName: 'System',
+          message: 'Game started! You are playing as Black.',
+          isSelf: false
+        });
+      }
     })
     .catch(error => {
       console.error('Error creating/starting game:', error);

@@ -90,19 +90,27 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', (req, res, next) => {
+  console.log('Login attempt for user:', req.body.username);
+  
   passport.authenticate('local', (err, user, info) => {
     if (err) {
-      return next(err);
+      console.error('Login error:', err);
+      return res.status(500).json({ message: 'Internal server error during login' });
     }
     
     if (!user) {
-      return res.status(401).json({ message: info.message });
+      console.log('Login failed:', info.message);
+      return res.status(401).json({ message: info.message || 'Invalid credentials' });
     }
     
     req.login(user, (err) => {
       if (err) {
-        return next(err);
+        console.error('Session error during login:', err);
+        return res.status(500).json({ message: 'Error establishing session' });
       }
+      
+      console.log('Login successful for user:', user.username);
+      console.log('Session after login:', req.session);
       
       return res.json({
         message: 'Login successful',
@@ -129,6 +137,10 @@ router.post('/logout', (req, res) => {
 
 // Get current user
 router.get('/current-user', (req, res) => {
+  console.log('Current user request received');
+  console.log('Is authenticated:', req.isAuthenticated());
+  console.log('Session:', req.session);
+  
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: 'Not authenticated' });
   }

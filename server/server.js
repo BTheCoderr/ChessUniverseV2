@@ -26,15 +26,21 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Session configuration
 const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || 'chess-app-secret',
+  secret: process.env.SESSION_SECRET || 'chess-app-secret-key-change-this-in-production',
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/chess-app',
-    collectionName: 'sessions'
+    collectionName: 'sessions',
+    ttl: 60 * 60 * 24, // 1 day
+    autoRemove: 'native',
+    touchAfter: 24 * 3600 // time period in seconds
   }),
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 // 1 day
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   }
 });
 
