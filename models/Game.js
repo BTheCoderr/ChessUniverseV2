@@ -33,6 +33,36 @@ const GameSchema = new mongoose.Schema({
     max: 20,
     default: 10
   },
+  // Chess Universe game variant
+  gameVariant: {
+    type: String,
+    enum: ['traditional', 'level2', 'level3', 'level4', 'battleChess', 'customSetup'],
+    default: 'traditional'
+  },
+  // Custom piece setup (for customSetup variant)
+  customSetup: {
+    white: {
+      type: Map,
+      of: {
+        type: String,
+        piece: String,
+        level: Number
+      }
+    },
+    black: {
+      type: Map,
+      of: {
+        type: String,
+        piece: String,
+        level: Number
+      }
+    }
+  },
+  // For Battle Chess mode
+  isBattleChess: {
+    type: Boolean,
+    default: false
+  },
   status: {
     type: String,
     enum: ['pending', 'active', 'completed', 'aborted'],
@@ -47,9 +77,9 @@ const GameSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  fen: {
+  currentFen: {
     type: String,
-    default: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' // Starting position
+    default: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1' // Starting position with Black to move first
   },
   moves: [{
     from: String,
@@ -63,6 +93,40 @@ const GameSchema = new mongoose.Schema({
   betAmount: {
     type: Number,
     default: 0
+  },
+  // House fee (10% of bet)
+  houseFee: {
+    type: Number,
+    default: 0
+  },
+  // Flag to indicate if bets have been settled
+  betsSettled: {
+    type: Boolean,
+    default: false
+  },
+  // Spectator bets
+  spectatorBets: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    amount: Number,
+    predictedWinner: {
+      type: String,
+      enum: ['white', 'black']
+    },
+    settled: {
+      type: Boolean,
+      default: false
+    }
+  }],
+  // Tournament info (if part of a tournament)
+  tournamentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tournament'
+  },
+  tournamentRound: {
+    type: Number
   },
   startTime: {
     type: Date

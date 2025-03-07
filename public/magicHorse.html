@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic Horse Challenge - Chess Universe</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="magicHorse.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <h1>Chess Universe - Magic Horse Challenge</h1>
+      <div class="user-info">
+        <span id="username-display">Guest</span>
+        <span id="balance-display">Balance: 0</span>
+        <button id="profile-btn" class="btn hidden"><i class="fas fa-user"></i> Profile</button>
+        <button id="login-btn" class="btn">Login</button>
+        <button id="register-btn" class="btn">Register</button>
+        <button id="logout-btn" class="btn hidden">Logout</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+      <!-- Magic Horse Section -->
+      <div id="magic-horse-section" class="magic-horse-container">
+        <div class="magic-horse-header">
+          <button id="back-to-game-btn" class="btn"><i class="fas fa-arrow-left"></i> Back to Game</button>
+          <h2>Magic Horse Challenge</h2>
+        </div>
+        
+        <div class="magic-horse-content">
+          <div class="magic-horse-info">
+            <div class="info-panel">
+              <h3>Challenge Rules</h3>
+              <p>Move the Horse to capture Queens. You can only move to squares with Queens.</p>
+              <p>The Horse moves in an L-shape (2 squares in one direction, then 1 square perpendicular).</p>
+              <p id="magic-horse-status">Level 1 Challenge: Leave 4 queens to win</p>
+            </div>
+            
+            <div class="stats-panel">
+              <div class="stat-item">
+                <div class="stat-value" id="magic-horse-moves">0</div>
+                <div class="stat-label">Moves</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" id="magic-horse-queens">24</div>
+                <div class="stat-label">Queens Remaining</div>
+              </div>
+            </div>
+            
+            <div class="controls-panel">
+              <button id="restart-challenge-btn" class="btn primary-btn">Restart Challenge</button>
+              <button id="hint-btn" class="btn">Show Hint</button>
+            </div>
+          </div>
+          
+          <div class="magic-horse-board-container">
+            <div id="magic-horse-board" class="magic-horse-board"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Auth Modals -->
+    <div id="login-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Login</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-username">Username:</label>
+            <input type="text" id="login-username" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" required>
+          </div>
+          <button type="submit" class="btn primary-btn">Login</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="register-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Register</h2>
+        <form id="register-form">
+          <div class="form-group">
+            <label for="register-username">Username:</label>
+            <input type="text" id="register-username" required>
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email:</label>
+            <input type="email" id="register-email" required>
+          </div>
+          <div class="form-group">
+            <label for="register-password">Password:</label>
+            <input type="password" id="register-password" required>
+          </div>
+          <div class="form-group">
+            <label for="register-confirm-password">Confirm Password:</label>
+            <input type="password" id="register-confirm-password" required>
+          </div>
+          <button type="submit" class="btn primary-btn">Register</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Challenge Completed!</h2>
+        <div id="success-message"></div>
+        <div class="modal-buttons">
+          <button id="continue-btn" class="btn primary-btn">Continue</button>
+          <button id="play-again-btn" class="btn">Play Again</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Failure Modal -->
+    <div id="failure-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Challenge Failed</h2>
+        <div id="failure-message"></div>
+        <div class="modal-buttons">
+          <button id="try-again-btn" class="btn primary-btn">Try Again</button>
+          <button id="back-to-menu-btn" class="btn">Back to Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+  <script src="magicHorse.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Back to game button
+      document.getElementById('back-to-game-btn').addEventListener('click', () => {
+        window.MagicHorse.hide();
+      });
+      
+      // Restart challenge button
+      document.getElementById('restart-challenge-btn').addEventListener('click', () => {
+        window.MagicHorse.show(challengeLevel);
+      });
+      
+      // Hint button
+      document.getElementById('hint-btn').addEventListener('click', () => {
+        showError('Hint: Try to keep the horse in the center of the board to maximize your options.');
+      });
+      
+      // Success modal buttons
+      document.getElementById('continue-btn').addEventListener('click', () => {
+        document.getElementById('success-modal').classList.add('hidden');
+        window.MagicHorse.hide();
+      });
+      
+      document.getElementById('play-again-btn').addEventListener('click', () => {
+        document.getElementById('success-modal').classList.add('hidden');
+        window.MagicHorse.show(challengeLevel);
+      });
+      
+      // Failure modal buttons
+      document.getElementById('try-again-btn').addEventListener('click', () => {
+        document.getElementById('failure-modal').classList.add('hidden');
+        window.MagicHorse.show(challengeLevel);
+      });
+      
+      document.getElementById('back-to-menu-btn').addEventListener('click', () => {
+        document.getElementById('failure-modal').classList.add('hidden');
+        window.MagicHorse.hide();
+      });
+    });
+  </script>
+</body>
+</html> 

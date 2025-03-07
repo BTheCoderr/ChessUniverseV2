@@ -139,6 +139,7 @@ router.post('/settle-bet', isAuthenticated, async (req, res) => {
     const game = await Game.findById(gameId)
       .populate('whitePlayer')
       .populate('blackPlayer')
+      .populate('spectatorBets.userId')
       .session(session);
     
     if (!game) {
@@ -151,100 +152,281 @@ router.post('/settle-bet', isAuthenticated, async (req, res) => {
     if (game.status !== 'completed') {
       await session.abortTransaction();
       session.endSession();
-      return res.status(400).json({ message: 'Game is not completed yet' });
+      return res.status(400).json({ message: 'Game is not completed' });
     }
     
-    // Check if bet has already been settled
-    if (!game.betAmount || game.betAmount <= 0) {
+    // Check if bets have already been settled
+    if (game.betsSettled) {
       await session.abortTransaction();
       session.endSession();
-      return res.status(400).json({ message: 'No bet to settle or bet already settled' });
+      return res.status(400).json({ message: 'Bets have already been settled' });
     }
     
-    // Get fresh user data to ensure accurate balances
-    const whitePlayer = await User.findById(game.whitePlayer._id).session(session);
-    const blackPlayer = await User.findById(game.blackPlayer._id).session(session);
+    // Get the result
+    const result = game.result;
     
-    // Get the winner and update balances
-    let winner, loser;
-    if (game.result === 'white') {
-      winner = whitePlayer;
-      loser = blackPlayer;
-    } else if (game.result === 'black') {
-      winner = blackPlayer;
-      loser = whitePlayer;
+    // Check if result is valid
+    if (result === 'pending') {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: 'Game result is pending' });
     }
     
-    // Handle the bet based on the result
-    if (winner && loser) {
-      // Winner takes all
-      winner.balance += (game.betAmount * 2);
-      winner.gamesWon += 1;
-      loser.gamesLost += 1;
+    // Calculate the prize pool
+    const betAmount = game.betAmount;
+    const houseFee = Math.floor(betAmount * 0.1); // 10% house fee
+    const prizePool = (betAmount * 2) - houseFee;
+    
+    // Update player balances and betting stats based on result
+    if (result === 'white' || result === 'black') {
+      // Get the winner and loser
+      const winner = result === 'white' ? game.whitePlayer : game.blackPlayer;
+      const loser = result === 'white' ? game.blackPlayer : game.whitePlayer;
       
-      await winner.save({ session });
-      await loser.save({ session });
-      
-      // Reset bet amount to indicate it's been settled
-      game.betAmount = 0;
-      await game.save({ session });
-      
-      // Commit the transaction
-      await session.commitTransaction();
-      session.endSession();
-      
-      res.json({
-        message: 'Bet settled successfully',
-        winner: {
-          id: winner._id,
-          username: winner.username,
-          balance: winner.balance
-        }
-      });
-    } else if (game.result === 'draw') {
-      // Refund bets in case of a draw
-      whitePlayer.balance += game.betAmount;
-      blackPlayer.balance += game.betAmount;
-      whitePlayer.gamesTied += 1;
-      blackPlayer.gamesTied += 1;
-      
-      await whitePlayer.save({ session });
-      await blackPlayer.save({ session });
-      
-      // Reset bet amount to indicate it's been settled
-      game.betAmount = 0;
-      await game.save({ session });
-      
-      // Commit the transaction
-      await session.commitTransaction();
-      session.endSession();
-      
-      res.json({
-        message: 'Game ended in a draw, bets refunded',
-        players: [
-          {
-            id: whitePlayer._id,
-            username: whitePlayer.username,
-            balance: whitePlayer.balance
-          },
-          {
-            id: blackPlayer._id,
-            username: blackPlayer.username,
-            balance: blackPlayer.balance
+      if (winner && !game.isAIOpponent) {
+        // Update winner's balance and stats
+        winner.balance += prizePool;
+        
+        // Update betting stats
+        if (!winner.bettingStats) {
+          winner.bettingStats = {
+            totalBets: 1,
+            wins: 1,
+            losses: 0,
+            draws: 0,
+            profit: betAmount,
+            largestWin: betAmount,
+            largestLoss: 0,
+            spectatorBets: {
+              total: 0,
+              wins: 0,
+              losses: 0,
+              profit: 0
+            }
+          };
+        } else {
+          winner.bettingStats.totalBets += 1;
+          winner.bettingStats.wins += 1;
+          winner.bettingStats.profit += betAmount;
+          
+          // Update largest win if applicable
+          if (betAmount > winner.bettingStats.largestWin) {
+            winner.bettingStats.largestWin = betAmount;
           }
-        ]
-      });
-    } else {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({ message: 'Invalid game result' });
+        }
+        
+        await winner.save({ session });
+      }
+      
+      if (loser && !game.isAIOpponent) {
+        // Update loser's stats
+        if (!loser.bettingStats) {
+          loser.bettingStats = {
+            totalBets: 1,
+            wins: 0,
+            losses: 1,
+            draws: 0,
+            profit: -betAmount,
+            largestWin: 0,
+            largestLoss: betAmount,
+            spectatorBets: {
+              total: 0,
+              wins: 0,
+              losses: 0,
+              profit: 0
+            }
+          };
+        } else {
+          loser.bettingStats.totalBets += 1;
+          loser.bettingStats.losses += 1;
+          loser.bettingStats.profit -= betAmount;
+          
+          // Update largest loss if applicable
+          if (betAmount > loser.bettingStats.largestLoss) {
+            loser.bettingStats.largestLoss = betAmount;
+          }
+        }
+        
+        await loser.save({ session });
+      }
+    } else if (result === 'draw') {
+      // Return bets to both players
+      if (game.whitePlayer && !game.whiteIsAI) {
+        game.whitePlayer.balance += betAmount;
+        
+        // Update betting stats
+        if (!game.whitePlayer.bettingStats) {
+          game.whitePlayer.bettingStats = {
+            totalBets: 1,
+            wins: 0,
+            losses: 0,
+            draws: 1,
+            profit: 0,
+            largestWin: 0,
+            largestLoss: 0,
+            spectatorBets: {
+              total: 0,
+              wins: 0,
+              losses: 0,
+              profit: 0
+            }
+          };
+        } else {
+          game.whitePlayer.bettingStats.totalBets += 1;
+          game.whitePlayer.bettingStats.draws += 1;
+        }
+        
+        await game.whitePlayer.save({ session });
+      }
+      
+      if (game.blackPlayer && !game.blackIsAI) {
+        game.blackPlayer.balance += betAmount;
+        
+        // Update betting stats
+        if (!game.blackPlayer.bettingStats) {
+          game.blackPlayer.bettingStats = {
+            totalBets: 1,
+            wins: 0,
+            losses: 0,
+            draws: 1,
+            profit: 0,
+            largestWin: 0,
+            largestLoss: 0,
+            spectatorBets: {
+              total: 0,
+              wins: 0,
+              losses: 0,
+              profit: 0
+            }
+          };
+        } else {
+          game.blackPlayer.bettingStats.totalBets += 1;
+          game.blackPlayer.bettingStats.draws += 1;
+        }
+        
+        await game.blackPlayer.save({ session });
+      }
     }
+    
+    // Settle spectator bets
+    if (game.spectatorBets && game.spectatorBets.length > 0) {
+      for (const bet of game.spectatorBets) {
+        if (bet.settled) continue;
+        
+        const spectator = bet.userId;
+        if (!spectator) continue;
+        
+        // Calculate payout
+        let payout = 0;
+        if (result === bet.predictedWinner) {
+          // Winner gets 1.8x their bet (after 10% house fee)
+          payout = Math.floor(bet.amount * 1.8);
+          spectator.balance += payout;
+          
+          // Update spectator betting stats
+          if (!spectator.bettingStats) {
+            spectator.bettingStats = {
+              totalBets: 0,
+              wins: 0,
+              losses: 0,
+              draws: 0,
+              profit: 0,
+              largestWin: 0,
+              largestLoss: 0,
+              spectatorBets: {
+                total: 1,
+                wins: 1,
+                losses: 0,
+                profit: payout - bet.amount
+              }
+            };
+          } else {
+            if (!spectator.bettingStats.spectatorBets) {
+              spectator.bettingStats.spectatorBets = {
+                total: 1,
+                wins: 1,
+                losses: 0,
+                profit: payout - bet.amount
+              };
+            } else {
+              spectator.bettingStats.spectatorBets.total += 1;
+              spectator.bettingStats.spectatorBets.wins += 1;
+              spectator.bettingStats.spectatorBets.profit += (payout - bet.amount);
+            }
+          }
+        } else if (result === 'draw') {
+          // Return bet on draw
+          payout = bet.amount;
+          spectator.balance += payout;
+          
+          // No change to profit on draw
+        } else {
+          // Loser gets nothing
+          payout = 0;
+          
+          // Update spectator betting stats
+          if (!spectator.bettingStats) {
+            spectator.bettingStats = {
+              totalBets: 0,
+              wins: 0,
+              losses: 0,
+              draws: 0,
+              profit: 0,
+              largestWin: 0,
+              largestLoss: 0,
+              spectatorBets: {
+                total: 1,
+                wins: 0,
+                losses: 1,
+                profit: -bet.amount
+              }
+            };
+          } else {
+            if (!spectator.bettingStats.spectatorBets) {
+              spectator.bettingStats.spectatorBets = {
+                total: 1,
+                wins: 0,
+                losses: 1,
+                profit: -bet.amount
+              };
+            } else {
+              spectator.bettingStats.spectatorBets.total += 1;
+              spectator.bettingStats.spectatorBets.losses += 1;
+              spectator.bettingStats.spectatorBets.profit -= bet.amount;
+            }
+          }
+        }
+        
+        // Mark bet as settled
+        bet.settled = true;
+        
+        await spectator.save({ session });
+      }
+    }
+    
+    // Mark bets as settled
+    game.betsSettled = true;
+    await game.save({ session });
+    
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+    
+    res.json({
+      message: 'Bets settled successfully',
+      game: {
+        id: game._id,
+        result: game.result,
+        betAmount: game.betAmount,
+        betsSettled: game.betsSettled
+      }
+    });
   } catch (error) {
-    // Abort transaction on error
+    // Abort the transaction on error
     await session.abortTransaction();
     session.endSession();
     
-    console.error('Error settling bet:', error);
+    console.error('Error settling bets:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -291,6 +473,133 @@ router.get('/history', isAuthenticated, async (req, res) => {
     res.json({ bettingHistory });
   } catch (error) {
     console.error('Error fetching betting history:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Place a spectator bet
+router.post('/spectator-bet', isAuthenticated, async (req, res) => {
+  try {
+    const { gameId, betAmount, predictedWinner } = req.body;
+    
+    // Validate bet amount - ensure it's a positive number and not too large
+    if (!betAmount || isNaN(betAmount) || betAmount <= 0) {
+      return res.status(400).json({ message: 'Invalid bet amount' });
+    }
+    
+    // Set a reasonable maximum bet amount
+    const maxBet = 1000;
+    if (betAmount > maxBet) {
+      return res.status(400).json({ message: `Bet amount cannot exceed ${maxBet} coins` });
+    }
+    
+    // Validate predicted winner
+    if (!predictedWinner || (predictedWinner !== 'white' && predictedWinner !== 'black')) {
+      return res.status(400).json({ message: 'Invalid predicted winner' });
+    }
+    
+    // Find the game
+    const game = await Game.findById(gameId);
+    if (!game) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+    
+    // Check if game is in active status
+    if (game.status !== 'active') {
+      return res.status(400).json({ message: 'Bets can only be placed on active games' });
+    }
+    
+    // Check if user is a player in this game (spectators only)
+    if (
+      (game.whitePlayer && game.whitePlayer.equals(req.user._id)) ||
+      (game.blackPlayer && game.blackPlayer.equals(req.user._id))
+    ) {
+      return res.status(403).json({ message: 'Players cannot place spectator bets on their own games' });
+    }
+    
+    // Get fresh user data to ensure accurate balance
+    const user = await User.findById(req.user._id);
+    
+    // Check if user has enough balance
+    if (user.balance < betAmount) {
+      return res.status(400).json({ message: 'Insufficient balance' });
+    }
+    
+    // Create a spectator bet
+    if (!game.spectatorBets) {
+      game.spectatorBets = [];
+    }
+    
+    // Check if user already has a bet on this game
+    const existingBetIndex = game.spectatorBets.findIndex(bet => 
+      bet.userId.toString() === user._id.toString()
+    );
+    
+    if (existingBetIndex >= 0) {
+      return res.status(400).json({ message: 'You already have a bet on this game' });
+    }
+    
+    // Add the spectator bet
+    game.spectatorBets.push({
+      userId: user._id,
+      amount: betAmount,
+      predictedWinner: predictedWinner
+    });
+    
+    await game.save();
+    
+    // Deduct bet amount from user's balance
+    user.balance -= betAmount;
+    await user.save();
+    
+    res.json({
+      message: 'Spectator bet placed successfully',
+      game: {
+        id: game._id,
+        spectatorBets: game.spectatorBets
+      },
+      user: {
+        id: user._id,
+        balance: user.balance
+      }
+    });
+  } catch (error) {
+    console.error('Error placing spectator bet:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get betting leaderboard
+router.get('/leaderboard', async (req, res) => {
+  try {
+    // Find all users with betting stats
+    const users = await User.find({
+      'bettingStats.totalBets': { $gt: 0 }
+    }).select('username bettingStats');
+    
+    // Calculate win rate and sort by profit
+    const leaderboard = users
+      .map(user => {
+        const winRate = user.bettingStats.totalBets > 0 
+          ? (user.bettingStats.wins / user.bettingStats.totalBets * 100).toFixed(1) 
+          : 0;
+        
+        return {
+          username: user.username,
+          totalBets: user.bettingStats.totalBets,
+          wins: user.bettingStats.wins,
+          losses: user.bettingStats.losses,
+          draws: user.bettingStats.draws,
+          winRate: `${winRate}%`,
+          profit: user.bettingStats.profit
+        };
+      })
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 20); // Get top 20
+    
+    res.json({ leaderboard });
+  } catch (error) {
+    console.error('Error fetching betting leaderboard:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

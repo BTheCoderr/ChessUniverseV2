@@ -254,4 +254,57 @@ router.post('/:id/resign', isAuthenticated, async (req, res) => {
   }
 });
 
+// Record Battle Chess win
+router.post('/:id/battle-chess-win', isAuthenticated, async (req, res) => {
+  try {
+    const game = await Game.findById(req.params.id);
+    
+    if (!game) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+    
+    // Check if this is a Battle Chess game
+    if (!game.isBattleChess) {
+      return res.status(400).json({ message: 'This is not a Battle Chess game' });
+    }
+    
+    // Check if user is a player in this game
+    const isWhitePlayer = game.whitePlayer && game.whitePlayer.equals(req.user._id);
+    const isBlackPlayer = game.blackPlayer && game.blackPlayer.equals(req.user._id);
+    
+    if (!isWhitePlayer && !isBlackPlayer) {
+      return res.status(403).json({ message: 'You are not a player in this game' });
+    }
+    
+    // Check if the user is the winner
+    const userIsWinner = 
+      (isWhitePlayer && game.result === 'white') || 
+      (isBlackPlayer && game.result === 'black');
+    
+    if (!userIsWinner) {
+      return res.status(400).json({ message: 'You did not win this game' });
+    }
+    
+    // Update user's Battle Chess wins
+    const user = await User.findById(req.user._id);
+    user.battleChessWins += 1;
+    
+    // If user has won 3 Battle Chess games, unlock Custom Setup
+    if (user.battleChessWins >= 3 && !user.unlockedLevels.includes('customSetup')) {
+      user.unlockedLevels.push('customSetup');
+    }
+    
+    await user.save();
+    
+    res.json({
+      message: 'Battle Chess win recorded',
+      battleChessWins: user.battleChessWins,
+      unlockedCustomSetup: user.unlockedLevels.includes('customSetup')
+    });
+  } catch (error) {
+    console.error('Error recording Battle Chess win:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router; 

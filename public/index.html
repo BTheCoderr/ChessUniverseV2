@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chess App with Betting</title>
+  <title>Chess Universe - The Ultimate Chess Evolution</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="magicHorse.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
   <div class="app-container">
     <!-- Header -->
     <header>
-      <h1>Chess App with Betting</h1>
+      <h1>Chess Universe</h1>
       <div class="user-info">
         <span id="username-display">Guest</span>
         <span id="balance-display">Balance: 0</span>
@@ -22,6 +23,15 @@
       </div>
     </header>
 
+    <!-- Navigation Bar -->
+    <div class="navigation-bar">
+      <div class="nav-left">
+        <button id="play-btn" class="btn primary-btn">Play</button>
+        <button id="tournaments-btn" class="btn">Tournaments</button>
+        <button id="magic-horse-btn" class="btn">Magic Horse Challenge</button>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <main>
       <!-- Game Section -->
@@ -30,10 +40,31 @@
         <div class="game-options">
           <h2>Game Options</h2>
           <div class="option-group">
-            <button id="new-game-btn" class="btn primary-btn">New Game</button>
+            <button id="new-game-btn" class="btn primary-btn">New Game (Level 1)</button>
             <button id="play-ai-btn" class="btn">Play vs AI</button>
             <button id="ai-vs-ai-btn" class="btn">AI vs AI</button>
             <button id="find-opponent-btn" class="btn">Find Opponent</button>
+          </div>
+          
+          <!-- Level Selection -->
+          <div id="level-selection" class="option-group">
+            <h3>Chess Levels</h3>
+            <button id="level1-btn" class="btn level-btn active">Level 1</button>
+            <button id="level2-btn" class="btn level-btn locked unlock-level2">Level 2</button>
+            <button id="level3-btn" class="btn level-btn locked unlock-level3">Level 3</button>
+            <button id="level4-btn" class="btn level-btn locked unlock-level4">Level 4</button>
+            <button id="battle-chess-btn" class="btn level-btn locked unlock-battleChess">Battle Chess</button>
+            <button id="custom-setup-btn" class="btn level-btn locked unlock-customSetup">Custom Setup</button>
+          </div>
+          
+          <!-- Magic Horse Challenge -->
+          <div id="magic-horse-options" class="option-group">
+            <h3>Magic Horse Challenge</h3>
+            <p>Complete challenges to unlock new levels!</p>
+            <button id="magic-horse-level1-btn" class="btn">Challenge Level 1</button>
+            <button id="magic-horse-level2-btn" class="btn locked unlock-level2">Challenge Level 2</button>
+            <button id="magic-horse-level3-btn" class="btn locked unlock-level3">Challenge Level 3</button>
+            <button id="magic-horse-level4-btn" class="btn locked unlock-level4">Castle Wars Challenge</button>
           </div>
           
           <div id="ai-options" class="option-group hidden">
@@ -170,6 +201,187 @@
               </table>
             </div>
           </div>
+          
+          <div class="betting-leaderboard">
+            <h3>Betting Leaderboard</h3>
+            <div class="leaderboard-tabs">
+              <button id="overall-leaderboard-btn" class="leaderboard-tab active">Overall</button>
+              <button id="spectator-leaderboard-btn" class="leaderboard-tab">Spectator Bets</button>
+            </div>
+            <div class="history-table-container">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Bets</th>
+                    <th>Win Rate</th>
+                    <th>Profit</th>
+                  </tr>
+                </thead>
+                <tbody id="betting-leaderboard-table">
+                  <!-- Leaderboard will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tournament Section -->
+      <div id="tournament-section" class="tournament-container hidden">
+        <div class="tournament-header">
+          <button id="tournament-back-btn" class="btn back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+          <h2>Tournaments</h2>
+          <button id="create-tournament-btn" class="btn primary-btn">Create Tournament</button>
+        </div>
+        
+        <div class="tournament-filters">
+          <div class="filter-group">
+            <label for="tournament-status-filter">Status:</label>
+            <select id="tournament-status-filter">
+              <option value="all">All</option>
+              <option value="registration">Registration Open</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="tournament-variant-filter">Game Variant:</label>
+            <select id="tournament-variant-filter">
+              <option value="all">All</option>
+              <option value="traditional">Traditional</option>
+              <option value="level2">Level 2</option>
+              <option value="level3">Level 3</option>
+              <option value="level4">Level 4</option>
+              <option value="battleChess">Battle Chess</option>
+              <option value="customSetup">Custom Setup</option>
+            </select>
+          </div>
+          
+          <button id="tournament-refresh-btn" class="btn refresh-btn"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        
+        <div class="tournaments-list">
+          <div class="no-tournaments-message">No tournaments available.</div>
+        </div>
+      </div>
+      
+      <!-- Magic Horse Challenge Section -->
+      <div id="magic-horse-section" class="magic-horse-container hidden">
+        <div class="magic-horse-header">
+          <button id="magic-horse-back-btn" class="btn back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+          <h2>Magic Horse Challenge</h2>
+        </div>
+        
+        <div class="magic-horse-description">
+          <p>Complete special chess challenges to unlock new game levels and earn rewards!</p>
+          <p>Each challenge tests different chess skills and introduces you to new game mechanics.</p>
+        </div>
+        
+        <div class="magic-horse-progress">
+          <h3>Your Progress</h3>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="magic-horse-progress-bar"></div>
+          </div>
+          <div class="progress-text">
+            <span id="magic-horse-progress-text">0/4 Challenges Completed</span>
+          </div>
+        </div>
+        
+        <div class="magic-horse-challenges">
+          <div class="challenge-card" data-level="level1">
+            <div class="challenge-header">
+              <h3>Knight's Tour</h3>
+              <span class="challenge-status" id="challenge1-status">Not Started</span>
+            </div>
+            <div class="challenge-description">
+              <p>Move the knight to visit every square on the board exactly once.</p>
+            </div>
+            <div class="challenge-rewards">
+              <p><strong>Rewards:</strong> 100 coins, Unlock Level 2</p>
+            </div>
+            <button class="btn primary-btn start-challenge-btn" data-challenge="level1">Start Challenge</button>
+          </div>
+          
+          <div class="challenge-card locked" data-level="level2">
+            <div class="challenge-header">
+              <h3>Pawn Promotion</h3>
+              <span class="challenge-status" id="challenge2-status">Locked</span>
+            </div>
+            <div class="challenge-description">
+              <p>Promote a pawn to a queen while avoiding enemy pieces.</p>
+            </div>
+            <div class="challenge-rewards">
+              <p><strong>Rewards:</strong> 200 coins, Unlock Level 3</p>
+            </div>
+            <button class="btn primary-btn start-challenge-btn" data-challenge="level2" disabled>Start Challenge</button>
+          </div>
+          
+          <div class="challenge-card locked" data-level="level3">
+            <div class="challenge-header">
+              <h3>Checkmate Puzzle</h3>
+              <span class="challenge-status" id="challenge3-status">Locked</span>
+            </div>
+            <div class="challenge-description">
+              <p>Find the checkmate in 3 moves in this challenging position.</p>
+            </div>
+            <div class="challenge-rewards">
+              <p><strong>Rewards:</strong> 300 coins, Unlock Level 4</p>
+            </div>
+            <button class="btn primary-btn start-challenge-btn" data-challenge="level3" disabled>Start Challenge</button>
+          </div>
+          
+          <div class="challenge-card locked" data-level="level4">
+            <div class="challenge-header">
+              <h3>Castle Wars</h3>
+              <span class="challenge-status" id="challenge4-status">Locked</span>
+            </div>
+            <div class="challenge-description">
+              <p>Defend your castle while attacking the opponent's in this special variant.</p>
+            </div>
+            <div class="challenge-rewards">
+              <p><strong>Rewards:</strong> 500 coins, Unlock Battle Chess</p>
+            </div>
+            <button class="btn primary-btn start-challenge-btn" data-challenge="level4" disabled>Start Challenge</button>
+          </div>
+        </div>
+        
+        <!-- Magic Horse Game Board (Hidden by default) -->
+        <div id="magic-horse-game-container" class="hidden">
+          <div class="magic-horse-content">
+            <div class="magic-horse-info">
+              <div class="info-panel">
+                <h3>Challenge Rules</h3>
+                <p>Move the Horse to capture Queens. You can only move to squares with Queens.</p>
+                <p>The Horse moves in an L-shape (2 squares in one direction, then 1 square perpendicular).</p>
+                <p id="magic-horse-status">Level 1 Challenge: Leave 4 queens to win</p>
+              </div>
+              
+              <div class="stats-panel">
+                <div class="stat-item">
+                  <div class="stat-value" id="magic-horse-moves">0</div>
+                  <div class="stat-label">Moves</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value" id="magic-horse-queens">24</div>
+                  <div class="stat-label">Queens Remaining</div>
+                </div>
+              </div>
+              
+              <div class="controls-panel">
+                <button id="restart-challenge-btn" class="btn primary-btn">Restart Challenge</button>
+                <button id="hint-btn" class="btn">Show Hint</button>
+                <button id="back-to-challenges-btn" class="btn">Back to Challenges</button>
+              </div>
+            </div>
+            
+            <div class="magic-horse-board-container">
+              <div id="magic-horse-board" class="magic-horse-board"></div>
+              <div class="progress-indicator">Progress: 0%</div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -286,6 +498,128 @@
       </div>
     </div>
     
+    <!-- Tournament Creation Modal -->
+    <div id="create-tournament-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Create Tournament</h2>
+        <form id="create-tournament-form">
+          <div class="form-group">
+            <label for="tournament-name">Tournament Name:</label>
+            <input type="text" id="tournament-name" required>
+          </div>
+          <div class="form-group">
+            <label for="tournament-description">Description:</label>
+            <textarea id="tournament-description" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="tournament-variant">Game Variant:</label>
+            <select id="tournament-variant" required>
+              <option value="traditional">Traditional</option>
+              <option value="level2">Level 2</option>
+              <option value="level3">Level 3</option>
+              <option value="level4">Level 4</option>
+              <option value="battleChess">Battle Chess</option>
+              <option value="customSetup">Custom Setup</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tournament-entry-fee">Entry Fee:</label>
+            <input type="number" id="tournament-entry-fee" min="10" max="10000" value="100" required>
+          </div>
+          <div class="form-group">
+            <label for="tournament-max-participants">Maximum Participants:</label>
+            <select id="tournament-max-participants" required>
+              <option value="4">4 Players</option>
+              <option value="8">8 Players</option>
+              <option value="16">16 Players</option>
+              <option value="32">32 Players</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tournament-registration-start">Registration Start:</label>
+            <input type="datetime-local" id="tournament-registration-start" required>
+          </div>
+          <div class="form-group">
+            <label for="tournament-registration-end">Registration End:</label>
+            <input type="datetime-local" id="tournament-registration-end" required>
+          </div>
+          <div class="form-group">
+            <label for="tournament-start">Tournament Start:</label>
+            <input type="datetime-local" id="tournament-start" required>
+          </div>
+          <button type="submit" class="btn primary-btn">Create Tournament</button>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Tournament Details Modal -->
+    <div id="tournament-details-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2 id="tournament-details-name">Tournament Name</h2>
+        <div class="tournament-details-content">
+          <div class="tournament-info">
+            <p id="tournament-details-description">Tournament description will appear here.</p>
+            <div class="tournament-details-grid">
+              <div class="detail-item">
+                <div class="detail-label">Game Variant:</div>
+                <div class="detail-value" id="tournament-details-variant">Traditional</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Entry Fee:</div>
+                <div class="detail-value" id="tournament-details-fee">100</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Prize Pool:</div>
+                <div class="detail-value" id="tournament-details-prize">900</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Status:</div>
+                <div class="detail-value" id="tournament-details-status">Registration</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Participants:</div>
+                <div class="detail-value" id="tournament-details-participants">0/8</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Registration:</div>
+                <div class="detail-value" id="tournament-details-registration">Jan 1, 2023 - Jan 7, 2023</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Tournament Start:</div>
+                <div class="detail-value" id="tournament-details-start">Jan 8, 2023</div>
+              </div>
+            </div>
+          </div>
+          <div class="tournament-actions">
+            <button id="join-tournament-btn" class="btn primary-btn">Join Tournament</button>
+            <button id="view-bracket-btn" class="btn">View Bracket</button>
+          </div>
+          <div class="tournament-participants">
+            <h3>Participants</h3>
+            <div id="tournament-participants-list" class="participants-list">
+              <!-- Participants will be populated here -->
+              <div class="no-participants-message">No participants yet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tournament Bracket Modal -->
+    <div id="tournament-bracket-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2 id="tournament-bracket-name">Tournament Bracket</h2>
+        <div class="tournament-bracket-container">
+          <div class="tournament-bracket" id="tournament-bracket">
+            <!-- Bracket will be populated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <!-- Game Chat -->
     <div id="game-chat" class="chat-container hidden">
       <div class="chat-header">
@@ -297,6 +631,125 @@
         <div class="chat-input-container">
           <input type="text" id="game-chat-input" placeholder="Type a message...">
           <button id="send-game-chat-btn" class="btn primary-btn">Send</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Spectator Betting Panel -->
+    <div id="spectator-panel" class="spectator-panel hidden">
+      <div class="spectator-header">
+        <h3>Spectator Betting</h3>
+        <button id="toggle-spectator-btn" class="btn"><i class="fas fa-chevron-down"></i></button>
+      </div>
+      <div class="spectator-body">
+        <div class="spectator-info">
+          <p>Place a bet on the outcome of this game. The house takes a 10% fee.</p>
+          <p>If you win, you'll receive 1.8x your bet amount.</p>
+        </div>
+        <div class="spectator-form">
+          <div class="form-group">
+            <label for="spectator-bet-amount">Bet Amount:</label>
+            <input type="number" id="spectator-bet-amount" min="10" max="1000" value="100">
+          </div>
+          <div class="form-group">
+            <label>Predicted Winner:</label>
+            <div class="winner-selection">
+              <button id="bet-on-white" class="btn">White</button>
+              <button id="bet-on-black" class="btn">Black</button>
+            </div>
+          </div>
+          <button id="place-spectator-bet-btn" class="btn primary-btn">Place Bet</button>
+        </div>
+        <div class="spectator-bets">
+          <h4>Current Bets</h4>
+          <div id="spectator-bets-list" class="spectator-bets-list">
+            <!-- Spectator bets will be populated here -->
+            <div class="no-bets-message">No bets placed yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Level Unlock Modal -->
+    <div id="level-unlock-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>New Level Unlocked!</h2>
+        <div class="level-unlock-content">
+          <div class="level-unlock-icon">
+            <i class="fas fa-unlock-alt"></i>
+          </div>
+          <div id="level-unlock-message">Congratulations! You've unlocked a new level.</div>
+          <div id="level-unlock-description" class="level-description"></div>
+        </div>
+        <div class="modal-buttons">
+          <button id="try-level-btn" class="btn primary-btn">Try It Now</button>
+          <button id="continue-btn" class="btn">Continue</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tutorial Modal -->
+    <div id="tutorial-modal" class="modal hidden">
+      <div class="modal-content tutorial-content">
+        <span class="close-btn">&times;</span>
+        <h2>Welcome to Chess Universe!</h2>
+        
+        <div class="tutorial-navigation">
+          <button id="prev-tutorial-btn" class="btn" disabled><i class="fas fa-arrow-left"></i> Previous</button>
+          <span id="tutorial-step-indicator">Step 1 of 5</span>
+          <button id="next-tutorial-btn" class="btn">Next <i class="fas fa-arrow-right"></i></button>
+        </div>
+        
+        <div class="tutorial-slides">
+          <div class="tutorial-slide active" data-step="1">
+            <h3>Chess Universe Basics</h3>
+            <div class="tutorial-image">
+              <img src="https://i.imgur.com/XYZ123.png" alt="Chess Universe Logo" class="placeholder-image">
+            </div>
+            <p>Welcome to Chess Universe, where chess evolves as you play! In this game, Black moves first, and as you progress, you'll unlock new abilities for your pieces.</p>
+          </div>
+          
+          <div class="tutorial-slide" data-step="2">
+            <h3>Progressive Chess Levels</h3>
+            <div class="tutorial-image">
+              <img src="https://i.imgur.com/XYZ123.png" alt="Chess Levels" class="placeholder-image">
+            </div>
+            <p>Chess Universe features 4 levels with evolving queen abilities:</p>
+            <ul>
+              <li><strong>Level 1:</strong> Traditional chess with Black moving first</li>
+              <li><strong>Level 2:</strong> Queens move like Bishop + King + Knight</li>
+              <li><strong>Level 3:</strong> Queens move like Rook + King + Knight</li>
+              <li><strong>Level 4:</strong> Queens have all traditional moves + Knight moves</li>
+            </ul>
+          </div>
+          
+          <div class="tutorial-slide" data-step="3">
+            <h3>Magic Horse Challenge</h3>
+            <div class="tutorial-image">
+              <img src="https://i.imgur.com/XYZ123.png" alt="Magic Horse Challenge" class="placeholder-image">
+            </div>
+            <p>Complete special challenges to unlock new levels! In the Magic Horse Challenge, you control a Knight that can only move to squares with Queens. Your goal is to leave a specific number of Queens on the board.</p>
+          </div>
+          
+          <div class="tutorial-slide" data-step="4">
+            <h3>Battle Chess & Custom Setup</h3>
+            <div class="tutorial-image">
+              <img src="https://i.imgur.com/XYZ123.png" alt="Battle Chess" class="placeholder-image">
+            </div>
+            <p><strong>Battle Chess:</strong> All pieces start in the center of the board, face-to-face!</p>
+            <p><strong>Custom Setup:</strong> Arrange your pieces behind the pawns however you want, with Queens in any level form.</p>
+          </div>
+          
+          <div class="tutorial-slide" data-step="5">
+            <h3>Betting & Tournaments</h3>
+            <div class="tutorial-image">
+              <img src="https://i.imgur.com/XYZ123.png" alt="Betting & Tournaments" class="placeholder-image">
+            </div>
+            <p>Place bets on games you play or as a spectator. Join tournaments with entry fees and compete for prize pools!</p>
+            <p>Ready to start your chess evolution?</p>
+            <button id="start-playing-btn" class="btn primary-btn">Start Playing!</button>
+          </div>
         </div>
       </div>
     </div>
@@ -315,6 +768,8 @@
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="chessRules.js"></script>
+  <script src="magicHorse.js"></script>
   <script src="script.js"></script>
 </body>
 </html> 
