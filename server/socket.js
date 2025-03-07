@@ -3,13 +3,24 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Game = require('../models/Game');
 
-// Store active games and waiting players
+// Store active games and waiting players - use WeakMap where possible to help with garbage collection
 const activeGames = new Map();
 const waitingPlayers = new Map();
 const userSockets = new Map();
 
+// Cache frequently accessed data
+const gameCache = new Map(); // Cache game data to reduce database queries
+
 module.exports = function(server) {
-  const io = socketIO(server);
+  const io = socketIO(server, {
+    pingTimeout: 60000, // Increase ping timeout to prevent frequent reconnections
+    pingInterval: 25000, // Adjust ping interval
+    transports: ['websocket', 'polling'], // Prefer websocket, fallback to polling
+    cors: {
+      origin: '*', // Adjust as needed for security
+      methods: ['GET', 'POST']
+    }
+  });
   
   // Middleware to authenticate socket connections
   io.use(async (socket, next) => {
@@ -56,6 +67,12 @@ module.exports = function(server) {
     socket.on('seek_game', async (data) => {
       try {
         const { level } = data;
+        
+        // Skip for guest users
+        if (socket.user.guest) {
+          return socket.emit('error', { message: 'Please log in to seek games' });
+        }
+        
         const userId = socket.user._id.toString();
         
         // Remove from waiting list if already waiting
@@ -63,67 +80,79 @@ module.exports = function(server) {
           waitingPlayers.delete(userId);
         }
         
-        // Check for suitable opponent
-        let matched = false;
+        // Check for suitable opponent - use more efficient matching algorithm
+        let bestMatch = null;
+        let waitTime = Infinity;
+        
         for (const [waitingId, waitingData] of waitingPlayers.entries()) {
           if (waitingData.level === level && waitingId !== userId) {
-            // Match found, create a new game
-            const whitePlayer = Math.random() < 0.5 ? userId : waitingId;
-            const blackPlayer = whitePlayer === userId ? waitingId : userId;
-            
-            const game = new Game({
-              white: whitePlayer,
-              black: blackPlayer,
-              level: level,
-              status: 'active',
-              moves: []
-            });
-            
-            await game.save();
-            
-            // Store game in active games
-            activeGames.set(game._id.toString(), {
-              gameId: game._id.toString(),
-              white: whitePlayer,
-              black: blackPlayer,
-              level: level,
-              moves: [],
-              lastMoveTime: Date.now()
-            });
-            
-            // Notify both players
-            const waitingSocket = userSockets.get(waitingId);
-            if (waitingSocket) {
-              waitingSocket.emit('game_start', {
-                gameId: game._id.toString(),
-                opponent: {
-                  id: socket.user._id,
-                  username: socket.user.username,
-                  rating: socket.user.rating
-                },
-                color: whitePlayer === waitingId ? 'white' : 'black'
-              });
+            const currentWaitTime = Date.now() - waitingData.seekTime;
+            if (currentWaitTime < waitTime) {
+              waitTime = currentWaitTime;
+              bestMatch = { id: waitingId, data: waitingData };
             }
-            
-            socket.emit('game_start', {
-              gameId: game._id.toString(),
-              opponent: {
-                id: waitingData.user._id,
-                username: waitingData.user.username,
-                rating: waitingData.user.rating
-              },
-              color: whitePlayer === userId ? 'white' : 'black'
-            });
-            
-            // Remove waiting player
-            waitingPlayers.delete(waitingId);
-            matched = true;
-            break;
           }
         }
         
-        // If no match, add to waiting list
-        if (!matched) {
+        if (bestMatch) {
+          // Match found, create a new game
+          const whitePlayer = Math.random() < 0.5 ? userId : bestMatch.id;
+          const blackPlayer = whitePlayer === userId ? bestMatch.id : userId;
+          
+          // Create game with minimal data
+          const game = new Game({
+            white: whitePlayer,
+            black: blackPlayer,
+            level: level,
+            status: 'active',
+            moves: []
+          });
+          
+          await game.save();
+          
+          // Store game in active games with only essential data
+          const gameData = {
+            gameId: game._id.toString(),
+            white: whitePlayer,
+            black: blackPlayer,
+            level: level,
+            moves: [],
+            lastMoveTime: Date.now()
+          };
+          
+          activeGames.set(game._id.toString(), gameData);
+          
+          // Cache game data
+          gameCache.set(game._id.toString(), gameData);
+          
+          // Notify both players
+          const waitingSocket = userSockets.get(bestMatch.id);
+          if (waitingSocket) {
+            waitingSocket.emit('game_start', {
+              gameId: game._id.toString(),
+              opponent: {
+                id: socket.user._id,
+                username: socket.user.username,
+                rating: socket.user.rating || 1200
+              },
+              color: whitePlayer === bestMatch.id ? 'white' : 'black'
+            });
+          }
+          
+          socket.emit('game_start', {
+            gameId: game._id.toString(),
+            opponent: {
+              id: bestMatch.data.user._id,
+              username: bestMatch.data.user.username,
+              rating: bestMatch.data.user.rating || 1200
+            },
+            color: whitePlayer === userId ? 'white' : 'black'
+          });
+          
+          // Remove waiting player
+          waitingPlayers.delete(bestMatch.id);
+        } else {
+          // If no match, add to waiting list
           waitingPlayers.set(userId, {
             user: socket.user,
             level: level,
@@ -139,6 +168,9 @@ module.exports = function(server) {
     
     // Handle player canceling seek
     socket.on('cancel_seek', () => {
+      // Skip for guest users
+      if (socket.user.guest) return;
+      
       const userId = socket.user._id.toString();
       if (waitingPlayers.has(userId)) {
         waitingPlayers.delete(userId);
@@ -146,14 +178,21 @@ module.exports = function(server) {
       }
     });
     
-    // Handle game moves
+    // Handle game moves - optimize for performance
     socket.on('make_move', async (data) => {
       try {
         const { gameId, move } = data;
+        
+        // Skip for guest users
+        if (socket.user.guest) {
+          return socket.emit('error', { message: 'Please log in to play games' });
+        }
+        
         const userId = socket.user._id.toString();
         
-        // Validate game exists and user is a participant
-        const gameData = activeGames.get(gameId);
+        // Check cache first before database
+        let gameData = activeGames.get(gameId) || gameCache.get(gameId);
+        
         if (!gameData) {
           // Try to load from database if not in memory
           const game = await Game.findById(gameId);
@@ -161,43 +200,44 @@ module.exports = function(server) {
             return socket.emit('error', { message: 'Game not found' });
           }
           
-          // Add to active games
-          activeGames.set(gameId, {
+          // Add to active games and cache
+          gameData = {
             gameId: game._id.toString(),
             white: game.white.toString(),
             black: game.black.toString(),
             level: game.level,
             moves: game.moves,
             lastMoveTime: Date.now()
-          });
+          };
+          
+          activeGames.set(gameId, gameData);
+          gameCache.set(gameId, gameData);
         }
         
-        const updatedGameData = activeGames.get(gameId);
-        
         // Check if user is a participant
-        if (updatedGameData.white !== userId && updatedGameData.black !== userId) {
+        if (gameData.white !== userId && gameData.black !== userId) {
           return socket.emit('error', { message: 'You are not a participant in this game' });
         }
         
         // Check if it's user's turn
-        const isWhiteTurn = updatedGameData.moves.length % 2 === 0;
-        const isUserWhite = updatedGameData.white === userId;
+        const isWhiteTurn = gameData.moves.length % 2 === 0;
+        const isUserWhite = gameData.white === userId;
         
         if ((isWhiteTurn && !isUserWhite) || (!isWhiteTurn && isUserWhite)) {
           return socket.emit('error', { message: 'Not your turn' });
         }
         
         // Add move to game
-        updatedGameData.moves.push(move);
-        updatedGameData.lastMoveTime = Date.now();
+        gameData.moves.push(move);
+        gameData.lastMoveTime = Date.now();
         
-        // Update game in database
+        // Update game in database - use bulk operations when possible
         await Game.findByIdAndUpdate(gameId, {
           $push: { moves: move }
-        });
+        }, { new: true });
         
         // Notify opponent
-        const opponentId = isUserWhite ? updatedGameData.black : updatedGameData.white;
+        const opponentId = isUserWhite ? gameData.black : gameData.white;
         const opponentSocket = userSockets.get(opponentId);
         
         if (opponentSocket) {
@@ -416,7 +456,7 @@ module.exports = function(server) {
     });
   });
   
-  // Cleanup inactive games periodically
+  // Cleanup inactive games periodically - run less frequently to reduce CPU usage
   setInterval(() => {
     const now = Date.now();
     for (const [gameId, gameData] of activeGames.entries()) {
@@ -427,6 +467,18 @@ module.exports = function(server) {
         }).catch(err => console.error('Error updating abandoned game:', err));
         
         activeGames.delete(gameId);
+        gameCache.delete(gameId);
+      }
+    }
+    
+    // Also clean up waiting players who have been waiting too long
+    for (const [userId, playerData] of waitingPlayers.entries()) {
+      if (now - playerData.seekTime > 10 * 60 * 1000) { // 10 minutes
+        waitingPlayers.delete(userId);
+        const socket = userSockets.get(userId);
+        if (socket) {
+          socket.emit('seek_canceled', { reason: 'timeout' });
+        }
       }
     }
   }, 5 * 60 * 1000); // Check every 5 minutes

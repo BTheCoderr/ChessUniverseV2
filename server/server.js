@@ -28,22 +28,35 @@ const server = http.createServer(app);
 // Initialize socket.io
 const io = socketSetup(server);
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
+// Performance optimizations
+app.use(express.json({ limit: '1mb' })); // Limit payload size
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Session middleware
+// Compression middleware to reduce bandwidth
+const compression = require('compression');
+app.use(compression());
+
+// Static file caching
+app.use(express.static(path.join(__dirname, '../public'), {
+  maxAge: '1d', // Cache static assets for 1 day
+  etag: true
+}));
+
+// Session middleware with optimized settings
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'chess-universe-secret',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false, // Don't create session until something stored
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax'
   },
   store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/chess-universe'
+    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/chess-universe',
+    ttl: 24 * 60 * 60, // = 1 day
+    autoRemove: 'native',
+    touchAfter: 24 * 3600 // time period in seconds
   })
 });
 
@@ -52,6 +65,18 @@ app.use(sessionMiddleware);
 // Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Rate limiting for API routes
+const rateLimit = require('express-rate-limit');
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to API routes
+app.use('/api/', apiLimiter);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chess-app')
@@ -63,7 +88,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/betting', bettingRoutes);
 app.use('/api/tournament', tournamentRoutes);
-app.use('/api/magicHorse', magicHorseRoutes);
+app.use('/api/magic-horse', magicHorseRoutes);
 app.use('/api/user', userRoutes);
 
 // Socket.io middleware to access session data
@@ -242,4 +267,10 @@ server.listen(PORT, () => {
 });
 
 // Initialize socket.io
-socketSetup(server); 
+socketSetup(server);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
+}); 

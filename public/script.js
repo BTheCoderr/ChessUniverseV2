@@ -2389,14 +2389,18 @@ function connectWebSocket() {
       token = document.cookie.split('jwt=')[1].split(';')[0];
     }
     
-    // Connect to socket.io server
+    // Connect to socket.io server with optimized settings
     socket = io({
       auth: {
         token: token
       },
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
+      transports: ['websocket', 'polling'], // Prefer WebSocket for better performance
+      upgrade: true,
+      rememberUpgrade: true,
+      timeout: 20000
     });
     
     // Connection events
@@ -2421,62 +2425,157 @@ function connectWebSocket() {
       showError('Disconnected from server', 'error');
     });
     
-    // Game events
-    socket.on('game_start', (data) => {
-      console.log('Game started:', data);
-      
-      // Hide lobby
-      hideLobby();
-      
-      // Store game ID
-      currentGameId = data.gameId;
-      
-      // Initialize game
-      chess = new Chess();
-      
-      // Set up the board with black to move first
-      chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
-      
-      // Set up the game
-      isAiGame = false;
-      isPlayerTurn = data.color === 'black';
-      playerColor = data.color;
-      
-      // Update player info
-      if (whitePlayerEl && blackPlayerEl) {
-        const whiteNameEl = whitePlayerEl.querySelector('.player-name');
-        const blackNameEl = blackPlayerEl.querySelector('.player-name');
-        
-        if (whiteNameEl) whiteNameEl.textContent = data.color === 'white' ? currentUser.username : data.opponent.username;
-        if (blackNameEl) blackNameEl.textContent = data.color === 'black' ? currentUser.username : data.opponent.username;
-      }
-      
-      // Create the board
-      createBoard();
-      
-      // Update the board
-      updateBoard();
-      
-      // Update game status
-      updateGameStatus();
-      
-      // Enable controls
-      if (resignBtn) resignBtn.disabled = false;
-      if (offerDrawBtn) offerDrawBtn.disabled = false;
-      
-      // Show game chat
-      showGameChat();
-      
-      // Show success message
-      showError('Game started against ' + data.opponent.username, 'success');
-    });
-    
-    // More socket event handlers...
+    // Game events with optimized handlers
+    socket.on('game_start', handleGameStart);
+    socket.on('opponent_move', handleOpponentMove);
+    socket.on('game_over', handleGameOver);
+    socket.on('opponent_resigned', handleOpponentResigned);
+    socket.on('draw_offered', handleDrawOffered);
+    socket.on('draw_accepted', handleDrawAccepted);
+    socket.on('draw_declined', handleDrawDeclined);
+    socket.on('error', handleSocketError);
     
   } catch (error) {
     console.error('Error connecting to WebSocket:', error);
     showError('Error connecting to server');
   }
+}
+
+// Optimized event handlers
+function handleGameStart(data) {
+  console.log('Game started:', data);
+  
+  // Hide lobby
+  hideLobby();
+  
+  // Store game ID
+  currentGameId = data.gameId;
+  
+  // Initialize game
+  chess = new Chess();
+  
+  // Set up the board with black to move first
+  chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
+  
+  // Set up the game
+  isAiGame = false;
+  isPlayerTurn = data.color === 'black';
+  playerColor = data.color;
+  
+  // Update player info
+  if (whitePlayerEl && blackPlayerEl) {
+    const whiteNameEl = whitePlayerEl.querySelector('.player-name');
+    const blackNameEl = blackPlayerEl.querySelector('.player-name');
+    
+    if (whiteNameEl) whiteNameEl.textContent = data.color === 'white' ? (currentUser ? currentUser.username : 'You') : data.opponent.username;
+    if (blackNameEl) blackNameEl.textContent = data.color === 'black' ? (currentUser ? currentUser.username : 'You') : data.opponent.username;
+  }
+  
+  // Create the board
+  createBoard();
+  
+  // Update the board
+  updateBoard();
+  
+  // Update game status
+  updateGameStatus();
+  
+  // Enable controls
+  if (resignBtn) resignBtn.disabled = false;
+  if (offerDrawBtn) offerDrawBtn.disabled = false;
+  
+  // Show game chat
+  showGameChat();
+  
+  // Show success message
+  showError('Game started against ' + data.opponent.username, 'success');
+}
+
+function handleOpponentMove(data) {
+  const { gameId, move } = data;
+  
+  // Verify this is for the current game
+  if (currentGameId !== gameId) return;
+  
+  // Make the move on the board
+  chess.move(move);
+  
+  // Update the board
+  updateBoard();
+  
+  // Highlight the last move
+  highlightLastMove(move.from, move.to);
+  
+  // Add move to history
+  addMoveToHistory(move);
+  
+  // Update game status
+  updateGameStatus();
+  
+  // Switch turn
+  isPlayerTurn = true;
+  
+  // Play sound
+  playSound('move');
+}
+
+function handleGameOver(data) {
+  const { gameId, result } = data;
+  
+  // Verify this is for the current game
+  if (currentGameId !== gameId) return;
+  
+  // End the game
+  endGame(result);
+}
+
+function handleOpponentResigned(data) {
+  const { gameId } = data;
+  
+  // Verify this is for the current game
+  if (currentGameId !== gameId) return;
+  
+  // End the game with win
+  endGame(playerColor === 'white' ? 'white' : 'black', 'resignation');
+}
+
+function handleDrawOffered(data) {
+  const { gameId } = data;
+  
+  // Verify this is for the current game
+  if (currentGameId !== gameId) return;
+  
+  // Show draw offer
+  if (confirm('Your opponent has offered a draw. Accept?')) {
+    socket.emit('accept_draw', { gameId });
+  } else {
+    socket.emit('decline_draw', { gameId });
+  }
+}
+
+function handleDrawAccepted(data) {
+  const { gameId } = data;
+  
+  // Verify this is for the current game
+  if (currentGameId !== gameId) return;
+  
+  // End the game with draw
+  endGame('draw', 'agreement');
+}
+
+function handleDrawDeclined(data) {
+  const { gameId } = data;
+  
+  // Verify this is for the current game
+  if (currentGameId !== gameId) return;
+  
+  // Show message
+  showError('Draw offer declined', 'info');
+}
+
+function handleSocketError(data) {
+  console.error('Socket error:', data.message);
+  showError(data.message);
 }
 
 // Show message (error, success, info)
