@@ -500,33 +500,49 @@ function init() {
 
 // Create the chessboard
 function createBoard() {
-  chessboardEl.innerHTML = '';
+  console.log('Creating board, player color:', playerColor);
   
-  // Create 64 squares
+  // Clear the chessboard
+  if (chessboardEl) {
+    chessboardEl.innerHTML = '';
+  } else {
+    console.error('Chessboard element not found');
+    return;
+  }
+  
+  // Determine board orientation based on player color
+  const isFlipped = playerColor === 'black';
+  
+  // Create the board array (8x8)
+  board = Array(8).fill().map(() => Array(8).fill(null));
+  
+  // Create the squares
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
+      // Create a square element
       const square = document.createElement('div');
-      const isLightSquare = (row + col) % 2 === 0;
+      square.className = 'square';
+      square.classList.add((row + col) % 2 === 0 ? 'light-square' : 'dark-square');
       
-      square.className = `square ${isLightSquare ? 'light-square' : 'dark-square'}`;
-      
-      // Flip the board if player is black (black at bottom)
-      const displayRow = playerColor === 'black' ? row : 7 - row;
-      const displayCol = playerColor === 'black' ? 7 - col : col;
+      // Set data attributes for row and column
+      // If board is flipped, we need to invert the row and column values
+      const displayRow = isFlipped ? row : 7 - row;
+      const displayCol = isFlipped ? 7 - col : col;
       
       square.dataset.row = displayRow;
       square.dataset.col = displayCol;
       
-      // Add click event for square selection
+      // Add click event listener
       square.addEventListener('click', () => handleSquareClick(square));
       
+      // Add the square to the chessboard
       chessboardEl.appendChild(square);
       
-      // Add to board array for easy access
-      if (!board[displayRow]) {
-        board[displayRow] = [];
-      }
-      board[displayRow][displayCol] = square;
+      // Add the square to the board array
+      board[displayRow][displayCol] = {
+        element: square,
+        piece: null
+      };
     }
   }
   
@@ -534,12 +550,14 @@ function createBoard() {
   updateBoard();
 }
 
-// Update the board with current position
+// Update the board with pieces
 function updateBoard() {
+  console.log('Updating board');
+  
   // Clear all pieces
   document.querySelectorAll('.piece').forEach(piece => piece.remove());
   
-  // Get current position
+  // Get the current position
   const position = chess.board();
   
   // Add pieces to the board
@@ -547,11 +565,35 @@ function updateBoard() {
     for (let col = 0; col < 8; col++) {
       const piece = position[row][col];
       if (piece) {
-        // Flip the board if player is black (black at bottom)
-        const displayRow = playerColor === 'black' ? 7 - row : row;
-        const displayCol = playerColor === 'black' ? col : col;
+        // Convert chess.js piece to our format
+        const pieceColor = piece.color === 'w' ? 'white' : 'black';
+        let pieceType = '';
         
-        addPiece(displayRow, displayCol, piece.color, piece.type);
+        switch (piece.type) {
+          case 'p': pieceType = 'pawn'; break;
+          case 'r': pieceType = 'rook'; break;
+          case 'n': pieceType = 'knight'; break;
+          case 'b': pieceType = 'bishop'; break;
+          case 'q': pieceType = 'queen'; break;
+          case 'k': pieceType = 'king'; break;
+        }
+        
+        // Find the correct square in our board array
+        // We need to convert from chess.js coordinates to our board coordinates
+        const boardRow = row;
+        const boardCol = col;
+        
+        // Find the square in our board array
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (parseInt(board[r][c].element.dataset.row) === boardRow && 
+                parseInt(board[r][c].element.dataset.col) === boardCol) {
+              // Add the piece to this square
+              addPiece(r, c, pieceColor, pieceType);
+              break;
+            }
+          }
+        }
       }
     }
   }
@@ -559,110 +601,31 @@ function updateBoard() {
 
 // Add a piece to the board
 function addPiece(row, col, color, type) {
-  const square = board[row][col];
-  const pieceEl = document.createElement('div');
+  // Create piece element
+  const piece = document.createElement('div');
+  piece.className = `piece ${color}-${type}`;
+  piece.dataset.color = color;
+  piece.dataset.type = type;
   
-  pieceEl.className = 'piece';
-  pieceEl.dataset.color = color;
-  pieceEl.dataset.type = type;
-  
-  // Set piece image
-  pieceEl.style.backgroundImage = `url('https://lichess1.org/assets/piece/cburnett/${color}${type.toUpperCase()}.svg')`;
-  
-  // Add drag-and-drop support
-  pieceEl.setAttribute('draggable', 'true');
-  
-  // Add click event to the piece
-  pieceEl.addEventListener('click', (e) => {
-    // Prevent the click from reaching the square underneath
-    e.stopPropagation();
-    
-    // Only allow clicks if it's the player's turn
-    if (!isPlayerTurn) return;
-    
-    // If it's not the player's color, ignore the click
-    if (playerColor && color !== playerColor[0]) return;
-    
-    // Trigger the square click handler
-    handleSquareClick(square);
-  });
-  
-  // Add drag events
-  pieceEl.addEventListener('dragstart', (e) => {
-    // Only allow dragging if it's the player's turn and the piece is the player's color
-    if (!isPlayerTurn || (playerColor && color !== playerColor[0])) {
-      e.preventDefault();
-      return false;
-    }
-    
-    // Add dragging class
-    pieceEl.classList.add('dragging');
-    
-    // Store the piece's position
-    e.dataTransfer.setData('text/plain', `${row},${col}`);
-    
-    // Set the drag image
-    const dragImage = pieceEl.cloneNode(true);
-    dragImage.style.position = 'absolute';
-    dragImage.style.top = '-1000px';
-    document.body.appendChild(dragImage);
-    e.dataTransfer.setDragImage(dragImage, 30, 30);
-    
-    // Remove the drag image after a short delay
-    setTimeout(() => {
-      document.body.removeChild(dragImage);
-    }, 0);
-    
-    // Clear any existing highlights and set this square as selected
-    clearHighlights();
-    square.classList.add('selected-piece');
-    selectedSquare = square;
-    
-    // Highlight possible moves
-    highlightPossibleMoves(row, col);
-  });
-  
-  pieceEl.addEventListener('dragend', () => {
-    pieceEl.classList.remove('dragging');
-  });
-  
-  // Add click event for piece selection
-  pieceEl.addEventListener('click', (e) => {
-    // Prevent the click from bubbling to the square
-    e.stopPropagation();
-    
-    // Only allow selection if it's the player's turn and the piece is the player's color
-    if (!isPlayerTurn || color !== playerColor[0]) {
-      return;
-    }
-    
-    // Clear any existing highlights
-    clearHighlights();
-    
-    // If this piece is already selected, deselect it
-    if (selectedSquare === square) {
-      selectedSquare = null;
-      return;
-    }
-    
-    // Set this square as selected
-    square.classList.add('selected-piece');
-    selectedSquare = square;
-    
-    // Highlight possible moves
-    highlightPossibleMoves(row, col);
-  });
-  
-  square.appendChild(pieceEl);
-  
-  // Add animation class if this is a new piece being moved
-  if (chess.history().length > 0) {
-    pieceEl.classList.add('moving');
-    // Remove the animation class after the animation completes
-    setTimeout(() => {
-      pieceEl.classList.remove('moving');
-    }, 300);
+  // Get the square from our board array
+  const square = board[row][col].element;
+  if (!square) {
+    console.error('Square not found at', row, col);
+    return;
   }
+  
+  // Add the piece to the square
+  square.appendChild(piece);
+  
+  // Store the piece in our board array
+  board[row][col].piece = {
+    element: piece,
+    color: color,
+    type: type
+  };
+  
+  // Make the piece draggable
+  piece.draggable = true;
 }
 
 // Play sound effect
@@ -4043,24 +4006,66 @@ function setupEventListeners() {
   try {
     console.log('Setting up event listeners');
     
-    // Close buttons for modals
+    // Close buttons for modals - improved implementation
     const closeBtns = document.querySelectorAll('.close-btn');
     if (closeBtns && closeBtns.length > 0) {
       closeBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
           console.log('Close button clicked');
           
-          // Hide all modals
-          const modals = document.querySelectorAll('.modal');
-          modals.forEach(modal => {
+          // Find the parent modal of this close button
+          const modal = btn.closest('.modal');
+          if (modal) {
+            console.log('Closing modal:', modal.id);
             modal.classList.add('hidden');
-          });
-          
-          // Hide lobby specifically
-          if (typeof hideLobby === 'function') {
-            hideLobby();
+            
+            // For dynamically created modals that might not use the hidden class
+            if (modal.style.display) {
+              modal.style.display = 'none';
+            }
+            
+            // If this is a dynamically created modal that's appended to body
+            if (modal.id === 'game-options-modal' || modal.parentNode === document.body) {
+              try {
+                document.body.removeChild(modal);
+              } catch (err) {
+                console.log('Modal already removed from DOM');
+              }
+            }
+          } else {
+            // Fallback - hide all modals
+            const allModals = document.querySelectorAll('.modal');
+            allModals.forEach(m => {
+              m.classList.add('hidden');
+              if (m.style.display) {
+                m.style.display = 'none';
+              }
+            });
           }
+          
+          // Prevent event from bubbling up
+          e.stopPropagation();
         });
+      });
+    }
+    
+    // Game result modal buttons
+    const newGameBtn = document.getElementById('new-game-btn');
+    if (newGameBtn) {
+      newGameBtn.addEventListener('click', function() {
+        console.log('New Game button clicked');
+        document.getElementById('game-result-modal').classList.add('hidden');
+        resetTimers();
+        initGame(1); // Start a new game at level 1
+      });
+    }
+    
+    const viewProfileBtn = document.getElementById('view-profile-btn');
+    if (viewProfileBtn) {
+      viewProfileBtn.addEventListener('click', function() {
+        console.log('View Profile button clicked');
+        document.getElementById('game-result-modal').classList.add('hidden');
+        showProfile();
       });
     }
     
@@ -4495,24 +4500,53 @@ function setupEventListeners() {
 
 // Show promotion dialog
 function showPromotionDialog(move) {
+  console.log('Showing promotion dialog for move:', move);
+  
   // Store the pending promotion
   pendingPromotion = move;
   
   // Get the promotion modal
   const promotionModal = document.getElementById('promotion-modal');
-  if (!promotionModal) return;
+  if (!promotionModal) {
+    console.error('Promotion modal not found');
+    return;
+  }
   
   // Get the piece color
   const piece = chess.get(move.from);
-  if (!piece) return;
+  if (!piece) {
+    console.error('Piece not found at', move.from);
+    return;
+  }
   
-  const pieceColor = piece.color === 'w' ? 'w' : 'b';
-  
-  // Update promotion piece images
-  document.getElementById('promote-queen').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}Q.svg`;
-  document.getElementById('promote-rook').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}R.svg`;
-  document.getElementById('promote-bishop').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}B.svg`;
-  document.getElementById('promote-knight').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}N.svg`;
+  // Clear previous promotion options
+  const promotionOptions = document.querySelector('.promotion-options');
+  if (promotionOptions) {
+    promotionOptions.innerHTML = '';
+    
+    // Create promotion pieces
+    const pieces = ['q', 'r', 'b', 'n']; // queen, rook, bishop, knight
+    pieces.forEach(pieceType => {
+      const pieceElement = document.createElement('div');
+      pieceElement.className = 'promotion-piece';
+      pieceElement.dataset.piece = pieceType;
+      
+      const img = document.createElement('img');
+      img.src = `images/${piece.color}${pieceType.toUpperCase()}.png`;
+      img.alt = pieceType;
+      pieceElement.appendChild(img);
+      
+      // Add click event listener
+      pieceElement.addEventListener('click', function() {
+        const selectedPiece = this.dataset.piece;
+        console.log('Selected promotion piece:', selectedPiece);
+        completePromotion(selectedPiece);
+        promotionModal.classList.add('hidden');
+      });
+      
+      promotionOptions.appendChild(pieceElement);
+    });
+  }
   
   // Show the modal
   promotionModal.classList.remove('hidden');
