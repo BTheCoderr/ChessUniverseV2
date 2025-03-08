@@ -440,8 +440,13 @@ function createBoard() {
       const isLightSquare = (row + col) % 2 === 0;
       
       square.className = `square ${isLightSquare ? 'light-square' : 'dark-square'}`;
-      square.dataset.row = 7 - row; // Flip rows for chess notation (0-7 to a-h)
-      square.dataset.col = col;
+      
+      // Flip the board if player is black (black at bottom)
+      const displayRow = playerColor === 'black' ? row : 7 - row;
+      const displayCol = playerColor === 'black' ? 7 - col : col;
+      
+      square.dataset.row = displayRow;
+      square.dataset.col = displayCol;
       
       // Add click event for square selection
       square.addEventListener('click', () => handleSquareClick(square));
@@ -449,8 +454,10 @@ function createBoard() {
       chessboardEl.appendChild(square);
       
       // Add to board array for easy access
-      if (!board[7 - row]) board[7 - row] = [];
-      board[7 - row][col] = square;
+      if (!board[displayRow]) {
+        board[displayRow] = [];
+      }
+      board[displayRow][displayCol] = square;
     }
   }
   
@@ -458,48 +465,27 @@ function createBoard() {
   updateBoard();
 }
 
-// Update the board based on current chess position
+// Update the board with current position
 function updateBoard() {
-  // Clear the board
-  chessboardEl.innerHTML = '';
+  // Clear all pieces
+  document.querySelectorAll('.piece').forEach(piece => piece.remove());
   
-  // Create the board
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      const square = document.createElement('div');
-      square.className = 'square';
-      square.classList.add((row + col) % 2 === 0 ? 'light-square' : 'dark-square');
-      square.dataset.row = row;
-      square.dataset.col = col;
-      
-      // Add click event
-      square.addEventListener('click', () => handleSquareClick(square));
-      
-      // Add to board
-      chessboardEl.appendChild(square);
-      
-      // Store square in board array
-      if (!board[row]) board[row] = [];
-      board[row][col] = square;
-    }
-  }
-  
-  // Add pieces
+  // Get current position
   const position = chess.board();
+  
+  // Add pieces to the board
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const piece = position[row][col];
       if (piece) {
-        addPiece(row, col, piece.color, piece.type);
+        // Flip the board if player is black (black at bottom)
+        const displayRow = playerColor === 'black' ? 7 - row : row;
+        const displayCol = playerColor === 'black' ? col : col;
+        
+        addPiece(displayRow, displayCol, piece.color, piece.type);
       }
     }
   }
-  
-  // Update game status
-  updateGameStatus();
-  
-  // Show spectator panel if applicable
-  showSpectatorPanel();
 }
 
 // Add a piece to the board
@@ -672,73 +658,59 @@ function playSound(type, isMuted = false) {
 
 // Handle square click
 function handleSquareClick(square) {
-  // Check if we're in custom setup mode
-  if (document.getElementById('setup-modal') && !document.getElementById('setup-modal').classList.contains('hidden')) {
-    handleSetupSquareClick(square);
-    return;
-  }
-  
-  // Only allow moves if it's player's turn
+  // Only allow interaction if it's the player's turn
   if (!isPlayerTurn) {
-    console.log('Not player turn, ignoring click');
+    showError('Not your turn');
     return;
   }
   
   const row = parseInt(square.dataset.row);
   const col = parseInt(square.dataset.col);
   
-  console.log(`Square clicked: row ${row}, col ${col}, isPlayerTurn: ${isPlayerTurn}, playerColor: ${playerColor}`);
+  // Convert to algebraic notation
+  const squareNotation = String.fromCharCode(97 + col) + (8 - row);
   
-  // If a piece is already selected, try to move it
+  // Check if a piece is selected
   if (selectedSquare) {
-    const fromRow = parseInt(selectedSquare.dataset.row);
-    const fromCol = parseInt(selectedSquare.dataset.col);
+    // Convert selected square to algebraic notation
+    const selectedSquareNotation = String.fromCharCode(97 + selectedSquare.col) + (8 - selectedSquare.row);
     
-    console.log(`Moving from: row ${fromRow}, col ${fromCol} to row ${row}, col ${col}`);
-    
-    // Convert to algebraic notation
-    const from = `${String.fromCharCode(97 + fromCol)}${fromRow + 1}`;
-    const to = `${String.fromCharCode(97 + col)}${row + 1}`;
-    
-    console.log(`Algebraic notation: ${from} to ${to}`);
+    // Check if clicking on the same square (deselect)
+    if (row === selectedSquare.row && col === selectedSquare.col) {
+      clearHighlights();
+      selectedSquare = null;
+      return;
+    }
     
     // Check if this is a pawn promotion move
-    const piece = chess.get(from);
+    const piece = chess.get(selectedSquareNotation);
     const isPromotion = piece && 
                        piece.type === 'p' && 
-                       ((piece.color === 'w' && row === 7) || 
-                        (piece.color === 'b' && row === 0));
+                       ((piece.color === 'w' && row === 0) || 
+                        (piece.color === 'b' && row === 7));
     
     if (isPromotion) {
-      // Store the pending promotion
-      pendingPromotion = { from, to };
-      
-      // Update promotion piece colors based on player color
-      const pieceColor = piece.color === 'w' ? 'w' : 'b';
-      document.getElementById('promote-queen').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}Q.svg`;
-      document.getElementById('promote-rook').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}R.svg`;
-      document.getElementById('promote-bishop').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}B.svg`;
-      document.getElementById('promote-knight').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}N.svg`;
-      
-      // Show promotion modal
-      promotionModal.classList.remove('hidden');
-      promotionModal.style.display = 'flex';
+      // Show promotion dialog
+      showPromotionDialog({
+        from: selectedSquareNotation,
+        to: squareNotation
+      });
       
       // Clear selection
       clearHighlights();
       selectedSquare = null;
-      
       return;
     }
     
-    // Check if move is valid
+    // Try to make the move
     try {
-      console.log('Attempting move in chess.js');
-      const move = chess.move({ from, to, promotion: 'q' }); // Default promotion to queen
+      const move = chess.move({
+        from: selectedSquareNotation,
+        to: squareNotation,
+        promotion: 'q' // Default to queen for promotion
+      });
       
       if (move) {
-        console.log('Move successful:', move);
-        
         // Play appropriate sound
         if (move.captured) {
           playSound('capture');
@@ -756,30 +728,25 @@ function handleSquareClick(square) {
         // Update the board
         updateBoard();
         
-        // Send move to server
-        if (socket && gameId) {
-          socket.emit('makeMove', { gameId, from, to, promotion: 'q' });
-        }
+        // Highlight the last move
+        highlightLastMove(selectedSquareNotation, squareNotation);
         
         // Add move to history
         addMoveToHistory(move);
         
-        // Highlight the last move
-        highlightLastMove(from, to);
+        // Update game status
+        updateGameStatus();
         
         // Switch turns
         isPlayerTurn = false;
         
-        // Switch active timer
-        switchTimer();
-        
         // If playing against AI, get AI move
-        if (isAiGame) {
-          setTimeout(getAiMove, 500);
+        if (isAiGame && !chess.isGameOver()) {
+          setTimeout(() => {
+            getAiMove();
+          }, 500);
         }
       } else {
-        console.log('Move was invalid according to chess.js');
-        playSound('error');
         showError('Invalid move');
       }
     } catch (error) {
@@ -792,40 +759,23 @@ function handleSquareClick(square) {
     clearHighlights();
     selectedSquare = null;
   } else {
-    // Check if the clicked square has a piece
-    const piece = chess.board()[row][col];
+    // Check if there's a piece on the square
+    const piece = chess.get(squareNotation);
     
     if (piece) {
-      console.log('Piece found:', piece);
+      // Check if the piece belongs to the player
+      const isPlayerPiece = (piece.color === 'w' && playerColor === 'white') || 
+                           (piece.color === 'b' && playerColor === 'black');
       
-      // In AI vs AI mode, don't allow selecting pieces
-      if (isAiVsAiGame) {
-        console.log('AI vs AI game, ignoring piece selection');
-        return;
-      }
-      
-      // For regular games, only allow selecting pieces of the player's color
-      // For black pieces, the color is 'b', for white pieces, the color is 'w'
-      const expectedColor = playerColor === 'black' ? 'b' : 'w';
-      
-      console.log(`Expected color: ${expectedColor}, Piece color: ${piece.color}`);
-      
-      if (piece.color === expectedColor) {
-        console.log('Selecting piece of player color:', playerColor);
+      if (isPlayerPiece) {
+        // Select the piece
+        selectedSquare = { row, col, element: square };
         
-      // Highlight selected square
-      clearHighlights();
-        square.classList.add('selected-piece');
-      selectedSquare = square;
-      
-      // Highlight possible moves
-      highlightPossibleMoves(row, col);
+        // Highlight possible moves
+        highlightPossibleMoves(row, col);
       } else {
-        console.log('Piece does not belong to player. Piece color:', piece.color, 'Player color:', playerColor);
-        showError("That's not your piece!");
+        showError('Not your piece');
       }
-    } else {
-      console.log('No piece on this square');
     }
   }
 }
@@ -882,21 +832,31 @@ function completePromotion(promotionPiece) {
 
 // Highlight possible moves for a piece
 function highlightPossibleMoves(row, col) {
-  const from = `${String.fromCharCode(97 + col)}${row + 1}`;
-  const moves = chess.moves({ square: from, verbose: true });
+  // Clear any existing highlights
+  clearHighlights();
   
+  // Convert to algebraic notation
+  const square = String.fromCharCode(97 + col) + (8 - row);
+  
+  // Get all possible moves for the piece
+  const moves = chess.moves({ square, verbose: true });
+  
+  // Highlight the selected square
+  if (board[row] && board[row][col]) {
+    board[row][col].classList.add('selected');
+  }
+  
+  // Highlight all possible destination squares
   moves.forEach(move => {
-    const toRow = parseInt(move.to[1]) - 1;
-    const toCol = move.to.charCodeAt(0) - 97;
-    const targetSquare = board[toRow][toCol];
+    const destRow = 8 - parseInt(move.to.charAt(1));
+    const destCol = move.to.charCodeAt(0) - 97;
     
-    // Add highlight class
-    targetSquare.classList.add('highlight');
+    // Adjust for board orientation
+    const displayRow = playerColor === 'black' ? 7 - destRow : destRow;
+    const displayCol = playerColor === 'black' ? 7 - destCol : destCol;
     
-    // If there's a piece on the target square (capture move), add a special visual indicator
-    const targetPiece = chess.get(move.to);
-    if (targetPiece) {
-      targetSquare.classList.add('capture-highlight');
+    if (board[displayRow] && board[displayRow][displayCol]) {
+      board[displayRow][displayCol].classList.add('highlight');
     }
   });
 }
@@ -922,24 +882,30 @@ function clearHighlights() {
 
 // Highlight the last move
 function highlightLastMove(from, to) {
-  // Clear previous last-move highlights
-  document.querySelectorAll('.last-move').forEach(el => {
-    el.classList.remove('last-move');
+  // Clear any existing last-move highlights
+  document.querySelectorAll('.last-move').forEach(square => {
+    square.classList.remove('last-move');
   });
   
-  // Convert algebraic notation to array indices
-  const fromRow = parseInt(from[1]) - 1;
+  // Convert algebraic notation to coordinates
   const fromCol = from.charCodeAt(0) - 97;
-  const toRow = parseInt(to[1]) - 1;
+  const fromRow = 8 - parseInt(from.charAt(1));
   const toCol = to.charCodeAt(0) - 97;
+  const toRow = 8 - parseInt(to.charAt(1));
+  
+  // Adjust for board orientation
+  const displayFromRow = playerColor === 'black' ? 7 - fromRow : fromRow;
+  const displayFromCol = playerColor === 'black' ? 7 - fromCol : fromCol;
+  const displayToRow = playerColor === 'black' ? 7 - toRow : toRow;
+  const displayToCol = playerColor === 'black' ? 7 - toCol : toCol;
   
   // Add last-move class to the squares
-  if (board[fromRow] && board[fromRow][fromCol]) {
-    board[fromRow][fromCol].classList.add('last-move');
+  if (board[displayFromRow] && board[displayFromRow][displayFromCol]) {
+    board[displayFromRow][displayFromCol].classList.add('last-move');
   }
   
-  if (board[toRow] && board[toRow][toCol]) {
-    board[toRow][toCol].classList.add('last-move');
+  if (board[displayToRow] && board[displayToRow][displayToCol]) {
+    board[displayToRow][displayToCol].classList.add('last-move');
   }
 }
 
@@ -1623,164 +1589,256 @@ function addGameChatMessage(message) {
   }
 } 
 
-// Add drag-and-drop support to the chessboard
+// Setup drag-and-drop
 function setupDragAndDrop() {
-  // Add event listeners to the chessboard
-  chessboardEl.addEventListener('dragover', (e) => {
-    e.preventDefault();
-  });
+  let draggedPiece = null;
+  let startSquare = null;
   
-  chessboardEl.addEventListener('drop', (e) => {
-    e.preventDefault();
+  // Add event delegation to the chessboard
+  chessboardEl.addEventListener('mousedown', (e) => {
+    const pieceElement = e.target.closest('.piece');
+    if (!pieceElement) return;
     
-    // Get the target square
-    const targetSquare = e.target.closest('.square');
-    if (!targetSquare) return;
-    
-    // Get the source position from the dataTransfer
-    const data = e.dataTransfer.getData('text/plain');
-    if (!data) return;
-    
-    const [fromRow, fromCol] = data.split(',').map(Number);
-    const toRow = parseInt(targetSquare.dataset.row);
-    const toCol = parseInt(targetSquare.dataset.col);
-    
-    // Convert to algebraic notation
-    const from = `${String.fromCharCode(97 + fromCol)}${fromRow + 1}`;
-    const to = `${String.fromCharCode(97 + toCol)}${toRow + 1}`;
-    
-    // Check if this is a pawn promotion move
-    const piece = chess.get(from);
-    const isPromotion = piece && 
-                       piece.type === 'p' && 
-                       ((piece.color === 'w' && toRow === 7) || 
-                        (piece.color === 'b' && toRow === 0));
-    
-    if (isPromotion) {
-      // Store the pending promotion
-      pendingPromotion = { from, to };
-      
-      // Update promotion piece colors based on player color
-      const pieceColor = piece.color === 'w' ? 'w' : 'b';
-      document.getElementById('promote-queen').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}Q.svg`;
-      document.getElementById('promote-rook').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}R.svg`;
-      document.getElementById('promote-bishop').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}B.svg`;
-      document.getElementById('promote-knight').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}N.svg`;
-      
-      // Show promotion modal
-      promotionModal.classList.remove('hidden');
-      promotionModal.style.display = 'flex';
-      
-      // Clear selection
-      clearHighlights();
-      selectedSquare = null;
-      
+    // Only allow dragging if it's the player's turn and the piece is the player's color
+    const pieceColor = pieceElement.classList.contains('white') ? 'w' : 'b';
+    if (!isPlayerTurn || (pieceColor === 'w' && playerColor === 'black') || (pieceColor === 'b' && playerColor === 'white')) {
       return;
     }
     
-    // Check if move is valid
-    try {
-      const move = chess.move({ from, to, promotion: 'q' }); // Default promotion to queen
-      
-      if (move) {
-        // Play appropriate sound
-        if (move.captured) {
-          playSound('capture');
-        } else if (move.flags.includes('k') || move.flags.includes('q')) {
-          playSound('castle');
-        } else {
-          playSound('move');
-        }
-        
-        // Check if the move puts the opponent in check
-        if (chess.isCheck()) {
-          playSound('check');
-        }
+    // Get the square that contains the piece
+    const square = pieceElement.parentElement;
+    startSquare = {
+      row: parseInt(square.dataset.row),
+      col: parseInt(square.dataset.col)
+    };
     
-    // Update the board
-    updateBoard();
-        
-        // Send move to server
-        if (socket && gameId) {
-          socket.emit('makeMove', { gameId, from, to, promotion: 'q' });
-        }
+    // Create a clone of the piece for dragging
+    draggedPiece = pieceElement.cloneNode(true);
+    draggedPiece.classList.add('dragging');
+    document.body.appendChild(draggedPiece);
     
-    // Add move to history
-        addMoveToHistory(move);
-        
-        // Highlight the last move
-        highlightLastMove(from, to);
-        
-        // Switch turns
-        isPlayerTurn = false;
-        
-        // Switch active timer
-        switchTimer();
-        
-        // If playing against AI, get AI move
-        if (isAiGame) {
-          setTimeout(getAiMove, 500);
-        }
-      }
-    } catch (error) {
-      console.error('Invalid move:', error);
-      playSound('error');
-      showError('Invalid move');
+    // Position the dragged piece at the mouse cursor
+    draggedPiece.style.position = 'absolute';
+    draggedPiece.style.zIndex = '1000';
+    draggedPiece.style.pointerEvents = 'none';
+    draggedPiece.style.width = `${pieceElement.offsetWidth}px`;
+    draggedPiece.style.height = `${pieceElement.offsetHeight}px`;
+    
+    // Center the piece on the cursor
+    const offsetX = pieceElement.offsetWidth / 2;
+    const offsetY = pieceElement.offsetHeight / 2;
+    draggedPiece.style.left = `${e.clientX - offsetX}px`;
+    draggedPiece.style.top = `${e.clientY - offsetY}px`;
+    
+    // Highlight possible moves
+    highlightPossibleMoves(startSquare.row, startSquare.col);
+    
+    // Add the selected-piece class to the original piece
+    pieceElement.classList.add('selected-piece');
+  });
+  
+  // Move the dragged piece with the mouse
+  document.addEventListener('mousemove', (e) => {
+    if (!draggedPiece) return;
+    
+    // Center the piece on the cursor
+    const offsetX = parseInt(draggedPiece.style.width) / 2;
+    const offsetY = parseInt(draggedPiece.style.height) / 2;
+    draggedPiece.style.left = `${e.clientX - offsetX}px`;
+    draggedPiece.style.top = `${e.clientY - offsetY}px`;
+  });
+  
+  // Handle dropping the piece
+  document.addEventListener('mouseup', (e) => {
+    if (!draggedPiece || !startSquare) return;
+    
+    // Remove the dragged piece
+    document.body.removeChild(draggedPiece);
+    
+    // Remove the selected-piece class from the original piece
+    const originalPiece = document.querySelector('.selected-piece');
+    if (originalPiece) {
+      originalPiece.classList.remove('selected-piece');
     }
     
-    // Clear selection
+    // Clear highlights
     clearHighlights();
-    selectedSquare = null;
+    
+    // Find the square under the mouse
+    const elementsUnderMouse = document.elementsFromPoint(e.clientX, e.clientY);
+    const targetSquare = elementsUnderMouse.find(el => el.classList.contains('square'));
+    
+    if (targetSquare) {
+      const endRow = parseInt(targetSquare.dataset.row);
+      const endCol = parseInt(targetSquare.dataset.col);
+      
+      // Convert to chess.js notation
+      const startSquareNotation = String.fromCharCode(97 + startSquare.col) + (8 - startSquare.row);
+      const endSquareNotation = String.fromCharCode(97 + endCol) + (8 - endRow);
+      
+      // Check if the move is valid
+      const move = {
+        from: startSquareNotation,
+        to: endSquareNotation,
+        promotion: 'q' // Default to queen for promotion
+      };
+      
+      // Check if this is a pawn promotion move
+      const piece = chess.get(startSquareNotation);
+      if (piece && piece.type === 'p' && (endRow === 0 || endRow === 7)) {
+        // Show promotion dialog
+        showPromotionDialog(move);
+      } else {
+        // Make the move
+        try {
+          const result = chess.move(move);
+          if (result) {
+            // Play sound
+            playSound('move');
+            
+            // Update the board
+            updateBoard();
+            
+            // Highlight the last move
+            highlightLastMove(startSquareNotation, endSquareNotation);
+            
+            // Add move to history
+            addMoveToHistory(result);
+            
+            // Update game status
+            updateGameStatus();
+            
+            // Switch turn
+            isPlayerTurn = false;
+            
+            // If playing against AI, get AI move
+            if (isAiGame && !chess.isGameOver()) {
+              setTimeout(() => {
+                getAiMove();
+              }, 500);
+            }
+          }
+        } catch (error) {
+          console.error('Invalid move:', error);
+          playSound('error');
+        }
+      }
+    }
+    
+    // Reset drag state
+    draggedPiece = null;
+    startSquare = null;
   });
+  
+  // Handle touch events for mobile
+  chessboardEl.addEventListener('touchstart', (e) => {
+    const pieceElement = e.target.closest('.piece');
+    if (!pieceElement) return;
+    
+    // Only allow dragging if it's the player's turn and the piece is the player's color
+    const pieceColor = pieceElement.classList.contains('white') ? 'w' : 'b';
+    if (!isPlayerTurn || (pieceColor === 'w' && playerColor === 'black') || (pieceColor === 'b' && playerColor === 'white')) {
+      return;
+    }
+    
+    // Get the square that contains the piece
+    const square = pieceElement.parentElement;
+    selectedSquare = {
+      element: square,
+      row: parseInt(square.dataset.row),
+      col: parseInt(square.dataset.col)
+    };
+    
+    // Highlight possible moves
+    highlightPossibleMoves(selectedSquare.row, selectedSquare.col);
+    
+    // Add the selected-piece class to the piece
+    pieceElement.classList.add('selected-piece');
+    
+    // Prevent default to avoid scrolling
+    e.preventDefault();
+  }, { passive: false });
 }
 
 // Initialize a new game
 function initGame(level = 1) {
-  // Set the game level
-  if (window.ChessRules) {
-    window.ChessRules.setGameLevel(level);
+  try {
+    console.log('Initializing game with level:', level);
+    
+    // Create a new chess instance
+    chess = new Chess();
+    
+    // Set up the board with black to move first
+    chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
+    
+    // Set the game level
+    if (window.ChessRules) {
+      window.ChessRules.setGameLevel(level);
+    }
+    
+    // Reset the board array
+    board = [];
+    
+    // Create the board
+    createBoard();
+    
+    // Reset game state
+    selectedSquare = null;
+    isAiGame = false;
+    isAiVsAiGame = false;
+    betPlaced = false;
+    pendingPromotion = null;
+    
+    // Reset timers
+    resetTimers();
+    
+    // Enable player's turn
+    isPlayerTurn = true;
+    playerColor = 'black'; // Black moves first
+    
+    // Update game status
+    updateGameStatus();
+    
+    // Show a notification with the level description
+    let levelDescription = '';
+    switch (level) {
+      case 1:
+        levelDescription = 'Traditional chess with Black moving first';
+        break;
+      case 2:
+        levelDescription = 'Queens move like Bishop, King, or Knight (not Rook)';
+        break;
+      case 3:
+        levelDescription = 'Queens move like Rook, King, or Knight (not Bishop)';
+        break;
+      case 4:
+        levelDescription = 'Queens have all traditional moves plus Knight moves';
+        break;
+      default:
+        levelDescription = 'Traditional chess with Black moving first';
+    }
+    
+    showError(`Level ${level}: ${levelDescription}`, 'info');
+    
+    // Update UI for the current level
+    updateUIForLevel(level);
+    
+    // Update player info
+    if (whitePlayerEl && blackPlayerEl) {
+      const whiteNameEl = whitePlayerEl.querySelector('.player-name');
+      const blackNameEl = blackPlayerEl.querySelector('.player-name');
+      
+      if (whiteNameEl) whiteNameEl.textContent = 'White';
+      if (blackNameEl) blackNameEl.textContent = currentUser ? currentUser.username : 'You (Black)';
+    }
+    
+    // Start timers
+    startTimers();
+    
+    console.log('Game initialized successfully');
+  } catch (error) {
+    console.error('Error initializing game:', error);
   }
-  
-  // Initialize chess.js
-  chess = new Chess();
-  
-  // Override chess.js moves if ChessRules is available
-  if (window.ChessRules) {
-    chess = window.ChessRules.overrideChessJsMoves(chess);
-  }
-  
-  // Set up the board with black to move first
-  chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
-  
-  // Reset game state
-  selectedSquare = null;
-      isPlayerTurn = true;
-  playerColor = 'black';
-  
-  // Create the board
-  createBoard();
-  
-  // Update the board
-  updateBoard();
-  
-  // Update game status
-  updateGameStatus();
-  
-  // Enable/disable buttons
-      resignBtn.disabled = false;
-      offerDrawBtn.disabled = false;
-  
-  // Clear move history
-  movesListEl.innerHTML = '';
-  
-  // Reset timers
-  resetTimers();
-  
-  // Start timers
-  startTimers();
-  
-  // Update UI based on level
-  updateUIForLevel(level);
 }
 
 // Update UI elements based on the current level
@@ -4290,4 +4348,30 @@ function setupEventListeners() {
   } catch (error) {
     console.error('Error setting up event listeners:', error);
   }
+}
+
+// Show promotion dialog
+function showPromotionDialog(move) {
+  // Store the pending promotion
+  pendingPromotion = move;
+  
+  // Get the promotion modal
+  const promotionModal = document.getElementById('promotion-modal');
+  if (!promotionModal) return;
+  
+  // Get the piece color
+  const piece = chess.get(move.from);
+  if (!piece) return;
+  
+  const pieceColor = piece.color === 'w' ? 'w' : 'b';
+  
+  // Update promotion piece images
+  document.getElementById('promote-queen').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}Q.svg`;
+  document.getElementById('promote-rook').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}R.svg`;
+  document.getElementById('promote-bishop').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}B.svg`;
+  document.getElementById('promote-knight').src = `https://lichess1.org/assets/piece/cburnett/${pieceColor}N.svg`;
+  
+  // Show the modal
+  promotionModal.classList.remove('hidden');
+  promotionModal.style.display = 'flex';
 }
