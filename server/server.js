@@ -25,6 +25,9 @@ const socketSetup = require('./socket');
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy - needed for Render deployment
+app.set('trust proxy', 1);
+
 // Initialize socket.io
 const io = socketSetup(server);
 
@@ -261,13 +264,10 @@ app.get('*', (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-// Initialize socket.io
-socketSetup(server);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
