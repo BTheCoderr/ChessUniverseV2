@@ -4298,6 +4298,9 @@ function setupEventListeners() {
       registerForm.addEventListener('submit', (e) => {
         e.preventDefault();
         
+        // Clear previous error messages
+        clearFormErrors();
+        
         const registerUsername = document.getElementById('register-username');
         const registerEmail = document.getElementById('register-email');
         const registerPassword = document.getElementById('register-password');
@@ -4314,7 +4317,7 @@ function setupEventListeners() {
         const confirmPassword = registerConfirmPassword.value;
         
         if (password !== confirmPassword) {
-          showError('Passwords do not match');
+          showFieldError(registerConfirmPassword, 'Passwords do not match');
           return;
         }
         
@@ -4325,7 +4328,41 @@ function setupEventListeners() {
         .then(response => {
           if (!response.ok) {
             return response.json().then(data => {
-              throw new Error(data.message || 'Registration failed');
+              // Handle field-specific errors
+              if (data.field) {
+                const fieldMap = {
+                  'username': registerUsername,
+                  'email': registerEmail,
+                  'password': registerPassword
+                };
+                
+                if (fieldMap[data.field]) {
+                  showFieldError(fieldMap[data.field], data.message);
+                } else {
+                  showError(data.message || 'Registration failed');
+                }
+              } 
+              // Handle multiple field errors
+              else if (data.fields) {
+                Object.keys(data.fields).forEach(field => {
+                  if (data.fields[field]) {
+                    const fieldMap = {
+                      'username': registerUsername,
+                      'email': registerEmail,
+                      'password': registerPassword
+                    };
+                    
+                    if (fieldMap[field]) {
+                      showFieldError(fieldMap[field], data.fields[field]);
+                    }
+                  }
+                });
+                showError(data.message || 'Registration failed');
+              } else {
+                showError(data.message || 'Registration failed');
+              }
+              
+              throw new Error('Registration failed');
             });
           }
           return response.json();
@@ -4336,11 +4373,41 @@ function setupEventListeners() {
             updateUIAfterLogin(data.user);
           }
           showError(data.message, 'success');
+          
+          // Close the registration modal
+          if (registerModal) {
+            registerModal.style.display = 'none';
+          }
         })
         .catch(error => {
           console.error('Registration error:', error);
-          showError(error.message || 'Registration failed. Please try again.');
+          // Error is already displayed by the field-specific error handling
         });
+      });
+    }
+    
+    // Helper function to show field-specific errors
+    function showFieldError(field, message) {
+      // Create or update error message element
+      let errorEl = field.nextElementSibling;
+      if (!errorEl || !errorEl.classList.contains('field-error')) {
+        errorEl = document.createElement('div');
+        errorEl.className = 'field-error';
+        field.parentNode.insertBefore(errorEl, field.nextSibling);
+      }
+      
+      errorEl.textContent = message;
+      field.classList.add('error');
+    }
+    
+    // Helper function to clear all form errors
+    function clearFormErrors() {
+      // Remove all field-error elements
+      document.querySelectorAll('.field-error').forEach(el => el.remove());
+      
+      // Remove error class from all inputs
+      document.querySelectorAll('input.error').forEach(input => {
+        input.classList.remove('error');
       });
     }
     
@@ -4375,3 +4442,322 @@ function showPromotionDialog(move) {
   promotionModal.classList.remove('hidden');
   promotionModal.style.display = 'flex';
 }
+
+// Game options modal
+function showGameOptionsModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'game-options-modal';
+  
+  const modalContent = document.createElement('div');
+  modalContent.className = 'modal-content';
+  
+  const closeBtn = document.createElement('span');
+  closeBtn.className = 'close-btn';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.onclick = () => {
+    document.body.removeChild(modal);
+  };
+  
+  const title = document.createElement('h2');
+  title.textContent = 'Game Options';
+  
+  const form = document.createElement('form');
+  form.id = 'game-options-form';
+  
+  // Time control options
+  const timeControlGroup = document.createElement('div');
+  timeControlGroup.className = 'form-group';
+  
+  const timeControlLabel = document.createElement('label');
+  timeControlLabel.textContent = 'Time Control:';
+  
+  const timeControlSelect = document.createElement('select');
+  timeControlSelect.id = 'time-control-select';
+  
+  const timeOptions = [
+    { value: 'none', text: 'No Time Limit' },
+    { value: '1', text: '1 Minute (Bullet)' },
+    { value: '3', text: '3 Minutes (Blitz)' },
+    { value: '5', text: '5 Minutes (Blitz)' },
+    { value: '10', text: '10 Minutes (Rapid)' },
+    { value: '15', text: '15 Minutes (Rapid)' },
+    { value: '30', text: '30 Minutes (Classical)' },
+    { value: 'custom', text: 'Custom' }
+  ];
+  
+  timeOptions.forEach(option => {
+    const optionEl = document.createElement('option');
+    optionEl.value = option.value;
+    optionEl.textContent = option.text;
+    timeControlSelect.appendChild(optionEl);
+  });
+  
+  // Custom time inputs (hidden by default)
+  const customTimeGroup = document.createElement('div');
+  customTimeGroup.className = 'form-group custom-time-group hidden';
+  
+  const whiteTimeLabel = document.createElement('label');
+  whiteTimeLabel.textContent = 'White Time (minutes):';
+  
+  const whiteTimeInput = document.createElement('input');
+  whiteTimeInput.type = 'number';
+  whiteTimeInput.id = 'white-time-input';
+  whiteTimeInput.min = '1';
+  whiteTimeInput.max = '60';
+  whiteTimeInput.value = '10';
+  
+  const blackTimeLabel = document.createElement('label');
+  blackTimeLabel.textContent = 'Black Time (minutes):';
+  
+  const blackTimeInput = document.createElement('input');
+  blackTimeInput.type = 'number';
+  blackTimeInput.id = 'black-time-input';
+  blackTimeInput.min = '1';
+  blackTimeInput.max = '60';
+  blackTimeInput.value = '10';
+  
+  // Increment options
+  const incrementGroup = document.createElement('div');
+  incrementGroup.className = 'form-group';
+  
+  const incrementLabel = document.createElement('label');
+  incrementLabel.textContent = 'Increment (seconds per move):';
+  
+  const incrementInput = document.createElement('input');
+  incrementInput.type = 'number';
+  incrementInput.id = 'increment-input';
+  incrementInput.min = '0';
+  incrementInput.max = '30';
+  incrementInput.value = '0';
+  
+  // Betting options
+  const bettingGroup = document.createElement('div');
+  bettingGroup.className = 'form-group';
+  
+  const bettingLabel = document.createElement('label');
+  bettingLabel.textContent = 'Betting:';
+  
+  const bettingCheckbox = document.createElement('input');
+  bettingCheckbox.type = 'checkbox';
+  bettingCheckbox.id = 'betting-checkbox';
+  
+  const betAmountLabel = document.createElement('label');
+  betAmountLabel.textContent = 'Bet Amount:';
+  betAmountLabel.className = 'hidden';
+  
+  const betAmountInput = document.createElement('input');
+  betAmountInput.type = 'number';
+  betAmountInput.id = 'bet-amount-input';
+  betAmountInput.min = '10';
+  betAmountInput.max = '1000';
+  betAmountInput.value = '100';
+  betAmountInput.className = 'hidden';
+  
+  // Submit button
+  const submitBtn = document.createElement('button');
+  submitBtn.type = 'submit';
+  submitBtn.className = 'btn primary-btn';
+  submitBtn.textContent = 'Start Game';
+  
+  // Add elements to form
+  timeControlGroup.appendChild(timeControlLabel);
+  timeControlGroup.appendChild(timeControlSelect);
+  
+  customTimeGroup.appendChild(whiteTimeLabel);
+  customTimeGroup.appendChild(whiteTimeInput);
+  customTimeGroup.appendChild(blackTimeLabel);
+  customTimeGroup.appendChild(blackTimeInput);
+  
+  incrementGroup.appendChild(incrementLabel);
+  incrementGroup.appendChild(incrementInput);
+  
+  bettingGroup.appendChild(bettingLabel);
+  bettingGroup.appendChild(bettingCheckbox);
+  bettingGroup.appendChild(betAmountLabel);
+  bettingGroup.appendChild(betAmountInput);
+  
+  form.appendChild(timeControlGroup);
+  form.appendChild(customTimeGroup);
+  form.appendChild(incrementGroup);
+  form.appendChild(bettingGroup);
+  form.appendChild(submitBtn);
+  
+  // Add event listeners
+  timeControlSelect.addEventListener('change', () => {
+    if (timeControlSelect.value === 'custom') {
+      customTimeGroup.classList.remove('hidden');
+    } else {
+      customTimeGroup.classList.add('hidden');
+    }
+  });
+  
+  bettingCheckbox.addEventListener('change', () => {
+    if (bettingCheckbox.checked) {
+      betAmountLabel.classList.remove('hidden');
+      betAmountInput.classList.remove('hidden');
+    } else {
+      betAmountLabel.classList.add('hidden');
+      betAmountInput.classList.add('hidden');
+    }
+  });
+  
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    // Get time control values
+    let whiteTime = 10 * 60; // Default: 10 minutes in seconds
+    let blackTime = 10 * 60;
+    const increment = parseInt(incrementInput.value) || 0;
+    
+    if (timeControlSelect.value === 'none') {
+      whiteTime = 0; // No time limit
+      blackTime = 0;
+    } else if (timeControlSelect.value === 'custom') {
+      whiteTime = (parseInt(whiteTimeInput.value) || 10) * 60;
+      blackTime = (parseInt(blackTimeInput.value) || 10) * 60;
+    } else {
+      const minutes = parseInt(timeControlSelect.value) || 10;
+      whiteTime = minutes * 60;
+      blackTime = minutes * 60;
+    }
+    
+    // Get betting values
+    const isBetting = bettingCheckbox.checked;
+    const betAmount = isBetting ? (parseInt(betAmountInput.value) || 100) : 0;
+    
+    // Start the game with these options
+    startGameWithOptions(whiteTime, blackTime, increment, isBetting, betAmount);
+    
+    // Close the modal
+    document.body.removeChild(modal);
+  });
+  
+  // Add elements to modal
+  modalContent.appendChild(closeBtn);
+  modalContent.appendChild(title);
+  modalContent.appendChild(form);
+  modal.appendChild(modalContent);
+  
+  // Add modal to body
+  document.body.appendChild(modal);
+  
+  // Show the modal
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+}
+
+// Start game with options
+function startGameWithOptions(whiteTime, blackTime, increment, isBetting, betAmount) {
+  // Set game options
+  gameTimes.white = whiteTime;
+  gameTimes.black = blackTime;
+  gameIncrement = increment;
+  
+  // Initialize the game
+  initGame(1);
+  
+  // Set up betting if enabled
+  if (isBetting && currentUser) {
+    // Check if user has enough balance
+    if (currentUser.balance < betAmount) {
+      showError('Insufficient balance for this bet');
+      return;
+    }
+    
+    // Place bet
+    placeBet(betAmount);
+  }
+}
+
+// Initialize a new game
+function initGame(level = 1) {
+  try {
+    console.log('Initializing game with level:', level);
+    
+    // Create a new chess instance
+    chess = new Chess();
+    
+    // Set up the board with black to move first
+    chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
+    
+    // Set the game level
+    if (window.ChessRules) {
+      window.ChessRules.setGameLevel(level);
+    }
+    
+    // Reset the board array
+    board = [];
+    
+    // Create the board
+    createBoard();
+    
+    // Reset game state
+    selectedSquare = null;
+    isAiGame = false;
+    isAiVsAiGame = false;
+    betPlaced = false;
+    pendingPromotion = null;
+    
+    // Reset timers
+    resetTimers();
+    
+    // Enable player's turn
+    isPlayerTurn = true;
+    playerColor = 'black'; // Black moves first
+    
+    // Update game status
+    updateGameStatus();
+    
+    // Show a notification with the level description
+    let levelDescription = '';
+    switch (level) {
+      case 1:
+        levelDescription = 'Traditional chess with Black moving first';
+        break;
+      case 2:
+        levelDescription = 'Queens move like Bishop, King, or Knight (not Rook)';
+        break;
+      case 3:
+        levelDescription = 'Queens move like Rook, King, or Knight (not Bishop)';
+        break;
+      case 4:
+        levelDescription = 'Queens have all traditional moves plus Knight moves';
+        break;
+      default:
+        levelDescription = 'Traditional chess with Black moving first';
+    }
+    
+    showError(`Level ${level}: ${levelDescription}`, 'info');
+    
+    // Update UI for the current level
+    updateUIForLevel(level);
+    
+    // Update player info
+    if (whitePlayerEl && blackPlayerEl) {
+      const whiteNameEl = whitePlayerEl.querySelector('.player-name');
+      const blackNameEl = blackPlayerEl.querySelector('.player-name');
+      
+      if (whiteNameEl) whiteNameEl.textContent = 'White';
+      if (blackNameEl) blackNameEl.textContent = currentUser ? currentUser.username : 'You (Black)';
+    }
+    
+    // Start timers if time control is enabled
+    if (gameTimes.white > 0 || gameTimes.black > 0) {
+      startTimers();
+    }
+    
+    console.log('Game initialized successfully');
+  } catch (error) {
+    console.error('Error initializing game:', error);
+  }
+}
+
+// Update the New Game button click handler
+document.addEventListener('DOMContentLoaded', () => {
+  const newGameBtn = document.getElementById('new-game-btn');
+  if (newGameBtn) {
+    newGameBtn.removeEventListener('click', initGame);
+    newGameBtn.addEventListener('click', showGameOptionsModal);
+  }
+});

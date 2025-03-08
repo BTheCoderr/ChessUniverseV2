@@ -2167,4 +2167,62 @@ header.authenticated {
   .modal-title {
     font-size: 1.2rem;
   }
+}
+
+/* Game Options Modal */
+#game-options-modal .modal-content {
+  max-width: 500px;
+  padding: 30px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input[type="number"],
+.form-group select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.custom-time-group {
+  border-left: 3px solid #4a90e2;
+  padding-left: 15px;
+  margin-top: 10px;
+}
+
+.custom-time-group label {
+  margin-top: 10px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Form field errors */
+.field-error {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+input.error {
+  border-color: #e74c3c !important;
+  background-color: rgba(231, 76, 60, 0.05);
 } 

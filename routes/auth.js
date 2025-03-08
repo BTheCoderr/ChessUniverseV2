@@ -46,14 +46,58 @@ router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ 
-      $or: [{ username }, { email }] 
-    });
-    
-    if (existingUser) {
+    // Validate input
+    if (!username || !email || !password) {
       return res.status(400).json({ 
-        message: 'Username or email already in use' 
+        message: 'All fields are required',
+        fields: {
+          username: !username ? 'Username is required' : null,
+          email: !email ? 'Email is required' : null,
+          password: !password ? 'Password is required' : null
+        }
+      });
+    }
+    
+    // Check username format
+    if (username.length < 3 || username.length > 20) {
+      return res.status(400).json({ 
+        message: 'Username must be between 3 and 20 characters',
+        field: 'username'
+      });
+    }
+    
+    // Check email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        message: 'Invalid email format',
+        field: 'email'
+      });
+    }
+    
+    // Check password strength
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        message: 'Password must be at least 6 characters',
+        field: 'password'
+      });
+    }
+    
+    // Check if username exists
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ 
+        message: 'Username already in use',
+        field: 'username'
+      });
+    }
+    
+    // Check if email exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ 
+        message: 'Email already in use',
+        field: 'email'
       });
     }
     
@@ -69,6 +113,7 @@ router.post('/register', async (req, res) => {
     // Log in the user after registration
     req.login(newUser, (err) => {
       if (err) {
+        console.error('Login error after registration:', err);
         return res.status(500).json({ message: 'Error logging in after registration' });
       }
       
@@ -78,13 +123,15 @@ router.post('/register', async (req, res) => {
           id: newUser._id,
           username: newUser.username,
           email: newUser.email,
-          balance: newUser.balance
+          balance: newUser.balance,
+          stats: newUser.stats,
+          unlockedLevels: newUser.unlockedLevels
         }
       });
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration' });
+    res.status(500).json({ message: 'Server error during registration', error: error.message });
   }
 });
 
