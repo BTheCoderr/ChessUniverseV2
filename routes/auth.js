@@ -2,6 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 const router = express.Router();
 
@@ -204,6 +205,70 @@ router.get('/current-user', (req, res) => {
       gamesTied: req.user.gamesTied
     }
   });
+});
+
+// Add a test account route for easier testing
+router.get('/test-account', async (req, res) => {
+  try {
+    // Check if test account already exists
+    const existingUser = await User.findOne({ username: 'testuser' });
+    
+    if (existingUser) {
+      // Log in as the test user
+      req.login(existingUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'Error logging in as test user', error: err.message });
+        }
+        return res.json({ 
+          message: 'Logged in as test user', 
+          user: {
+            id: existingUser._id,
+            username: existingUser.username,
+            email: existingUser.email,
+            balance: existingUser.balance,
+            unlockedLevels: existingUser.unlockedLevels
+          }
+        });
+      });
+    } else {
+      // Create a test account
+      const testUser = new User({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: await bcrypt.hash('testpassword', 10),
+        balance: 5000, // Give them plenty of coins to test with
+        unlockedLevels: {
+          level2: true,
+          level3: true,
+          level4: true,
+          battleChess: true,
+          customSetup: true
+        }
+      });
+      
+      await testUser.save();
+      
+      // Log in as the test user
+      req.login(testUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'Error logging in as test user', error: err.message });
+        }
+        return res.json({ 
+          message: 'Created and logged in as test user', 
+          user: {
+            id: testUser._id,
+            username: testUser.username,
+            email: testUser.email,
+            balance: testUser.balance,
+            unlockedLevels: testUser.unlockedLevels
+          }
+        });
+      });
+    }
+  } catch (error) {
+    console.error('Test account error:', error);
+    res.status(500).json({ message: 'Error creating test account', error: error.message });
+  }
 });
 
 module.exports = router; 

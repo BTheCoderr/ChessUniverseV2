@@ -304,12 +304,12 @@ function init() {
   try {
     console.log('Initializing application...');
     
-    // Get DOM Elements
-    chessboardEl = document.getElementById('chessboard');
-    gameStatusEl = document.getElementById('game-status');
-    movesListEl = document.getElementById('moves-list');
-    whitePlayerEl = document.getElementById('white-player');
-    blackPlayerEl = document.getElementById('black-player');
+  // Get DOM Elements
+  chessboardEl = document.getElementById('chessboard');
+  gameStatusEl = document.getElementById('game-status');
+  movesListEl = document.getElementById('moves-list');
+  whitePlayerEl = document.getElementById('white-player');
+  blackPlayerEl = document.getElementById('black-player');
     
     // Setup modal close buttons
     setupModalCloseButtons();
@@ -352,28 +352,28 @@ function init() {
     bodyObserver.observe(document.body, { childList: true });
     
     // Get DOM Elements
-    usernameDisplayEl = document.getElementById('username-display');
-    balanceDisplayEl = document.getElementById('balance-display');
+  usernameDisplayEl = document.getElementById('username-display');
+  balanceDisplayEl = document.getElementById('balance-display');
 
-    // Auth Elements
-    loginBtn = document.getElementById('login-btn');
-    registerBtn = document.getElementById('register-btn');
-    logoutBtn = document.getElementById('logout-btn');
-    loginModal = document.getElementById('login-modal');
-    registerModal = document.getElementById('register-modal');
-    loginForm = document.getElementById('login-form');
-    registerForm = document.getElementById('register-form');
-    closeBtns = document.querySelectorAll('.close-btn');
+  // Auth Elements
+  loginBtn = document.getElementById('login-btn');
+  registerBtn = document.getElementById('register-btn');
+  logoutBtn = document.getElementById('logout-btn');
+  loginModal = document.getElementById('login-modal');
+  registerModal = document.getElementById('register-modal');
+  loginForm = document.getElementById('login-form');
+  registerForm = document.getElementById('register-form');
+  closeBtns = document.querySelectorAll('.close-btn');
 
     // Game Option Elements
-    newGameBtn = document.getElementById('new-game-btn');
-    playAiBtn = document.getElementById('play-ai-btn');
-    aiVsAiBtn = document.getElementById('ai-vs-ai-btn');
-    findOpponentBtn = document.getElementById('find-opponent-btn');
-    aiOptions = document.getElementById('ai-options');
-    aiVsAiOptions = document.getElementById('ai-vs-ai-options');
-    bettingOptions = document.getElementById('betting-options');
-    
+  newGameBtn = document.getElementById('new-game-btn');
+  playAiBtn = document.getElementById('play-ai-btn');
+  aiVsAiBtn = document.getElementById('ai-vs-ai-btn');
+  findOpponentBtn = document.getElementById('find-opponent-btn');
+  aiOptions = document.getElementById('ai-options');
+  aiVsAiOptions = document.getElementById('ai-vs-ai-options');
+  bettingOptions = document.getElementById('betting-options');
+  
     // Magic Horse Challenge Elements
     magicHorseLevel1Btn = document.getElementById('magic-horse-level1-btn');
     magicHorseLevel2Btn = document.getElementById('magic-horse-level2-btn');
@@ -383,75 +383,75 @@ function init() {
     magicHorseSection = document.getElementById('magic-horse-section');
     
     // AI Option Elements
-    aiDifficultySlider = document.getElementById('ai-difficulty');
-    difficultyValueEl = document.getElementById('difficulty-value');
-    aiWhiteDifficultySlider = document.getElementById('ai-white-difficulty');
-    aiBlackDifficultySlider = document.getElementById('ai-black-difficulty');
-    whiteDifficultyValueEl = document.getElementById('white-difficulty-value');
-    blackDifficultyValueEl = document.getElementById('black-difficulty-value');
-    aiMoveSpeedSlider = document.getElementById('ai-move-speed');
-    moveSpeedValueEl = document.getElementById('move-speed-value');
-    startAiGameBtn = document.getElementById('start-ai-game-btn');
-    startAiVsAiBtn = document.getElementById('start-ai-vs-ai-btn');
+  aiDifficultySlider = document.getElementById('ai-difficulty');
+  difficultyValueEl = document.getElementById('difficulty-value');
+  aiWhiteDifficultySlider = document.getElementById('ai-white-difficulty');
+  aiBlackDifficultySlider = document.getElementById('ai-black-difficulty');
+  whiteDifficultyValueEl = document.getElementById('white-difficulty-value');
+  blackDifficultyValueEl = document.getElementById('black-difficulty-value');
+  aiMoveSpeedSlider = document.getElementById('ai-move-speed');
+  moveSpeedValueEl = document.getElementById('move-speed-value');
+  startAiGameBtn = document.getElementById('start-ai-game-btn');
+  startAiVsAiBtn = document.getElementById('start-ai-vs-ai-btn');
     
     // Betting Elements
-    betAmountInput = document.getElementById('bet-amount');
-    placeBetBtn = document.getElementById('place-bet-btn');
-    resignBtn = document.getElementById('resign-btn');
-    offerDrawBtn = document.getElementById('offer-draw-btn');
+  betAmountInput = document.getElementById('bet-amount');
+  placeBetBtn = document.getElementById('place-bet-btn');
+  resignBtn = document.getElementById('resign-btn');
+  offerDrawBtn = document.getElementById('offer-draw-btn');
 
-    // Game Result Modal
-    gameResultModal = document.getElementById('game-result-modal');
-    resultMessageEl = document.getElementById('result-message');
-    bettingResultEl = document.getElementById('betting-result');
-    newGameAfterResultBtn = document.getElementById('new-game-after-result');
-    viewProfileAfterResultBtn = document.getElementById('view-profile-after-result');
-    
-    // Sound Elements
-    soundToggle = document.getElementById('sound-toggle');
-    moveSound = document.getElementById('move-sound');
-    captureSound = document.getElementById('capture-sound');
-    checkSound = document.getElementById('check-sound');
-    castleSound = document.getElementById('castle-sound');
-    promoteSound = document.getElementById('promote-sound');
-    gameEndSound = document.getElementById('game-end-sound');
-    errorSound = document.getElementById('error-sound');
-    chatSound = document.getElementById('chat-sound');
-    
-    // Promotion Modal
-    promotionModal = document.getElementById('promotion-modal');
-    promotionPieces = document.querySelectorAll('.promotion-piece');
-    
-    // Profile Elements
-    profileBtn = document.getElementById('profile-btn');
-    backToGameBtn = document.getElementById('back-to-game-btn');
-    gameSection = document.getElementById('game-section');
-    profileSection = document.getElementById('profile-section');
-    
-    gamesPlayedEl = document.getElementById('games-played');
-    gamesWonEl = document.getElementById('games-won');
-    gamesLostEl = document.getElementById('games-lost');
-    gamesTiedEl = document.getElementById('games-tied');
-    winPercentageEl = document.getElementById('win-percentage');
-    totalEarningsEl = document.getElementById('total-earnings');
-    bettingHistoryTableEl = document.getElementById('betting-history-table');
-    
-    // Lobby Elements
-    lobbyModal = document.getElementById('lobby-modal');
-    availablePlayersEl = document.getElementById('available-players');
-    betAmountLobbyInput = document.getElementById('bet-amount-lobby');
-    createGameBtn = document.getElementById('create-game-btn');
-    lobbyChatMessagesEl = document.getElementById('lobby-chat-messages');
-    lobbyChatInput = document.getElementById('lobby-chat-input');
-    sendLobbyChatBtn = document.getElementById('send-lobby-chat-btn');
-    
-    // Game Chat Elements
-    gameChatEl = document.getElementById('game-chat');
-    gameChatHeaderEl = document.querySelector('.chat-header');
-    toggleChatBtn = document.getElementById('toggle-chat-btn');
-    gameChatMessagesEl = document.getElementById('game-chat-messages');
-    gameChatInput = document.getElementById('game-chat-input');
-    sendGameChatBtn = document.getElementById('send-game-chat-btn');
+  // Game Result Modal
+  gameResultModal = document.getElementById('game-result-modal');
+  resultMessageEl = document.getElementById('result-message');
+  bettingResultEl = document.getElementById('betting-result');
+  newGameAfterResultBtn = document.getElementById('new-game-after-result');
+  viewProfileAfterResultBtn = document.getElementById('view-profile-after-result');
+  
+  // Sound Elements
+  soundToggle = document.getElementById('sound-toggle');
+  moveSound = document.getElementById('move-sound');
+  captureSound = document.getElementById('capture-sound');
+  checkSound = document.getElementById('check-sound');
+  castleSound = document.getElementById('castle-sound');
+  promoteSound = document.getElementById('promote-sound');
+  gameEndSound = document.getElementById('game-end-sound');
+  errorSound = document.getElementById('error-sound');
+  chatSound = document.getElementById('chat-sound');
+  
+  // Promotion Modal
+  promotionModal = document.getElementById('promotion-modal');
+  promotionPieces = document.querySelectorAll('.promotion-piece');
+  
+  // Profile Elements
+  profileBtn = document.getElementById('profile-btn');
+  backToGameBtn = document.getElementById('back-to-game-btn');
+  gameSection = document.getElementById('game-section');
+  profileSection = document.getElementById('profile-section');
+  
+  gamesPlayedEl = document.getElementById('games-played');
+  gamesWonEl = document.getElementById('games-won');
+  gamesLostEl = document.getElementById('games-lost');
+  gamesTiedEl = document.getElementById('games-tied');
+  winPercentageEl = document.getElementById('win-percentage');
+  totalEarningsEl = document.getElementById('total-earnings');
+  bettingHistoryTableEl = document.getElementById('betting-history-table');
+  
+  // Lobby Elements
+  lobbyModal = document.getElementById('lobby-modal');
+  availablePlayersEl = document.getElementById('available-players');
+  betAmountLobbyInput = document.getElementById('bet-amount-lobby');
+  createGameBtn = document.getElementById('create-game-btn');
+  lobbyChatMessagesEl = document.getElementById('lobby-chat-messages');
+  lobbyChatInput = document.getElementById('lobby-chat-input');
+  sendLobbyChatBtn = document.getElementById('send-lobby-chat-btn');
+  
+  // Game Chat Elements
+  gameChatEl = document.getElementById('game-chat');
+  gameChatHeaderEl = document.querySelector('.chat-header');
+  toggleChatBtn = document.getElementById('toggle-chat-btn');
+  gameChatMessagesEl = document.getElementById('game-chat-messages');
+  gameChatInput = document.getElementById('game-chat-input');
+  sendGameChatBtn = document.getElementById('send-game-chat-btn');
     
     // Tournament Elements
     tournamentsBtn = document.getElementById('tournaments-btn');
@@ -470,7 +470,7 @@ function init() {
     magicHorseProgressText = document.getElementById('magic-horse-progress-text');
     challengeCards = document.querySelectorAll('.challenge-card');
   
-    // Set promotion piece images
+  // Set promotion piece images
     const promoteQueen = document.getElementById('promote-queen');
     const promoteRook = document.getElementById('promote-rook');
     const promoteBishop = document.getElementById('promote-bishop');
@@ -481,8 +481,8 @@ function init() {
     if (promoteBishop) promoteBishop.src = 'https://lichess1.org/assets/piece/cburnett/wB.svg';
     if (promoteKnight) promoteKnight.src = 'https://lichess1.org/assets/piece/cburnett/wN.svg';
   
-    // Initialize Chess.js
-    chess = new Chess();
+  // Initialize Chess.js
+  chess = new Chess();
     
     try {
       // Initialize socket connection
@@ -501,9 +501,9 @@ function init() {
       updateUIForGuest();
     }
   
-    // Create the chessboard
+  // Create the chessboard
     if (chessboardEl) {
-      createBoard();
+  createBoard();
     } else {
       console.warn('Chessboard element not found');
     }
@@ -518,7 +518,7 @@ function init() {
     setupGameEventListeners();
     
     // Setup event listeners
-    setupEventListeners();
+  setupEventListeners();
     
     console.log('Application initialized successfully');
     
@@ -541,9 +541,6 @@ function createBoard() {
     return;
   }
   
-  // Determine board orientation based on player color
-  const isFlipped = playerColor === 'black';
-  
   // Create the board array (8x8)
   board = Array(8).fill().map(() => Array(8).fill(null));
   
@@ -556,12 +553,8 @@ function createBoard() {
       square.classList.add((row + col) % 2 === 0 ? 'light-square' : 'dark-square');
       
       // Set data attributes for row and column
-      // If board is flipped, we need to invert the row and column values
-      const displayRow = isFlipped ? row : 7 - row;
-      const displayCol = isFlipped ? 7 - col : col;
-      
-      square.dataset.row = displayRow;
-      square.dataset.col = displayCol;
+      square.dataset.row = row;
+      square.dataset.col = col;
       
       // Add click event listener
       square.addEventListener('click', () => handleSquareClick(square));
@@ -570,7 +563,7 @@ function createBoard() {
       chessboardEl.appendChild(square);
       
       // Add the square to the board array
-      board[displayRow][displayCol] = {
+      board[row][col] = {
         element: square,
         piece: null
       };
@@ -609,22 +602,8 @@ function updateBoard() {
           case 'k': pieceType = 'king'; break;
         }
         
-        // Find the correct square in our board array
-        // We need to convert from chess.js coordinates to our board coordinates
-        const boardRow = row;
-        const boardCol = col;
-        
-        // Find the square in our board array
-        for (let r = 0; r < 8; r++) {
-          for (let c = 0; c < 8; c++) {
-            if (parseInt(board[r][c].element.dataset.row) === boardRow && 
-                parseInt(board[r][c].element.dataset.col) === boardCol) {
-              // Add the piece to this square
-              addPiece(r, c, pieceColor, pieceType);
-              break;
-            }
-          }
-        }
+        // Add the piece to the board
+        addPiece(row, col, pieceColor, pieceType);
       }
     }
   }
@@ -833,9 +812,9 @@ function handleSquareClick(square) {
       if (isPlayerPiece) {
         // Select the piece
         selectedSquare = { row, col, element: square };
-        
-        // Highlight possible moves
-        highlightPossibleMoves(row, col);
+      
+      // Highlight possible moves
+      highlightPossibleMoves(row, col);
       } else {
         showError('Not your piece');
       }
@@ -1263,7 +1242,7 @@ function endGame(result, reason = null) {
       if (gameId && !gameId.startsWith('local-') && chess.load_pgn(chess.pgn()).header().Variant === 'Battle Chess') {
         recordBattleChessWin(gameId);
       }
-    } else {
+  } else {
       resultMessage += ' - You lose!';
     }
   } else if (result === 'black') {
@@ -1326,7 +1305,7 @@ function endGame(result, reason = null) {
       const modalContent = gameResultModal.querySelector('.modal-content');
       if (modalContent) {
         modalContent.insertBefore(closeBtn, modalContent.firstChild);
-      } else {
+    } else {
         // If there's no modal-content, add it directly to the modal
         gameResultModal.insertBefore(closeBtn, gameResultModal.firstChild);
       }
@@ -1804,9 +1783,9 @@ function setupDragAndDrop() {
             
             // If playing against AI, get AI move
             if (isAiGame && !chess.isGameOver()) {
-              setTimeout(() => {
+    setTimeout(() => {
                 getAiMove();
-              }, 500);
+    }, 500);
             }
           }
         } catch (error) {
@@ -2001,10 +1980,10 @@ function initBattleChess(level = 1) {
   
   // Create the board
   createBoard();
-  
-  // Update the board
-  updateBoard();
-  
+    
+    // Update the board
+    updateBoard();
+    
   // Update game status
   updateGameStatus();
   
@@ -2730,8 +2709,8 @@ function handleDrawDeclined(data) {
 }
 
 function handleSocketError(data) {
-  console.error('Socket error:', data.message);
-  showError(data.message);
+    console.error('Socket error:', data.message);
+    showError(data.message);
 }
 
 // Show message (error, success, info)
@@ -2895,10 +2874,10 @@ function getAiMove(color = null) {
     if (chess.isCheck()) {
       playSound('check');
     }
-      
-      // Update the board
-      updateBoard();
-      
+    
+    // Update the board
+    updateBoard();
+    
     // Add move to history
     addMoveToHistory(randomMove);
     
@@ -2917,7 +2896,7 @@ function getAiMove(color = null) {
       aiVsAiTimer = setTimeout(() => {
         getAiMove();
       }, aiMoveSpeed);
-      } else {
+    } else {
       // Switch turns back to player
       isPlayerTurn = true;
       console.log('AI move complete, setting isPlayerTurn to true');
@@ -3402,8 +3381,8 @@ function joinTournament(tournamentId) {
   
   // Send join request to server
   fetchWithCredentials(`/api/tournament/${tournamentId}/join`, {
-    method: 'POST'
-  })
+      method: 'POST'
+    })
     .then(response => {
       if (!response.ok) {
         return response.json().then(data => {
@@ -3446,9 +3425,9 @@ function createTournament(formData) {
   
   // Send create request to server
   fetchWithCredentials('/api/tournament/create', {
-    method: 'POST',
+      method: 'POST',
     body: JSON.stringify(formData)
-  })
+    })
     .then(response => {
       if (!response.ok) {
         return response.json().then(data => {
@@ -3713,12 +3692,12 @@ function startChallenge(challengeLevel) {
   
   // Update challenge status to in_progress
   fetchWithCredentials('/api/user/magic-horse-progress', {
-    method: 'POST',
-    body: JSON.stringify({
+      method: 'POST',
+      body: JSON.stringify({
       level: challengeLevel,
       status: 'in_progress'
+      })
     })
-  })
     .then(response => {
       if (!response.ok) {
         console.warn('Failed to update challenge status');
@@ -3979,7 +3958,7 @@ function showTutorial() {
     // Update next button text for last step
     if (currentStep === totalSteps) {
       nextBtn.innerHTML = 'Finish <i class="fas fa-check"></i>';
-    } else {
+      } else {
       nextBtn.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
     }
   }
@@ -4064,6 +4043,29 @@ function checkTutorial() {
 function setupEventListeners() {
   try {
     console.log('Setting up event listeners');
+    
+    // Test account button
+    const testAccountBtn = document.getElementById('test-account-btn');
+    if (testAccountBtn) {
+      testAccountBtn.addEventListener('click', function() {
+        console.log('Test account button clicked');
+        
+        // Call the test account API
+        fetchWithCredentials('/api/auth/test-account')
+          .then(response => response.json())
+          .then(data => {
+            console.log('Test account response:', data);
+            if (data.user) {
+              updateUIAfterLogin(data.user);
+              showError('Logged in as test user with all levels unlocked!', 'success');
+            }
+          })
+          .catch(error => {
+            console.error('Test account error:', error);
+            showError('Error creating test account');
+          });
+      });
+    }
     
     // Close buttons for modals - improved implementation
     const closeBtns = document.querySelectorAll('.close-btn');
@@ -4430,9 +4432,9 @@ function setupEventListeners() {
         
         if (!loginUsername || !loginPassword) {
           showError('Login form elements not found');
-          return;
-        }
-        
+    return;
+  }
+  
         const username = loginUsername.value;
         const password = loginPassword.value;
         
@@ -4814,7 +4816,7 @@ function showGameOptionsModal() {
     } else if (timeControlSelect.value === 'custom') {
       whiteTime = (parseInt(whiteTimeInput.value) || 10) * 60;
       blackTime = (parseInt(blackTimeInput.value) || 10) * 60;
-    } else {
+  } else {
       const minutes = parseInt(timeControlSelect.value) || 10;
       whiteTime = minutes * 60;
       blackTime = minutes * 60;

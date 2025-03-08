@@ -17,6 +17,7 @@
         <span id="username-display">Guest</span>
         <span id="balance-display">Balance: 0</span>
         <button id="profile-btn" class="btn hidden"><i class="fas fa-user"></i> Profile</button>
+        <button id="test-account-btn" class="btn"><i class="fas fa-user-check"></i> Test Account</button>
         <button id="login-btn" class="btn">Login</button>
         <button id="register-btn" class="btn">Register</button>
         <button id="logout-btn" class="btn hidden">Logout</button>
@@ -455,12 +456,13 @@
     <!-- Game Result Modal -->
     <div id="game-result-modal" class="modal hidden">
       <div class="modal-content">
+        <span class="close-btn">&times;</span>
         <h2>Game Over</h2>
         <div id="result-message"></div>
         <div id="betting-result"></div>
         <div class="modal-buttons">
-          <button id="new-game-after-result" class="btn primary-btn">New Game</button>
-          <button id="view-profile-after-result" class="btn">View Profile</button>
+          <button id="new-game-btn" class="btn primary-btn">New Game</button>
+          <button id="view-profile-btn" class="btn">View Profile</button>
         </div>
       </div>
     </div>
