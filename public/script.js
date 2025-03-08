@@ -50,6 +50,37 @@ function setupModalCloseButtons() {
       }
     });
   });
+  
+  // Add a specific function to close the game over modal
+  window.closeGameOverModal = function() {
+    console.log('Closing game over modal');
+    const gameResultModal = document.getElementById('game-result-modal');
+    if (gameResultModal) {
+      gameResultModal.classList.add('hidden');
+      if (gameResultModal.style.display) {
+        gameResultModal.style.display = 'none';
+      }
+    }
+  };
+  
+  // Add keyboard event listener to close modals with Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      console.log('Escape key pressed, closing modals');
+      
+      // Close all visible modals
+      const visibleModals = document.querySelectorAll('.modal:not(.hidden)');
+      visibleModals.forEach(modal => {
+        modal.classList.add('hidden');
+        if (modal.style.display) {
+          modal.style.display = 'none';
+        }
+      });
+      
+      // Specifically check for game over modal
+      closeGameOverModal();
+    }
+  });
 }
 
 // DOM Elements
@@ -1232,7 +1263,7 @@ function endGame(result, reason = null) {
       if (gameId && !gameId.startsWith('local-') && chess.load_pgn(chess.pgn()).header().Variant === 'Battle Chess') {
         recordBattleChessWin(gameId);
       }
-  } else {
+    } else {
       resultMessage += ' - You lose!';
     }
   } else if (result === 'black') {
@@ -1278,7 +1309,35 @@ function endGame(result, reason = null) {
   // Show game result modal
   resultMessageEl.textContent = resultMessage;
   bettingResultEl.textContent = bettingResultMessage;
-  gameResultModal.classList.remove('hidden');
+  
+  // Ensure the modal has a close button
+  const gameResultModal = document.getElementById('game-result-modal');
+  if (gameResultModal) {
+    // Check if there's already a close button
+    let closeBtn = gameResultModal.querySelector('.close-btn');
+    if (!closeBtn) {
+      // Create a close button if it doesn't exist
+      closeBtn = document.createElement('span');
+      closeBtn.className = 'close-btn';
+      closeBtn.innerHTML = '&times;';
+      closeBtn.addEventListener('click', closeGameOverModal);
+      
+      // Add it to the modal content
+      const modalContent = gameResultModal.querySelector('.modal-content');
+      if (modalContent) {
+        modalContent.insertBefore(closeBtn, modalContent.firstChild);
+      } else {
+        // If there's no modal-content, add it directly to the modal
+        gameResultModal.insertBefore(closeBtn, gameResultModal.firstChild);
+      }
+    }
+    
+    // Show the modal
+    gameResultModal.classList.remove('hidden');
+    if (gameResultModal.style.display) {
+      gameResultModal.style.display = 'flex';
+    }
+  }
 }
 
 // Record a Battle Chess win
@@ -4049,23 +4108,52 @@ function setupEventListeners() {
       });
     }
     
-    // Game result modal buttons
+    // Game result modal buttons - ensure these are properly set up
     const newGameBtn = document.getElementById('new-game-btn');
     if (newGameBtn) {
-      newGameBtn.addEventListener('click', function() {
+      // Remove any existing event listeners
+      const newBtn = newGameBtn.cloneNode(true);
+      if (newGameBtn.parentNode) {
+        newGameBtn.parentNode.replaceChild(newBtn, newGameBtn);
+      }
+      
+      // Add new event listener
+      newBtn.addEventListener('click', function() {
         console.log('New Game button clicked');
-        document.getElementById('game-result-modal').classList.add('hidden');
+        closeGameOverModal();
         resetTimers();
         initGame(1); // Start a new game at level 1
       });
+    } else {
+      console.error('New Game button not found');
     }
     
     const viewProfileBtn = document.getElementById('view-profile-btn');
     if (viewProfileBtn) {
-      viewProfileBtn.addEventListener('click', function() {
+      // Remove any existing event listeners
+      const newBtn = viewProfileBtn.cloneNode(true);
+      if (viewProfileBtn.parentNode) {
+        viewProfileBtn.parentNode.replaceChild(newBtn, viewProfileBtn);
+      }
+      
+      // Add new event listener
+      newBtn.addEventListener('click', function() {
         console.log('View Profile button clicked');
-        document.getElementById('game-result-modal').classList.add('hidden');
+        closeGameOverModal();
         showProfile();
+      });
+    } else {
+      console.error('View Profile button not found');
+    }
+    
+    // Add a click handler to the game result modal background to close it
+    const gameResultModal = document.getElementById('game-result-modal');
+    if (gameResultModal) {
+      gameResultModal.addEventListener('click', function(e) {
+        // Only close if the click was directly on the modal background, not on its content
+        if (e.target === this) {
+          closeGameOverModal();
+        }
       });
     }
     
