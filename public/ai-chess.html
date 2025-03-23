@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chess Game</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+  <style>
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Navigation */
+    .nav-header {
+      background-color: #4a6fa5;
+      padding: 10px 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-title {
+      color: white;
+      font-size: 1.5rem;
+      margin: 0;
+    }
+    .nav-links {
+      display: flex;
+      gap: 15px;
+    }
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    .nav-link.home {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .game-layout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .board-container {
+      flex: 1;
+      min-width: 400px;
+    }
+    .controls-container {
+      flex: 0 0 320px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .chessboard {
+      width: 100%;
+      aspect-ratio: 1/1;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      border: 3px solid #333;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .square {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+    }
+    .light {
+      background-color: #f0d9b5;
+    }
+    .dark {
+      background-color: #b58863;
+    }
+    .selected {
+      background-color: rgba(155, 199, 0, 0.41);
+    }
+    .possible-move::after {
+      content: "";
+      width: 30%;
+      height: 30%;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.2);
+      position: absolute;
+    }
+    .last-move {
+      background-color: rgba(155, 199, 0, 0.41);
+    }
+    .status {
+      margin: 20px 0;
+      padding: 12px;
+      background: #f5f5f5;
+      border-left: 4px solid #4a6fa5;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+    .status.player-turn {
+      background-color: #e3f2fd;
+      border-left-color: #2196f3;
+      color: #1565c0;
+    }
+    .status.ai-turn {
+      background-color: #f5f5f5;
+      border-left-color: #9e9e9e;
+      color: #616161;
+    }
+    .status.check {
+      background-color: #fff3e0;
+      border-left-color: #ff9800;
+      color: #e65100;
+    }
+    .status.white-wins {
+      background-color: #e8f5e9;
+      border-left-color: #4caf50;
+      color: #2e7d32;
+    }
+    .status.black-wins {
+      background-color: #e8f5e9;
+      border-left-color: #4caf50;
+      color: #2e7d32;
+    }
+    .status.draw {
+      background-color: #fffde7;
+      border-left-color: #ffc107;
+      color: #ff6f00;
+    }
+    .status.thinking {
+      background-color: #e0f7fa;
+      border-left-color: #00bcd4;
+      color: #006064;
+    }
+    .moves-list {
+      height: 250px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-top: 10px;
+      background: white;
+      border-radius: 4px;
+    }
+    .move-item {
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+    }
+    .move-item:hover {
+      background-color: #f5f5f5;
+      cursor: pointer;
+    }
+    .move-number {
+      width: 30px;
+      font-weight: bold;
+      color: #4a6fa5;
+    }
+    .slider-container {
+      margin: 15px 0;
+    }
+    .slider-container label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .slider-container input[type="range"] {
+      width: 100%;
+      margin: 8px 0;
+    }
+    .slider-value {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 5px;
+    }
+    .difficulty-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .indicator-dots {
+      display: flex;
+      gap: 3px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #ddd;
+    }
+    .dot.active {
+      background-color: #4a6fa5;
+    }
+    .indicator-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .button-group .btn {
+      flex: 1;
+    }
+    .btn {
+      padding: 10px;
+      cursor: pointer;
+      background: #4a6fa5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: #3a5a85;
+      transform: translateY(-2px);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 10px 0 15px;
+    }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 15px 0;
+    }
+    .player-selector {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #ddd;
+    }
+    .thinking {
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    h2, h3 {
+      margin-top: 0;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    h3 {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+      color: #4a6fa5;
+    }
+    @media (max-width: 768px) {
+      .game-layout {
+        flex-direction: column;
+      }
+      .controls-container {
+        width: 100%;
+        max-width: 100%;
+      }
+      .chessboard {
+        max-width: 500px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-header">
+      <h1 class="nav-title">AI Chess Game</h1>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link home">Home</a>
+        <a href="chess-map.html" class="nav-link"><i class="fas fa-map"></i> Chess App Guide</a>
+      </div>
+    </div>
+    
+    <div class="game-layout">
+      <div class="board-container">
+        <div class="status" id="status">Game ready - Your turn (White)</div>
+        <div class="chessboard" id="board"></div>
+      </div>
+      
+      <div class="controls-container">
+        <h2>Game Controls</h2>
+        <div class="button-group">
+          <button id="new-game" class="btn">New Game</button>
+          <button id="make-ai-move" class="btn">Make AI Move</button>
+        </div>
+        
+        <div class="player-selector">
+          <h3>Player Color</h3>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="player-color" value="white" checked>
+              Play as White
+            </label>
+            <label>
+              <input type="radio" name="player-color" value="black">
+              Play as Black
+            </label>
+          </div>
+        </div>
+        
+        <h3>AI Settings</h3>
+        <div class="slider-container">
+          <label for="difficulty">AI Difficulty (1-10):</label>
+          <input type="range" id="difficulty" min="1" max="10" value="3" step="1">
+          <div class="slider-value">
+            <span id="difficulty-value">3</span>
+            <div class="difficulty-indicator">
+              <div class="indicator-dots">
+                <span class="dot active"></span>
+                <span class="dot active"></span>
+                <span class="dot active"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+              <div class="indicator-label">Beginner</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="slider-container">
+          <label for="thinking-time">Thinking Time (ms):</label>
+          <input type="range" id="thinking-time" min="50" max="2000" value="300" step="50">
+          <div class="slider-value">
+            <span id="thinking-time-value">300 ms</span>
+          </div>
+        </div>
+        
+        <div class="checkbox-container">
+          <input type="checkbox" id="auto-play" checked>
+          <label for="auto-play">Auto-play AI moves</label>
+        </div>
+        
+        <h3>Move History</h3>
+        <div id="moves-list" class="moves-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize variables
+      let game = new Chess();
+      let board = document.getElementById('board');
+      let status = document.getElementById('status');
+      let movesList = document.getElementById('moves-list');
+      let selectedSquare = null;
+      let isAiThinking = false;
+      let lastMove = null;
+      let playerColor = 'white'; // Default player color
+      
+      // Debug message
+      console.log('AI Chess initialized with chess.js version:', typeof Chess);
+      
+      // Create the chess board
+      createBoard();
+      
+      // Force initial position
+      game.reset(); // Reset to standard starting position
+      updateBoard();
+      
+      // Show initial status
+      updateStatus();
+      status.textContent = "Game ready - Your turn (White)";
+      status.className = "status player-turn";
+      
+      // Event listeners for controls
+      document.getElementById('new-game').addEventListener('click', newGame);
+      document.getElementById('make-ai-move').addEventListener('click', makeAiMove);
+      document.getElementById('difficulty').addEventListener('input', updateDifficultyDisplay);
+      document.getElementById('thinking-time').addEventListener('input', updateThinkingTimeDisplay);
+      
+      // Player color radio buttons
+      document.querySelectorAll('input[name="player-color"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          playerColor = e.target.value;
+          // If it's AI's turn after changing color, make AI move automatically
+          if ((game.turn() === 'w' && playerColor === 'black') || 
+              (game.turn() === 'b' && playerColor === 'white')) {
+            setTimeout(makeAiMove, 300);
+          }
+        });
+      });
+      
+      // Initialize display values
+      updateDifficultyDisplay();
+      updateThinkingTimeDisplay();
+      
+      function createBoard() {
+        console.log('Creating chessboard...');
+        board.innerHTML = '';
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+        
+        for (let rank = 0; rank < 8; rank++) {
+          for (let file = 0; file < 8; file++) {
+            const square = document.createElement('div');
+            square.className = `square ${(rank + file) % 2 === 0 ? 'light' : 'dark'}`;
+            square.dataset.square = files[file] + ranks[rank];
+            square.addEventListener('click', () => handleSquareClick(files[file] + ranks[rank]));
+            board.appendChild(square);
+          }
+        }
+        console.log('Chessboard created with ' + files.length * ranks.length + ' squares');
+      }
+      
+      function updateBoard() {
+        console.log('Updating board with FEN:', game.fen());
+        // Clear previous piece displays
+        const squares = document.querySelectorAll('.square');
+        squares.forEach(square => {
+          square.textContent = '';
+          square.classList.remove('selected', 'possible-move', 'last-move');
+        });
+        
+        // Add pieces and highlights
+        for (let rank = 0; rank < 8; rank++) {
+          for (let file = 0; file < 8; file++) {
+            const position = game.board()[rank][file];
+            if (position) {
+              const squareId = String.fromCharCode(97 + file) + (8 - rank);
+              const square = document.querySelector(`.square[data-square="${squareId}"]`);
+              if (square) {
+                square.textContent = getPieceSymbol(position.type, position.color);
+                console.log(`Placing ${position.color} ${position.type} on ${squareId}`);
+              } else {
+                console.error(`Square element not found for ${squareId}`);
+              }
+            }
+          }
+        }
+        
+        // Add highlight for selected square
+        if (selectedSquare) {
+          const selected = document.querySelector(`.square[data-square="${selectedSquare}"]`);
+          if (selected) {
+            selected.classList.add('selected');
+            
+            // Show possible moves
+            const moves = game.moves({ square: selectedSquare, verbose: true });
+            moves.forEach(move => {
+              const possibleMove = document.querySelector(`.square[data-square="${move.to}"]`);
+              if (possibleMove) {
+                possibleMove.classList.add('possible-move');
+              }
+            });
+          }
+        }
+        
+        // Highlight last move
+        if (lastMove) {
+          const fromSquare = document.querySelector(`.square[data-square="${lastMove.from}"]`);
+          const toSquare = document.querySelector(`.square[data-square="${lastMove.to}"]`);
+          
+          if (fromSquare) fromSquare.classList.add('last-move');
+          if (toSquare) toSquare.classList.add('last-move');
+        }
+        
+        // Update game status
+        updateStatus();
+      }
+      
+      function getPieceSymbol(type, color) {
+        const symbols = {
+          p: color === 'w' ? '♙' : '♟',
+          n: color === 'w' ? '♘' : '♞',
+          b: color === 'w' ? '♗' : '♝',
+          r: color === 'w' ? '♖' : '♜',
+          q: color === 'w' ? '♕' : '♛',
+          k: color === 'w' ? '♔' : '♚'
+        };
+        return symbols[type];
+      }
+      
+      function handleSquareClick(square) {
+        // If AI is thinking, don't allow moves
+        if (isAiThinking) return;
+        
+        // If game is over, don't allow moves
+        if (game.game_over()) return;
+        
+        // Check if it's player's turn
+        const isPlayerTurn = (game.turn() === 'w' && playerColor === 'white') || 
+                             (game.turn() === 'b' && playerColor === 'black');
+                             
+        if (!isPlayerTurn) {
+          status.textContent = "It's not your turn";
+          return;
+        }
+        
+        const piece = game.get(square);
+        
+        // If a square is already selected
+        if (selectedSquare) {
+          // Try to make a move
+          const move = makeMove(selectedSquare, square);
+          selectedSquare = null;
+          
+          // If move was successful and auto-play is enabled
+          if (move && document.getElementById('auto-play').checked) {
+            setTimeout(makeAiMove, 500);
+          }
+        } 
+        // If clicking on a piece of the current turn's color
+        else if (piece && piece.color === game.turn()) {
+          selectedSquare = square;
+        }
+        
+        updateBoard();
+      }
+      
+      function makeMove(from, to) {
+        try {
+          const moveObj = {
+            from: from,
+            to: to,
+            promotion: 'q' // Always promote to queen for simplicity
+          };
+          
+          const move = game.move(moveObj);
+          
+          if (move) {
+            lastMove = { from, to };
+            addMoveToHistory(move);
+            return move;
+          }
+          return null;
+        } catch (e) {
+          console.error('Invalid move', e);
+          return null;
+        }
+      }
+      
+      function makeAiMove() {
+        // If game is over or AI is already thinking, don't make move
+        if (game.game_over() || isAiThinking) return;
+        
+        // Check if it's AI's turn
+        const isAiTurn = (game.turn() === 'w' && playerColor === 'black') || 
+                         (game.turn() === 'b' && playerColor === 'white');
+                         
+        if (!isAiTurn) {
+          status.textContent = "It's your turn to move";
+          return;
+        }
+        
+        // Set thinking state
+        isAiThinking = true;
+        status.textContent = 'AI is thinking...';
+        status.classList.add('thinking');
+        
+        // Get difficulty and thinking time
+        const difficulty = parseInt(document.getElementById('difficulty').value);
+        const thinkingTime = parseInt(document.getElementById('thinking-time').value);
+        
+        // Use requestAnimationFrame for smoother animation and perceived performance
+        requestAnimationFrame(() => {
+          // Calculate move immediately (don't wait for timeout)
+          const move = calculateBestMove(difficulty);
+          
+          // Use a shorter timeout for better responsiveness - we already did the calculation
+          setTimeout(() => {
+            if (move) {
+              lastMove = { from: move.from, to: move.to };
+              game.move(move);
+              addMoveToHistory(move);
+            }
+            
+            // Reset thinking state
+            isAiThinking = false;
+            status.classList.remove('thinking');
+            updateBoard();
+            
+            // Display the move quality based on difficulty
+            if (difficulty < 3) {
+              status.textContent += ' (Beginner level move)';
+            } else if (difficulty < 7) {
+              status.textContent += ' (Intermediate level move)';
+            } else {
+              status.textContent += ' (Advanced level move)';
+            }
+          }, Math.min(thinkingTime, 500)); // Cap the delay at 500ms for better responsiveness
+        });
+      }
+      
+      function calculateBestMove(difficulty) {
+        // Get all possible moves
+        const moves = game.moves({ verbose: true });
+        
+        // If no moves, return null
+        if (moves.length === 0) return null;
+        
+        // For very easy difficulty (1-2), just choose a random move
+        if (difficulty <= 2) {
+          return moves[Math.floor(Math.random() * moves.length)];
+        }
+        
+        // For medium difficulty (3-5), use simple material evaluation with high randomness
+        if (difficulty <= 5) {
+          let bestMove = null;
+          let bestScore = -Infinity;
+          
+          for (const move of moves) {
+            // Make move
+            game.move(move);
+            
+            // Evaluate position (simple material counting)
+            const score = -evaluatePosition();
+            
+            // Undo move
+            game.undo();
+            
+            // Add high randomness factor for medium difficulty
+            const randomFactor = (6 - difficulty) * 2; // More randomness for lower difficulty
+            const adjustedScore = score + (Math.random() * randomFactor - randomFactor/2);
+            
+            // Keep track of best move
+            if (adjustedScore > bestScore) {
+              bestScore = adjustedScore;
+              bestMove = move;
+            }
+          }
+          
+          return bestMove;
+        }
+        
+        // For higher difficulty (6-10), use more sophisticated evaluation with less randomness
+        let bestMove = null;
+        let bestScore = -Infinity;
+        
+        // Consider checking and castling more valuable at higher difficulties
+        const isCheck = (moveObj) => moveObj.san.includes('+');
+        const isCastle = (moveObj) => moveObj.san === 'O-O' || moveObj.san === 'O-O-O';
+        const isCapture = (moveObj) => moveObj.captured;
+        
+        // Search depth based on difficulty
+        const depth = Math.min(Math.floor(difficulty / 2), 3); // Max depth 3 for performance
+        
+        for (const move of moves) {
+          // Make move
+          game.move(move);
+          
+          // Use minimax for higher difficulties
+          let score;
+          if (difficulty >= 8) {
+            // Use deeper search for high difficulties
+            score = -minimax(depth, -Infinity, Infinity, false);
+          } else {
+            // Use simple evaluation for medium-high difficulties
+            score = -evaluatePosition();
+          }
+          
+          // Undo move
+          game.undo();
+          
+          // Strategic bonuses at higher difficulties
+          if (difficulty >= 7) {
+            // Bonus for checks, captures and castling
+            if (isCheck(move)) score += 0.2;
+            if (isCastle(move)) score += 0.3;
+            if (isCapture(move)) score += 0.1;
+            
+            // Center control bonus for central pawns and knights
+            if (move.to === 'd4' || move.to === 'e4' || move.to === 'd5' || move.to === 'e5') {
+              if (move.piece === 'p' || move.piece === 'n') {
+                score += 0.15;
+              }
+            }
+          }
+          
+          // Add decreasing randomness as difficulty increases
+          const randomFactor = (11 - difficulty) / 10;
+          const adjustedScore = score + (Math.random() * randomFactor - randomFactor/2);
+          
+          // Keep track of best move
+          if (adjustedScore > bestScore) {
+            bestScore = adjustedScore;
+            bestMove = move;
+          }
+        }
+        
+        return bestMove;
+      }
+      
+      function minimax(depth, alpha, beta, isMaximizingPlayer) {
+        if (depth === 0 || game.game_over()) {
+          return evaluatePosition();
+        }
+        
+        if (isMaximizingPlayer) {
+          let maxEval = -Infinity;
+          const moves = game.moves({ verbose: true });
+          
+          for (const move of moves) {
+            game.move(move);
+            const eval = minimax(depth - 1, alpha, beta, false);
+            game.undo();
+            
+            maxEval = Math.max(maxEval, eval);
+            alpha = Math.max(alpha, eval);
+            if (beta <= alpha) break; // Alpha-beta pruning
+          }
+          
+          return maxEval;
+        } else {
+          let minEval = Infinity;
+          const moves = game.moves({ verbose: true });
+          
+          for (const move of moves) {
+            game.move(move);
+            const eval = minimax(depth - 1, alpha, beta, true);
+            game.undo();
+            
+            minEval = Math.min(minEval, eval);
+            beta = Math.min(beta, eval);
+            if (beta <= alpha) break; // Alpha-beta pruning
+          }
+          
+          return minEval;
+        }
+      }
+      
+      function evaluatePosition() {
+        // Piece values
+        const pieceValues = {
+          p: 1,
+          n: 3,
+          b: 3.25,
+          r: 5,
+          q: 9,
+          k: 0
+        };
+        
+        let score = 0;
+        
+        // Material evaluation
+        for (let rank = 0; rank < 8; rank++) {
+          for (let file = 0; file < 8; file++) {
+            const piece = game.board()[rank][file];
+            if (piece) {
+              // Base material value
+              let value = pieceValues[piece.type];
+              
+              // Positional bonuses - encourage center control and pawn advancement
+              if (piece.type === 'p') {
+                // Pawn advancement bonus
+                const rankBonus = piece.color === 'w' ? 7 - rank : rank;
+                value += rankBonus * 0.05;
+                
+                // Center control
+                if ((file === 3 || file === 4) && (rank >= 3 && rank <= 4)) {
+                  value += 0.2;
+                }
+              }
+              
+              // Knight bonus for central positions
+              if (piece.type === 'n') {
+                // Center knight bonus
+                if ((file >= 2 && file <= 5) && (rank >= 2 && rank <= 5)) {
+                  value += 0.2;
+                }
+              }
+              
+              score += piece.color === 'w' ? value : -value;
+            }
+          }
+        }
+        
+        // Check bonus
+        if (game.in_check()) {
+          score += game.turn() === 'w' ? -0.5 : 0.5;
+        }
+        
+        return score;
+      }
+      
+      function addMoveToHistory(move) {
+        const moveNumber = Math.floor((game.history().length + 1) / 2);
+        const color = move.color === 'w' ? 'White' : 'Black';
+        
+        const moveItem = document.createElement('div');
+        moveItem.className = 'move-item';
+        
+        const moveNumberSpan = document.createElement('span');
+        moveNumberSpan.className = 'move-number';
+        moveNumberSpan.textContent = moveNumber + '.';
+        
+        const moveSan = document.createElement('span');
+        moveSan.textContent = `${color}: ${move.san}`;
+        
+        moveItem.appendChild(moveNumberSpan);
+        moveItem.appendChild(moveSan);
+        movesList.appendChild(moveItem);
+        
+        // Scroll to bottom of moves list
+        movesList.scrollTop = movesList.scrollHeight;
+      }
+      
+      function updateStatus() {
+        if (game.game_over()) {
+          if (game.in_checkmate()) {
+            const winner = game.turn() === 'w' ? 'Black' : 'White';
+            status.textContent = `Checkmate! ${winner} wins`;
+            
+            // Add winner highlight class
+            status.className = 'status ' + winner.toLowerCase() + '-wins';
+          } else if (game.in_draw()) {
+            status.textContent = 'Game over - Draw';
+            status.className = 'status draw';
+          }
+        } else {
+          const turn = game.turn() === 'w' ? 'White' : 'Black';
+          const isPlayersTurn = (game.turn() === 'w' && playerColor === 'white') || 
+                                (game.turn() === 'b' && playerColor === 'black');
+          
+          if (isPlayersTurn) {
+            status.textContent = `Your turn (${turn})`;
+            status.className = 'status player-turn';
+          } else {
+            status.textContent = `AI's turn (${turn})`;
+            status.className = 'status ai-turn';
+          }
+          
+          if (game.in_check()) {
+            status.textContent += ' - CHECK!';
+            status.className += ' check';
+          }
+        }
+      }
+      
+      function newGame() {
+        console.log("Starting new game...");
+        game = new Chess();
+        selectedSquare = null;
+        lastMove = null;
+        isAiThinking = false;
+        status.classList.remove('thinking');
+        movesList.innerHTML = '';
+        
+        // Force a reset and update
+        game.reset();
+        updateBoard();
+        
+        // Update status with appropriate message
+        const isPlayersTurn = (game.turn() === 'w' && playerColor === 'white') || 
+                             (game.turn() === 'b' && playerColor === 'black');
+                             
+        if (isPlayersTurn) {
+          status.textContent = `Your turn (${game.turn() === 'w' ? 'White' : 'Black'})`;
+          status.className = 'status player-turn';
+        } else {
+          status.textContent = `AI's turn (${game.turn() === 'w' ? 'White' : 'Black'})`;
+          status.className = 'status ai-turn';
+        }
+        
+        // Make AI move first if player is black and AI is white
+        if (playerColor === 'black' && game.turn() === 'w') {
+          console.log("AI to move first...");
+          setTimeout(makeAiMove, 500);
+        }
+      }
+      
+      function updateDifficultyDisplay() {
+        const value = parseInt(document.getElementById('difficulty').value);
+        const difficultyElement = document.getElementById('difficulty-value');
+        difficultyElement.textContent = value;
+        
+        // Update dots indicator
+        updateDifficultyDots(value);
+        
+        // Add description based on difficulty
+        let description = '';
+        if (value <= 2) description = ' (Beginner)';
+        else if (value <= 5) description = ' (Intermediate)';
+        else if (value <= 8) description = ' (Advanced)';
+        else description = ' (Expert)';
+        
+        // Set indicator label
+        document.querySelector('.indicator-label').textContent = 
+          value <= 2 ? 'Beginner' : 
+          value <= 5 ? 'Intermediate' : 
+          value <= 8 ? 'Advanced' : 'Expert';
+        
+        // Visual feedback for difficulty change
+        difficultyElement.style.fontWeight = 'bold';
+        difficultyElement.style.color = '#4a6fa5';
+        
+        setTimeout(() => {
+          difficultyElement.style.fontWeight = 'normal';
+          difficultyElement.style.color = '';
+        }, 500);
+        
+        // Reset AI thinking visual indication
+        if (isAiThinking) {
+          status.textContent = 'AI is thinking...';
+          status.classList.add('thinking');
+        } else {
+          updateStatus();
+        }
+      }
+      
+      function updateDifficultyDots(value) {
+        // Get all dots
+        const dots = document.querySelectorAll('.dot');
+        
+        // Update active state based on difficulty
+        dots.forEach((dot, index) => {
+          dot.classList.toggle('active', index < value);
+        });
+      }
+      
+      function updateThinkingTimeDisplay() {
+        const value = document.getElementById('thinking-time').value;
+        const thinkingTimeElement = document.getElementById('thinking-time-value');
+        thinkingTimeElement.textContent = value + ' ms';
+        
+        // Visual feedback for thinking time change  
+        thinkingTimeElement.style.fontWeight = 'bold';
+        thinkingTimeElement.style.color = '#4a6fa5';
+        
+        setTimeout(() => {
+          thinkingTimeElement.style.fontWeight = 'normal';
+          thinkingTimeElement.style.color = '';
+        }, 500);
+      }
+    });
+  </script>
+</body>
+</html> 

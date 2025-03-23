@@ -1,130 +1,43 @@
 const express = require('express');
+const router = express.Router();
+const mongoose = require('mongoose');
 const Tournament = require('../models/Tournament');
 const User = require('../models/User');
 const Game = require('../models/Game');
+const { isAuthenticated } = require('../middleware/auth');
 
-const router = express.Router();
-
-// Middleware to check if user is authenticated
-const isAuthenticated = (req, res, next) => {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.status(401).json({ message: 'Unauthorized' });
-};
-
-// Create a new tournament
-router.post('/create', isAuthenticated, async (req, res) => {
-  try {
-    const { 
-      name, 
-      description, 
-      gameVariant, 
-      entryFee, 
-      maxParticipants,
-      registrationStart,
-      registrationEnd,
-      tournamentStart
-    } = req.body;
-    
-    // Validate required fields
-    if (!name || !entryFee || !maxParticipants || !registrationStart || !registrationEnd || !tournamentStart) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-    
-    // Validate dates
-    const now = new Date();
-    const regStart = new Date(registrationStart);
-    const regEnd = new Date(registrationEnd);
-    const tourStart = new Date(tournamentStart);
-    
-    if (regStart < now) {
-      return res.status(400).json({ message: 'Registration start date must be in the future' });
-    }
-    
-    if (regEnd <= regStart) {
-      return res.status(400).json({ message: 'Registration end date must be after registration start date' });
-    }
-    
-    if (tourStart <= regEnd) {
-      return res.status(400).json({ message: 'Tournament start date must be after registration end date' });
-    }
-    
-    // Create new tournament
-    const newTournament = new Tournament({
-      name,
-      description,
-      gameVariant: gameVariant || 'traditional',
-      entryFee,
-      maxParticipants,
-      registrationStart: regStart,
-      registrationEnd: regEnd,
-      tournamentStart: tourStart,
-      createdBy: req.user._id
-    });
-    
-    await newTournament.save();
-    
-    res.status(201).json({
-      message: 'Tournament created successfully',
-      tournament: {
-        id: newTournament._id,
-        name: newTournament.name,
-        gameVariant: newTournament.gameVariant,
-        entryFee: newTournament.entryFee,
-        maxParticipants: newTournament.maxParticipants,
-        registrationStart: newTournament.registrationStart,
-        registrationEnd: newTournament.registrationEnd,
-        tournamentStart: newTournament.tournamentStart
-      }
-    });
-  } catch (error) {
-    console.error('Error creating tournament:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// Apply authentication middleware to all tournament routes
+router.use(isAuthenticated);
 
 // Get all tournaments
 router.get('/', async (req, res) => {
   try {
-    const { status, gameVariant } = req.query;
+    const { status, skip = 0, limit = 10 } = req.query;
     
     // Build query
     const query = {};
-    
     if (status) {
       query.status = status;
     }
     
-    if (gameVariant) {
-      query.gameVariant = gameVariant;
-    }
-    
-    // Get tournaments
+    // Execute query with pagination
     const tournaments = await Tournament.find(query)
-      .populate('createdBy', 'username')
-      .sort({ tournamentStart: 1 });
+      .sort({ startDate: -1 })
+      .skip(parseInt(skip))
+      .limit(parseInt(limit))
+      .populate('creator', 'username');
     
-    res.json({
-      tournaments: tournaments.map(tournament => ({
-        id: tournament._id,
-        name: tournament.name,
-        description: tournament.description,
-        gameVariant: tournament.gameVariant,
-        entryFee: tournament.entryFee,
-        prizePool: tournament.prizePool,
-        maxParticipants: tournament.maxParticipants,
-        currentParticipants: tournament.participants.length,
-        status: tournament.status,
-        registrationStart: tournament.registrationStart,
-        registrationEnd: tournament.registrationEnd,
-        tournamentStart: tournament.tournamentStart,
-        createdBy: tournament.createdBy.username
-      }))
+    const total = await Tournament.countDocuments(query);
+    
+    res.json({ 
+      tournaments,
+      total,
+      page: Math.floor(skip / limit) + 1,
+      totalPages: Math.ceil(total / limit)
     });
   } catch (error) {
-    console.error('Error getting tournaments:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching tournaments:', error);
+    res.status(500).json({ message: 'Error fetching tournaments', error: error.message });
   }
 });
 
@@ -132,47 +45,89 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id)
-      .populate('createdBy', 'username')
-      .populate('participants.user', 'username');
+      .populate('creator', 'username')
+      .populate('participants.user', 'username rating')
+      .populate({
+        path: 'matches',
+        populate: {
+          path: 'player1 player2 winner',
+          select: 'username rating'
+        }
+      });
     
     if (!tournament) {
       return res.status(404).json({ message: 'Tournament not found' });
     }
     
-    res.json({
-      tournament: {
-        id: tournament._id,
-        name: tournament.name,
-        description: tournament.description,
-        gameVariant: tournament.gameVariant,
-        entryFee: tournament.entryFee,
-        prizePool: tournament.prizePool,
-        prizeDistribution: tournament.prizeDistribution,
-        maxParticipants: tournament.maxParticipants,
-        participants: tournament.participants.map(p => ({
-          id: p.user._id,
-          username: p.user.username,
-          status: p.status,
-          joinedAt: p.joinedAt
-        })),
-        rounds: tournament.rounds,
-        status: tournament.status,
-        winners: tournament.winners,
-        registrationStart: tournament.registrationStart,
-        registrationEnd: tournament.registrationEnd,
-        tournamentStart: tournament.tournamentStart,
-        tournamentEnd: tournament.tournamentEnd,
-        createdBy: tournament.createdBy.username
-      }
+    res.json({ tournament });
+  } catch (error) {
+    console.error('Error fetching tournament:', error);
+    res.status(500).json({ message: 'Error fetching tournament', error: error.message });
+  }
+});
+
+// Create a new tournament
+router.post('/', async (req, res) => {
+  try {
+    const { 
+      name, 
+      description, 
+      startDate, 
+      maxParticipants, 
+      entryFee, 
+      prizePool,
+      gameVariant,
+      timeControl
+    } = req.body;
+    
+    // Validate inputs
+    if (!name || !startDate || !maxParticipants) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    
+    // Validate date
+    const tournamentDate = new Date(startDate);
+    if (isNaN(tournamentDate) || tournamentDate < new Date()) {
+      return res.status(400).json({ message: 'Invalid start date' });
+    }
+    
+    // Check if user can afford the creation fee
+    const creationFee = 100;
+    if (req.user.balance < creationFee) {
+      return res.status(400).json({ message: 'Insufficient balance to create tournament' });
+    }
+    
+    // Deduct creation fee
+    req.user.balance -= creationFee;
+    await req.user.save();
+    
+    // Create tournament
+    const tournament = new Tournament({
+      name,
+      description,
+      creator: req.user._id,
+      startDate: tournamentDate,
+      maxParticipants: Math.min(maxParticipants, 32), // Cap at 32 players
+      entryFee: entryFee || 0,
+      prizePool: prizePool || 0,
+      gameVariant: gameVariant || 'traditional',
+      timeControl: timeControl || 'rapid'
+    });
+    
+    await tournament.save();
+    
+    res.status(201).json({
+      message: 'Tournament created successfully',
+      tournament
     });
   } catch (error) {
-    console.error('Error getting tournament:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error creating tournament:', error);
+    res.status(500).json({ message: 'Error creating tournament', error: error.message });
   }
 });
 
 // Join a tournament
-router.post('/:id/join', isAuthenticated, async (req, res) => {
+router.post('/:id/join', async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id);
     
@@ -180,9 +135,9 @@ router.post('/:id/join', isAuthenticated, async (req, res) => {
       return res.status(404).json({ message: 'Tournament not found' });
     }
     
-    // Check if tournament is in registration phase
+    // Check if tournament is open for registration
     if (tournament.status !== 'registration') {
-      return res.status(400).json({ message: 'Tournament is not in registration phase' });
+      return res.status(400).json({ message: 'Tournament is not open for registration' });
     }
     
     // Check if tournament is full
@@ -199,48 +154,41 @@ router.post('/:id/join', isAuthenticated, async (req, res) => {
       return res.status(400).json({ message: 'You are already registered for this tournament' });
     }
     
-    // Check if user has enough balance
-    if (req.user.balance < tournament.entryFee) {
-      return res.status(400).json({ message: 'Insufficient balance' });
+    // Check if user can afford the entry fee
+    if (tournament.entryFee > 0 && req.user.balance < tournament.entryFee) {
+      return res.status(400).json({ message: 'Insufficient balance for entry fee' });
     }
     
     // Deduct entry fee
-    req.user.balance -= tournament.entryFee;
-    await req.user.save();
+    if (tournament.entryFee > 0) {
+      req.user.balance -= tournament.entryFee;
+      await req.user.save();
+      
+      // Add to prize pool
+      tournament.prizePool += tournament.entryFee;
+    }
     
     // Add user to participants
     tournament.participants.push({
       user: req.user._id,
-      status: 'active',
-      joinedAt: new Date()
+      status: 'registered',
+      seedNumber: tournament.participants.length + 1
     });
-    
-    // Recalculate prize pool
-    tournament.calculatePrizePool();
     
     await tournament.save();
     
     res.json({
       message: 'Successfully joined tournament',
-      tournament: {
-        id: tournament._id,
-        name: tournament.name,
-        prizePool: tournament.prizePool,
-        participants: tournament.participants.length,
-        maxParticipants: tournament.maxParticipants
-      },
-      user: {
-        balance: req.user.balance
-      }
+      tournament
     });
   } catch (error) {
     console.error('Error joining tournament:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Error joining tournament', error: error.message });
   }
 });
 
-// Start a tournament (admin only)
-router.post('/:id/start', isAuthenticated, async (req, res) => {
+// Start a tournament
+router.post('/:id/start', async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id);
     
@@ -249,293 +197,300 @@ router.post('/:id/start', isAuthenticated, async (req, res) => {
     }
     
     // Check if user is the creator
-    if (tournament.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to start this tournament' });
+    if (tournament.creator.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only the tournament creator can start it' });
     }
     
     // Check if tournament can be started
     if (tournament.status !== 'registration') {
-      return res.status(400).json({ message: 'Tournament is not in registration phase' });
+      return res.status(400).json({ message: 'Tournament cannot be started' });
     }
     
-    // Check if there are enough participants (at least 4)
-    if (tournament.participants.length < 4) {
+    // Need at least 2 participants
+    if (tournament.participants.length < 2) {
       return res.status(400).json({ message: 'Not enough participants to start tournament' });
     }
     
-    // Generate first round pairings
-    const participants = tournament.participants.map(p => p.user);
-    const pairings = generatePairings(participants);
+    // Generate pairings
+    const matches = generatePairings(tournament.participants);
     
-    // Create first round
-    tournament.rounds.push({
-      roundNumber: 1,
-      matches: pairings.map(pair => ({
-        whitePlayer: pair[0],
-        blackPlayer: pair[1],
-        status: 'pending'
-      })),
-      startTime: new Date()
-    });
-    
-    // Update tournament status
+    // Update tournament
     tournament.status = 'active';
+    tournament.currentRound = 1;
+    tournament.matches = matches;
+    tournament.startDate = new Date();
     
     await tournament.save();
     
     res.json({
       message: 'Tournament started successfully',
-      tournament: {
-        id: tournament._id,
-        status: tournament.status,
-        rounds: tournament.rounds
-      }
+      tournament
     });
   } catch (error) {
     console.error('Error starting tournament:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Error starting tournament', error: error.message });
   }
 });
 
-// Helper function to generate random pairings
+// Record match result
+router.post('/:id/matches/:matchId/result', async (req, res) => {
+  try {
+    const { winnerId, gameId } = req.body;
+    
+    const tournament = await Tournament.findById(req.params.id);
+    
+    if (!tournament) {
+      return res.status(404).json({ message: 'Tournament not found' });
+    }
+    
+    // Find the match
+    const match = tournament.matches.id(req.params.matchId);
+    
+    if (!match) {
+      return res.status(404).json({ message: 'Match not found' });
+    }
+    
+    // Check if match is active
+    if (match.status !== 'scheduled' && match.status !== 'in_progress') {
+      return res.status(400).json({ message: 'Match is not active' });
+    }
+    
+    // Check if user is a player in the match
+    const isPlayer1 = match.player1.toString() === req.user._id.toString();
+    const isPlayer2 = match.player2.toString() === req.user._id.toString();
+    
+    if (!isPlayer1 && !isPlayer2 && tournament.creator.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to report match result' });
+    }
+    
+    // Validate winner
+    if (winnerId !== match.player1.toString() && winnerId !== match.player2.toString()) {
+      return res.status(400).json({ message: 'Invalid winner' });
+    }
+    
+    // Validate game ID if provided
+    if (gameId) {
+      const game = await Game.findById(gameId);
+      
+      if (!game) {
+        return res.status(404).json({ message: 'Game not found' });
+      }
+      
+      // Check if game belongs to the match players
+      const gameWhite = game.whitePlayer.toString();
+      const gameBlack = game.blackPlayer.toString();
+      const matchPlayer1 = match.player1.toString();
+      const matchPlayer2 = match.player2.toString();
+      
+      if ((gameWhite !== matchPlayer1 && gameWhite !== matchPlayer2) || 
+          (gameBlack !== matchPlayer1 && gameBlack !== matchPlayer2)) {
+        return res.status(400).json({ message: 'Game does not match tournament pairing' });
+      }
+      
+      match.gameId = gameId;
+    }
+    
+    // Update match
+    match.winner = winnerId;
+    match.status = 'completed';
+    match.endTime = new Date();
+    
+    // Update player statuses
+    tournament.participants.forEach(participant => {
+      if (participant.user.toString() === winnerId) {
+        participant.status = 'active';
+      } else if (participant.user.toString() === match.player1.toString() || 
+                participant.user.toString() === match.player2.toString()) {
+        participant.status = 'eliminated';
+      }
+    });
+    
+    // Check if round is complete
+    const currentRoundMatches = tournament.matches.filter(m => m.round === tournament.currentRound);
+    const isRoundComplete = currentRoundMatches.every(m => m.status === 'completed');
+    
+    if (isRoundComplete) {
+      // Generate next round if not final
+      const advancingPlayers = tournament.participants.filter(p => p.status === 'active');
+      
+      if (advancingPlayers.length > 1) {
+        // Generate next round
+        tournament.currentRound += 1;
+        const nextRoundMatches = generateNextRoundPairings(advancingPlayers, tournament.currentRound);
+        tournament.matches.push(...nextRoundMatches);
+      } else if (advancingPlayers.length === 1) {
+        // Tournament completed
+        tournament.status = 'completed';
+        tournament.winner = advancingPlayers[0].user;
+        tournament.endDate = new Date();
+        
+        // Distribute prizes
+        await distributeTournamentPrizes(tournament);
+      }
+    }
+    
+    await tournament.save();
+    
+    res.json({
+      message: 'Match result recorded successfully',
+      tournament
+    });
+  } catch (error) {
+    console.error('Error recording match result:', error);
+    res.status(500).json({ message: 'Error recording match result', error: error.message });
+  }
+});
+
+// Helper function to generate first round pairings
 function generatePairings(participants) {
-  // Shuffle participants
+  // Shuffle participants to randomize seeding
   const shuffled = [...participants];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   
-  // Create pairs
-  const pairs = [];
-  for (let i = 0; i < shuffled.length; i += 2) {
-    if (i + 1 < shuffled.length) {
-      pairs.push([shuffled[i], shuffled[i + 1]]);
+  // Check if we need byes (if participant count is not a power of 2)
+  const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(shuffled.length)));
+  const byeCount = nextPowerOf2 - shuffled.length;
+  
+  // Create matches array
+  const matches = [];
+  
+  // If odd number of participants, give a bye to the first participant
+  let position = 0;
+  while (position < shuffled.length) {
+    if (byeCount > 0 && position < byeCount) {
+      // Bye - automatically advance participant
+      matches.push({
+        round: 1,
+        player1: shuffled[position].user,
+        player2: null, // Bye
+        status: 'completed',
+        winner: shuffled[position].user
+      });
+      
+      position += 1;
+    } else if (position + 1 < shuffled.length) {
+      // Regular match
+      matches.push({
+        round: 1,
+        player1: shuffled[position].user,
+        player2: shuffled[position + 1].user,
+        status: 'scheduled'
+      });
+      
+      position += 2;
     } else {
-      // If odd number of participants, the last one gets a bye
-      pairs.push([shuffled[i], null]);
+      // Odd player at the end gets a bye
+      matches.push({
+        round: 1,
+        player1: shuffled[position].user,
+        player2: null, // Bye
+        status: 'completed',
+        winner: shuffled[position].user
+      });
+      
+      position += 1;
     }
   }
   
-  return pairs;
+  return matches;
 }
 
-// Advance tournament to next round
-router.post('/:id/advance', isAuthenticated, async (req, res) => {
-  try {
-    const tournament = await Tournament.findById(req.params.id)
-      .populate('participants')
-      .populate({
-        path: 'rounds.matches',
-        populate: {
-          path: 'player1 player2 winner',
-          model: 'User'
-        }
+// Helper function to generate next round pairings
+function generateNextRoundPairings(advancingPlayers, roundNumber) {
+  const matches = [];
+  
+  for (let i = 0; i < advancingPlayers.length; i += 2) {
+    if (i + 1 < advancingPlayers.length) {
+      matches.push({
+        round: roundNumber,
+        player1: advancingPlayers[i].user,
+        player2: advancingPlayers[i + 1].user,
+        status: 'scheduled'
       });
-    
-    if (!tournament) {
-      return res.status(404).json({ message: 'Tournament not found' });
-    }
-    
-    // Check if user is admin or tournament creator
-    if (!req.user.isAdmin && tournament.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Unauthorized to advance this tournament' });
-    }
-    
-    // Check if tournament is active
-    if (tournament.status !== 'active') {
-      return res.status(400).json({ message: 'Tournament must be active to advance rounds' });
-    }
-    
-    // Check if current round is complete
-    const currentRoundIndex = tournament.currentRound - 1;
-    if (currentRoundIndex < 0 || currentRoundIndex >= tournament.rounds.length) {
-      return res.status(400).json({ message: 'Invalid current round' });
-    }
-    
-    const currentRound = tournament.rounds[currentRoundIndex];
-    const allMatchesComplete = currentRound.matches.every(match => match.status === 'completed');
-    
-    if (!allMatchesComplete) {
-      return res.status(400).json({ message: 'All matches in the current round must be completed before advancing' });
-    }
-    
-    // Check if this was the final round
-    if (currentRoundIndex === tournament.rounds.length - 1) {
-      // Tournament is complete, distribute prizes
-      await distributeTournamentPrizes(tournament);
-      
-      // Update tournament status
-      tournament.status = 'completed';
-      tournament.completedAt = new Date();
-      await tournament.save();
-      
-      return res.json({
-        message: 'Tournament completed and prizes distributed',
-        tournament: {
-          id: tournament._id,
-          name: tournament.name,
-          status: tournament.status
-        }
+    } else {
+      // If odd number of players, give a bye
+      matches.push({
+        round: roundNumber,
+        player1: advancingPlayers[i].user,
+        player2: null,
+        status: 'completed',
+        winner: advancingPlayers[i].user
       });
     }
-    
-    // Advance to next round
-    tournament.currentRound += 1;
-    
-    // Update next round matches with winners from current round
-    const nextRoundIndex = currentRoundIndex + 1;
-    const nextRound = tournament.rounds[nextRoundIndex];
-    
-    // Pair winners from current round into next round matches
-    let winnerIndex = 0;
-    for (let i = 0; i < nextRound.matches.length; i++) {
-      const match = nextRound.matches[i];
-      
-      // Set player1 from first winner
-      if (winnerIndex < currentRound.matches.length) {
-        const winner1 = currentRound.matches[winnerIndex].winner;
-        if (winner1) {
-          match.player1 = winner1;
-        }
-        winnerIndex++;
-      }
-      
-      // Set player2 from second winner
-      if (winnerIndex < currentRound.matches.length) {
-        const winner2 = currentRound.matches[winnerIndex].winner;
-        if (winner2) {
-          match.player2 = winner2;
-        }
-        winnerIndex++;
-      }
-      
-      // Update match status
-      if (match.player1 && match.player2) {
-        match.status = 'scheduled';
-      }
-    }
-    
-    await tournament.save();
-    
-    res.json({
-      message: 'Tournament advanced to next round',
-      tournament: {
-        id: tournament._id,
-        name: tournament.name,
-        currentRound: tournament.currentRound
-      }
-    });
-  } catch (error) {
-    console.error('Error advancing tournament:', error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
+  
+  return matches;
+}
 
-// Distribute tournament prizes
+// Helper function to distribute tournament prizes
 async function distributeTournamentPrizes(tournament) {
   try {
-    // Calculate prize pool
-    const entryFee = tournament.entryFee;
-    const participantCount = tournament.participants.length;
-    const prizePool = entryFee * participantCount * 0.9; // 10% goes to house
+    if (!tournament.winner) return;
     
-    // Find the winner (final match winner)
-    const finalRound = tournament.rounds[tournament.rounds.length - 1];
-    const finalMatch = finalRound.matches[0];
+    const prizePool = tournament.prizePool || 0;
+    if (prizePool <= 0) return;
     
-    if (!finalMatch || !finalMatch.winner) {
-      console.error('No winner found for tournament:', tournament._id);
-      return;
-    }
+    // Define prize distribution percentages
+    const prizeDistribution = {
+      1: 0.6, // Winner gets 60%
+      2: 0.3, // Runner-up gets 30%
+      3: 0.1  // Third place gets 10%
+    };
     
-    // Find second place (loser of final match)
-    const secondPlace = finalMatch.player1 && finalMatch.player1._id.toString() === finalMatch.winner.toString()
-      ? finalMatch.player2
-      : finalMatch.player1;
+    // Find finalists
+    const winner = await User.findById(tournament.winner);
+    if (!winner) return;
     
-    // Find third place (winner of 3rd place match, or semifinal losers if no 3rd place match)
-    let thirdPlace = null;
-    if (tournament.rounds.length > 1) {
-      const semifinalRound = tournament.rounds[tournament.rounds.length - 2];
+    // Winner gets first prize
+    const firstPrize = Math.floor(prizePool * prizeDistribution[1]);
+    winner.balance += firstPrize;
+    winner.tournamentsWon += 1;
+    winner.totalEarnings += firstPrize;
+    await winner.save();
+    
+    // Find second and third place if available
+    const finalists = tournament.matches.filter(m => m.round === tournament.currentRound - 1);
+    
+    if (finalists.length > 0) {
+      // Find the runner-up (the player who lost in the final)
+      const final = finalists.find(m => 
+        m.player1?.toString() === tournament.winner.toString() || 
+        m.player2?.toString() === tournament.winner.toString()
+      );
       
-      // Check if there's a 3rd place match
-      const thirdPlaceMatch = tournament.rounds.find(round => round.name === '3rd Place');
-      if (thirdPlaceMatch && thirdPlaceMatch.matches[0] && thirdPlaceMatch.matches[0].winner) {
-        thirdPlace = thirdPlaceMatch.matches[0].winner;
-      } else {
-        // Use semifinal losers as tied for 3rd
-        const semifinalLosers = semifinalRound.matches
-          .filter(match => match.winner && match.status === 'completed')
-          .map(match => {
-            return match.player1 && match.player1._id.toString() === match.winner.toString()
-              ? match.player2
-              : match.player1;
-          })
-          .filter(player => player);
+      if (final) {
+        const runnerUpId = final.player1?.toString() === tournament.winner.toString() ? 
+          final.player2 : final.player1;
         
-        if (semifinalLosers.length > 0) {
-          thirdPlace = semifinalLosers[0];
+        if (runnerUpId) {
+          const runnerUp = await User.findById(runnerUpId);
+          if (runnerUp) {
+            const secondPrize = Math.floor(prizePool * prizeDistribution[2]);
+            runnerUp.balance += secondPrize;
+            runnerUp.totalEarnings += secondPrize;
+            await runnerUp.save();
+          }
         }
       }
     }
     
-    // Calculate prize distribution
-    // 1st place: 60% of prize pool
-    // 2nd place: 30% of prize pool
-    // 3rd place: 10% of prize pool
-    const firstPrize = Math.floor(prizePool * 0.6);
-    const secondPrize = Math.floor(prizePool * 0.3);
-    const thirdPrize = Math.floor(prizePool * 0.1);
-    
-    // Update winner's balance
-    const winner = await User.findById(finalMatch.winner);
-    if (winner) {
-      winner.balance += firstPrize;
-      winner.tournamentsWon += 1;
-      winner.totalEarnings += firstPrize;
-      await winner.save();
-    }
-    
-    // Update second place's balance
-    if (secondPlace) {
-      const secondPlaceUser = await User.findById(secondPlace);
-      if (secondPlaceUser) {
-        secondPlaceUser.balance += secondPrize;
-        secondPlaceUser.totalEarnings += secondPrize;
-        await secondPlaceUser.save();
+    if (finalists.length > 1 && prizeDistribution[3]) {
+      // Find third place (winner of the 3rd place match if it exists)
+      const thirdPlaceMatch = tournament.matches.find(m => m.round === tournament.currentRound - 1 && m.isThirdPlace);
+      
+      if (thirdPlaceMatch && thirdPlaceMatch.winner) {
+        const thirdPlace = await User.findById(thirdPlaceMatch.winner);
+        if (thirdPlace) {
+          const thirdPrize = Math.floor(prizePool * prizeDistribution[3]);
+          thirdPlace.balance += thirdPrize;
+          thirdPlace.totalEarnings += thirdPrize;
+          await thirdPlace.save();
+        }
       }
     }
-    
-    // Update third place's balance
-    if (thirdPlace) {
-      const thirdPlaceUser = await User.findById(thirdPlace);
-      if (thirdPlaceUser) {
-        thirdPlaceUser.balance += thirdPrize;
-        thirdPlaceUser.totalEarnings += thirdPrize;
-        await thirdPlaceUser.save();
-      }
-    }
-    
-    // Update tournament with prize distribution
-    tournament.prizeDistribution = {
-      first: {
-        user: finalMatch.winner,
-        amount: firstPrize
-      },
-      second: secondPlace ? {
-        user: secondPlace,
-        amount: secondPrize
-      } : null,
-      third: thirdPlace ? {
-        user: thirdPlace,
-        amount: thirdPrize
-      } : null
-    };
-    
-    await tournament.save();
-    
-    console.log(`Prizes distributed for tournament ${tournament._id}`);
   } catch (error) {
     console.error('Error distributing tournament prizes:', error);
   }

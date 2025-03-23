@@ -1,104 +1,70 @@
 const express = require('express');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
-const User = require('../models/User');
+const { User } = require('../models');
 const bcrypt = require('bcryptjs');
+const { isAuthenticated } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Configure Passport.js
+// Configure passport to use local strategy
 passport.use(new LocalStrategy(
-  async (username, password, done) => {
-    try {
-      const user = await User.findOne({ username });
-      
-      if (!user) {
-        return done(null, false, { message: 'Incorrect username' });
-      }
-      
-      const isMatch = await user.comparePassword(password);
-      
-      if (!isMatch) {
-        return done(null, false, { message: 'Incorrect password' });
-      }
-      
-      return done(null, user);
-    } catch (error) {
-      return done(error);
+    async (username, password, done) => {
+        try {
+            const user = await User.findOne({ username });
+            if (!user) {
+                return done(null, false, { message: 'Incorrect username or password' });
+            }
+            
+            const isMatch = await user.comparePassword(password);
+            if (!isMatch) {
+                return done(null, false, { message: 'Incorrect username or password' });
+            }
+            
+            return done(null, user);
+        } catch (error) {
+            return done(error);
+        }
     }
-  }
 ));
 
+// Serialize and deserialize user
 passport.serializeUser((user, done) => {
-  done(null, user.id);
+    done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id);
-    done(null, user);
-  } catch (error) {
-    done(error);
-  }
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (error) {
+        done(error);
+    }
 });
 
-// Register a new user
+// @route   POST /api/auth/register
+// @desc    Register a new user
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
     
     // Validate input
     if (!username || !email || !password) {
-      return res.status(400).json({ 
-        message: 'All fields are required',
-        fields: {
-          username: !username ? 'Username is required' : null,
-          email: !email ? 'Email is required' : null,
-          password: !password ? 'Password is required' : null
-        }
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required fields'
       });
     }
     
-    // Check username format
-    if (username.length < 3 || username.length > 20) {
-      return res.status(400).json({ 
-        message: 'Username must be between 3 and 20 characters',
-        field: 'username'
-      });
-    }
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }]
+    });
     
-    // Check email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
-        message: 'Invalid email format',
-        field: 'email'
-      });
-    }
-    
-    // Check password strength
-    if (password.length < 6) {
-      return res.status(400).json({ 
-        message: 'Password must be at least 6 characters',
-        field: 'password'
-      });
-    }
-    
-    // Check if username exists
-    const existingUsername = await User.findOne({ username });
-    if (existingUsername) {
-      return res.status(400).json({ 
-        message: 'Username already in use',
-        field: 'username'
-      });
-    }
-    
-    // Check if email exists
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      return res.status(400).json({ 
-        message: 'Email already in use',
-        field: 'email'
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username or email already exists'
       });
     }
     
@@ -106,168 +72,211 @@ router.post('/register', async (req, res) => {
     const newUser = new User({
       username,
       email,
-      password
+      password, // Will be hashed by pre-save hook
+      balance: 1000, // Starting balance
+      rating: 1200, // Default rating
     });
     
     await newUser.save();
     
-    // Log in the user after registration
+    // Login the user after registration
     req.login(newUser, (err) => {
       if (err) {
-        console.error('Login error after registration:', err);
-        return res.status(500).json({ message: 'Error logging in after registration' });
+        return res.status(500).json({
+          success: false,
+          message: 'Error logging in after registration',
+          error: err.message
+        });
       }
       
+      // Return user info without password
       return res.status(201).json({
-        message: 'Registration successful',
+        success: true,
+        message: 'User registered successfully',
         user: {
           id: newUser._id,
           username: newUser.username,
           email: newUser.email,
           balance: newUser.balance,
-          stats: newUser.stats,
-          unlockedLevels: newUser.unlockedLevels
+          rating: newUser.rating,
+          magicHorse: newUser.magicHorse
         }
       });
     });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration', error: error.message });
+  } catch (err) {
+    console.error('Error registering user:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during registration',
+      error: err.message
+    });
   }
 });
 
-// Login
+// @route   POST /api/auth/login
+// @desc    Login user and return user data
 router.post('/login', (req, res, next) => {
-  console.log('Login attempt for user:', req.body.username);
-  
   passport.authenticate('local', (err, user, info) => {
     if (err) {
-      console.error('Login error:', err);
-      return res.status(500).json({ message: 'Internal server error during login' });
+      return res.status(500).json({
+        success: false,
+        message: 'Server error during login',
+        error: err.message
+      });
     }
     
     if (!user) {
-      console.log('Login failed:', info.message);
-      return res.status(401).json({ message: info.message || 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: info.message || 'Invalid credentials'
+      });
     }
     
-    req.login(user, (err) => {
+    req.login(user, async (err) => {
       if (err) {
-        console.error('Session error during login:', err);
-        return res.status(500).json({ message: 'Error establishing session' });
+        return res.status(500).json({
+          success: false,
+          message: 'Error logging in',
+          error: err.message
+        });
       }
       
-      console.log('Login successful for user:', user.username);
-      console.log('Session after login:', req.session);
+      // Update last login time
+      user.lastLogin = new Date();
+      await user.save();
       
       return res.json({
+        success: true,
         message: 'Login successful',
         user: {
           id: user._id,
           username: user.username,
           email: user.email,
-          balance: user.balance
+          balance: user.balance,
+          rating: user.rating,
+          role: user.role,
+          magicHorse: user.magicHorse
         }
       });
     });
   })(req, res, next);
 });
 
-// Logout
-router.post('/logout', (req, res) => {
-  req.logout(function(err) {
-    if (err) {
-      return res.status(500).json({ message: 'Error during logout' });
-    }
-    res.json({ message: 'Logout successful' });
-  });
+// @route   GET /api/auth/logout
+// @desc    Logout user
+router.get('/logout', (req, res) => {
+  try {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error logging out',
+          error: err.message
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: 'Logout successful'
+      });
+    });
+  } catch (err) {
+    console.error('Error logging out:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during logout',
+      error: err.message
+    });
+  }
 });
 
-// Get current user
-router.get('/current-user', (req, res) => {
-  console.log('Current user request received');
-  console.log('Is authenticated:', req.isAuthenticated());
-  console.log('Session:', req.session);
-  
+// @route   GET /api/auth/user
+// @desc    Get current user
+router.get('/user', (req, res) => {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: 'Not authenticated' });
+    return res.json({
+      success: false,
+      message: 'Not authenticated',
+      user: null
+    });
   }
   
+  const user = {
+    id: req.user._id,
+    username: req.user.username,
+    email: req.user.email,
+    balance: req.user.balance,
+    rating: req.user.rating,
+    role: req.user.role,
+    profile: req.user.profile,
+    stats: req.user.stats,
+    magicHorse: req.user.magicHorse,
+    lastLogin: req.user.lastLogin
+  };
+  
   res.json({
-    user: {
-      id: req.user._id,
-      username: req.user.username,
-      email: req.user.email,
-      balance: req.user.balance,
-      gamesPlayed: req.user.gamesPlayed,
-      gamesWon: req.user.gamesWon,
-      gamesLost: req.user.gamesLost,
-      gamesTied: req.user.gamesTied
-    }
+    success: true,
+    message: 'User authenticated',
+    user
   });
 });
 
-// Add a test account route for easier testing
-router.get('/test-account', async (req, res) => {
+// @route   POST /api/auth/create-test-account
+// @desc    Create and login as a test user (for demo purposes)
+router.post('/create-test-account', async (req, res) => {
   try {
-    // Check if test account already exists
-    const existingUser = await User.findOne({ username: 'testuser' });
+    const { username, password } = req.body;
     
-    if (existingUser) {
-      // Log in as the test user
-      req.login(existingUser, (err) => {
-        if (err) {
-          return res.status(500).json({ message: 'Error logging in as test user', error: err.message });
-        }
-        return res.json({ 
-          message: 'Logged in as test user', 
-          user: {
-            id: existingUser._id,
-            username: existingUser.username,
-            email: existingUser.email,
-            balance: existingUser.balance,
-            unlockedLevels: existingUser.unlockedLevels
-          }
-        });
-      });
-    } else {
-      // Create a test account
-      const testUser = new User({
-        username: 'testuser',
-        email: 'test@example.com',
-        password: await bcrypt.hash('testpassword', 10),
-        balance: 5000, // Give them plenty of coins to test with
-        unlockedLevels: {
-          level2: true,
-          level3: true,
-          level4: true,
-          battleChess: true,
-          customSetup: true
-        }
+    // Check if test user already exists
+    let testUser = await User.findOne({ username });
+    
+    // If user doesn't exist, create one
+    if (!testUser) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      
+      testUser = new User({
+        username,
+        email: `${username}@example.com`,
+        password: hashedPassword,
+        balance: 5000,
+        rating: 1250,
+        verified: true
       });
       
       await testUser.save();
-      
-      // Log in as the test user
-      req.login(testUser, (err) => {
-        if (err) {
-          return res.status(500).json({ message: 'Error logging in as test user', error: err.message });
-        }
-        return res.json({ 
-          message: 'Created and logged in as test user', 
-          user: {
-            id: testUser._id,
-            username: testUser.username,
-            email: testUser.email,
-            balance: testUser.balance,
-            unlockedLevels: testUser.unlockedLevels
-          }
-        });
-      });
     }
-  } catch (error) {
-    console.error('Test account error:', error);
-    res.status(500).json({ message: 'Error creating test account', error: error.message });
+    
+    // Login as test user
+    req.login(testUser, (err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error logging in as test user',
+          error: err.message
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: 'Logged in as test user',
+        user: {
+          id: testUser._id,
+          username: testUser.username,
+          email: testUser.email,
+          balance: testUser.balance,
+          rating: testUser.rating,
+          magicHorse: testUser.magicHorse
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Error creating test account:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error creating test account',
+      error: err.message
+    });
   }
 });
 

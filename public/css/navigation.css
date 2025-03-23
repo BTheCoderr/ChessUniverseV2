@@ -1,0 +1,162 @@
+/* Unified Navigation Component for Chess Universe */
+
+.chess-nav {
+  background-color: #4a6fa5;
+  color: white;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+
+.chess-nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.chess-nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chess-nav-logo h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.chess-nav-logo img {
+  height: 32px;
+  width: auto;
+}
+
+.chess-nav-links {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.chess-nav-link {
+  color: white;
+  text-decoration: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.chess-nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.chess-nav-link.active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.chess-nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chess-nav-username {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.chess-nav-balance {
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-right: 10px;
+  font-size: 0.9em;
+}
+
+/* Mobile navigation */
+.chess-nav-mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.chess-nav-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: #4a6fa5;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  padding: 10px;
+  border-radius: 0 0 8px 8px;
+}
+
+.chess-nav-dropdown.active {
+  display: block;
+}
+
+.chess-nav-dropdown-link {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+
+.chess-nav-dropdown-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Current page indicator */
+.chess-nav-current-page {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding-bottom: 5px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chess-nav-links, .chess-nav-auth {
+    display: none;
+  }
+  
+  .chess-nav-mobile-toggle {
+    display: block;
+  }
+  
+  .chess-nav-dropdown .chess-nav-links,
+  .chess-nav-dropdown .chess-nav-auth {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chess-nav-dropdown .chess-nav-auth {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chess-nav-dropdown.active {
+  animation: fadeIn 0.3s ease-out;
+} 

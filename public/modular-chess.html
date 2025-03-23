@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modular Chess Application</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Update chess.js to latest version and make it available as a module -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+  <!-- Use type="module" to enable ES6 module loading -->
+  <script type="module" src="js/modules/main.js"></script>
+  <style>
+    /* Additional styles for move history */
+    .move-item {
+      display: flex;
+      align-items: center;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .move-number {
+      width: 30px;
+      font-weight: bold;
+      color: #4a6fa5;
+    }
+    
+    .move-notation {
+      padding: 2px 8px;
+      margin: 0 4px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .move-notation:hover {
+      background-color: #f0f0f0;
+    }
+    
+    .move-notation.current-move {
+      background-color: #4a6fa5;
+      color: white;
+    }
+    
+    .sound-controls {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+    
+    .sound-toggle {
+      display: flex;
+      align-items: center;
+      margin-right: 15px;
+    }
+    
+    .sound-toggle input {
+      margin-right: 5px;
+    }
+    
+    .volume-control {
+      display: flex;
+      align-items: center;
+    }
+    
+    .volume-control label {
+      margin-right: 5px;
+    }
+    
+    .volume-control input {
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>Modular Chess</h1>
+    </header>
+
+    <main>
+      <div class="game-container">
+        <!-- Game Options -->
+        <div class="game-options">
+          <h2>Controls</h2>
+          <div class="option-group">
+            <button id="new-game-btn" class="btn primary-btn">New Game</button>
+            <button id="resign-btn" class="btn danger-btn">Resign</button>
+            
+            <!-- Sound Controls -->
+            <div class="sound-controls">
+              <div class="sound-toggle">
+                <input type="checkbox" id="sound-toggle" checked>
+                <label for="sound-toggle">Sound</label>
+              </div>
+              <div class="volume-control">
+                <label for="volume-slider">Volume:</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="50">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Move History -->
+          <div class="move-history">
+            <h3>Move History</h3>
+            <div id="moves-list" class="moves-list"></div>
+          </div>
+        </div>
+
+        <!-- Chessboard -->
+        <div class="board-container">
+          <div class="game-info">
+            <div id="white-player" class="player-info">
+              <div class="player-name">White</div>
+            </div>
+            <div id="game-status">Black to move</div>
+            <div id="black-player" class="player-info active-player">
+              <div class="player-name">You (Black)</div>
+            </div>
+          </div>
+          <div id="chessboard" class="chessboard"></div>
+        </div>
+
+        <!-- Game Information -->
+        <div class="game-info-panel">
+          <h2>About</h2>
+          <p>This is a modular chess application built with a clean separation of concerns.</p>
+          <ul>
+            <li><strong>Black always moves first</strong> in this version</li>
+            <li>Core chess logic is separated from UI</li>
+            <li>Component-based architecture</li>
+            <li>Event-based communication between components</li>
+          </ul>
+          
+          <h3>Features</h3>
+          <ul>
+            <li>Sound effects for moves</li>
+            <li>Move history tracking</li>
+            <li>Highlight legal moves</li>
+            <li>Game status display</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- Audio files (these would typically be loaded by the sound manager) -->
+  <audio id="move-sound" src="https://lichess1.org/assets/sound/standard/Move.mp3" preload="auto"></audio>
+  <audio id="capture-sound" src="https://lichess1.org/assets/sound/standard/Capture.mp3" preload="auto"></audio>
+  <audio id="check-sound" src="https://lichess1.org/assets/sound/standard/Check.mp3" preload="auto"></audio>
+  <audio id="castle-sound" src="https://lichess1.org/assets/sound/standard/Castle.mp3" preload="auto"></audio>
+  <audio id="promote-sound" src="https://lichess1.org/assets/sound/standard/Promote.mp3" preload="auto"></audio>
+  <audio id="game-end-sound" src="https://lichess1.org/assets/sound/standard/GenericNotify.mp3" preload="auto"></audio>
+  <audio id="error-sound" src="https://lichess1.org/assets/sound/standard/Error.mp3" preload="auto"></audio>
+</body>
+</html> 

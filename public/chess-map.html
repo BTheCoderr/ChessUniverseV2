@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Universe - Complete Guide</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/navigation.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #4a6fa5;
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #4a6fa5;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #4a6fa5;
+      margin-top: 30px;
+      border-left: 4px solid #4a6fa5;
+      padding-left: 10px;
+    }
+    h3 {
+      color: #2c3e50;
+      margin-top: 20px;
+    }
+    .app-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .app-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .app-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .app-title {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #4a6fa5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .app-description {
+      color: #666;
+      margin-bottom: 15px;
+      flex-grow: 1;
+    }
+    .app-features {
+      margin: 15px 0;
+      padding-left: 20px;
+    }
+    .app-features li {
+      margin-bottom: 5px;
+    }
+    .app-link {
+      display: inline-block;
+      background-color: #4a6fa5;
+      color: white;
+      padding: 8px 15px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .app-link:hover {
+      background-color: #3a5a85;
+    }
+    .notice {
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .info-section {
+      margin: 30px 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Chess App - Navigation Guide</h1>
+    
+    <div class="notice">
+      <p><strong>Note:</strong> This app contains multiple chess interfaces that were developed at different stages. This guide will help you understand what each page does.</p>
+    </div>
+    
+    <h2>Chess Interfaces</h2>
+    <div class="app-list">
+      <div class="app-card">
+        <div class="app-title">Main Chess App</div>
+        <div class="app-description">The main chess application with multiple game modes, betting, and tournament features.</div>
+        <a href="index.html" class="app-link">Open</a>
+      </div>
+      
+      <div class="app-card">
+        <div class="app-title">AI Chess Game</div>
+        <div class="app-description">A standalone AI chess game with adjustable difficulty, move history, and player color selection.</div>
+        <a href="ai-chess.html" class="app-link">Open</a>
+      </div>
+      
+      <div class="app-card">
+        <div class="app-title">Modular Chess</div>
+        <div class="app-description">A modular implementation of chess with separation of concerns between UI and game logic.</div>
+        <a href="modular-chess.html" class="app-link">Open</a>
+      </div>
+      
+      <div class="app-card">
+        <div class="app-title">Simple Chess</div>
+        <div class="app-description">A simplified chess implementation for learning purposes.</div>
+        <a href="simple-chess.html" class="app-link">Open</a>
+      </div>
+      
+      <div class="app-card">
+        <div class="app-title">Magic Horse Challenge</div>
+        <div class="app-description">A unique chess variant focusing on knight moves and special challenges.</div>
+        <a href="magicHorse.html" class="app-link">Open</a>
+      </div>
+    </div>
+    
+    <h2>About This Project</h2>
+    <p>This chess application demonstrates various approaches to implementing chess functionality with JavaScript. Each interface has different features and implementation details:</p>
+    
+    <ul>
+      <li><strong>Main Chess App:</strong> The most feature-rich implementation with tournaments, betting, and multiple game modes.</li>
+      <li><strong>AI Chess Game:</strong> Focused on playing against an AI with adjustable difficulty.</li>
+      <li><strong>Modular Chess:</strong> A clean implementation using modules and separation of concerns.</li>
+      <li><strong>Simple Chess:</strong> A basic implementation for learning purposes.</li>
+      <li><strong>Magic Horse Challenge:</strong> A unique chess variant with special rules focusing on knights.</li>
+    </ul>
+    
+    <div class="notice">
+      <p><strong>Debugging Tip:</strong> If you encounter any issues with a specific interface, try another one. Also, check the browser console (F12) for any error messages.</p>
+    </div>
+  </div>
+</body>
+</html> 

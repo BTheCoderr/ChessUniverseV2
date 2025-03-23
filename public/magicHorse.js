@@ -63,7 +63,7 @@
 
   // Update the challenge description based on level
   function updateChallengeDescription(level) {
-    const descriptionEl = document.querySelector('.info-panel p:last-child');
+    const descriptionEl = document.getElementById('magic-horse-status');
     if (!descriptionEl) return;
     
     switch (level) {
@@ -77,7 +77,22 @@
         descriptionEl.textContent = `Level 3 Challenge: Leave ${magicHorseWinCondition} queen to win`;
         break;
       case 4:
-        descriptionEl.textContent = `Castle Wars Challenge: Clear all queens to unlock Battle Chess!`;
+        descriptionEl.textContent = `Castle Wars Challenge: Capture all queens using castle teleports!`;
+        
+        // Add detailed help text for Castle Wars
+        const infoPanel = document.querySelector('.info-panel');
+        if (infoPanel) {
+          // Check if we already added the castle wars info
+          if (!document.getElementById('castle-wars-help')) {
+            const helpText = document.createElement('p');
+            helpText.id = 'castle-wars-help';
+            helpText.innerHTML = `<strong>Castle Wars Rules:</strong> Your knight can teleport between castle squares (♜). Use this ability to reach all areas of the board and capture every queen.`;
+            helpText.style.color = '#8B4513';
+            helpText.style.fontStyle = 'italic';
+            helpText.style.marginTop = '10px';
+            infoPanel.appendChild(helpText);
+          }
+        }
         break;
       default:
         descriptionEl.textContent = `Level ${level} Challenge: Leave ${magicHorseWinCondition} queens to win`;
@@ -150,169 +165,364 @@
 
   // Create the board UI
   function createBoardUI() {
-    if (!magicHorseBoardEl) {
-      console.error('Magic Horse board element not found');
-      return;
-    }
+    console.log('Creating board UI...');
     
-    // Clear the board
-    magicHorseBoardEl.innerHTML = '';
-    
-    // Create the squares
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
-        const square = document.createElement('div');
-        square.className = `square ${(row + col) % 2 === 0 ? 'light-square' : 'dark-square'}`;
-        square.dataset.row = row;
-        square.dataset.col = col;
-        
-        // Add piece if there is one
-        const piece = magicHorseBoard[row][col];
-        if (piece) {
-          const pieceEl = document.createElement('div');
-          pieceEl.className = `piece ${piece.type}`;
-          square.appendChild(pieceEl);
+    // Clear the board element first
+    if (magicHorseBoardEl) {
+      magicHorseBoardEl.innerHTML = '';
+      
+      // Create squares
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const square = document.createElement('div');
+          square.className = 'square ' + ((row + col) % 2 === 0 ? 'light-square' : 'dark-square');
+          square.dataset.row = row;
+          square.dataset.col = col;
+          
+          // Add piece if needed
+          if (magicHorseBoard[row][col]) {
+            const piece = document.createElement('div');
+            piece.className = `piece ${magicHorseBoard[row][col].type}`;
+            
+            // For display purposes
+            if (magicHorseBoard[row][col].type === 'queen') {
+              piece.textContent = '♛'; 
+            } else if (magicHorseBoard[row][col].type === 'horse') {
+              piece.textContent = '♞';
+            } else if (magicHorseBoard[row][col].type === 'castle') {
+              piece.textContent = '♜';
+              piece.classList.add('castle');
+            }
+            
+            square.appendChild(piece);
+          }
+          
+          // Add click event
+          square.addEventListener('click', function() {
+            console.log(`Square clicked: row ${row}, col ${col}`);
+            handleSquareClick(row, col);
+          });
+          
+          magicHorseBoardEl.appendChild(square);
         }
-        
-        // Add click event listener
-        square.addEventListener('click', () => {
-          handleSquareClick(row, col);
-        });
-        
-        magicHorseBoardEl.appendChild(square);
       }
+      
+      // Add castle CSS if it doesn't exist
+      if (!document.getElementById('castle-styles')) {
+        const style = document.createElement('style');
+        style.id = 'castle-styles';
+        style.textContent = `
+          .castle {
+            color: #8B4513;
+            font-size: 2.7em;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+          }
+          
+          .square:has(.castle) {
+            background-color: rgba(139, 69, 19, 0.2);
+          }
+          
+          @keyframes castle-glow {
+            0% { box-shadow: 0 0 10px rgba(139, 69, 19, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(139, 69, 19, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(139, 69, 19, 0.5); }
+          }
+          
+          .castle-valid-move {
+            animation: castle-glow 1.5s infinite;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      
+      console.log('Board UI created with 64 squares');
+    } else {
+      console.error('Magic horse board element not found!');
     }
   }
 
   // Handle square click
   function handleSquareClick(row, col) {
-    console.log(`Square clicked: row ${row}, col ${col}`);
+    console.log(`handleSquareClick called with row: ${row}, col: ${col}`);
     
-    // If game is not active, ignore clicks
+    // If game is over, don't do anything
     if (magicHorseGameStatus !== 'active') {
+      console.log('Game is over, ignoring click');
       return;
     }
     
-    // If the horse is already selected, try to move it
-    if (magicHorseSelectedSquare) {
+    // If we've already selected a square
+    if (magicHorseSelectedSquare !== null) {
       const fromRow = magicHorseSelectedSquare.row;
       const fromCol = magicHorseSelectedSquare.col;
       
-      // Check if the move is valid
-      if (isValidMove(fromRow, fromCol, row, col)) {
+      // Check the type of piece at the target
+      const targetPiece = magicHorseBoard[row][col] ? magicHorseBoard[row][col].type : null;
+      const isCastleWars = challengeLevel === 4;
+      
+      // Special case for Castle Wars: can move between castles or to a queen
+      const castleToQueenMove = isCastleWars && 
+                              magicHorseBoard[fromRow][fromCol].type === 'horse' &&
+                              targetPiece === 'queen' &&
+                              isValidMove(fromRow, fromCol, row, col);
+                              
+      const castleToCastleMove = isCastleWars && 
+                               magicHorseBoard[fromRow][fromCol].type === 'horse' &&
+                               targetPiece === 'castle';
+      
+      // Check if move is valid
+      if (castleToQueenMove || (castleToCastleMove && horseOnCastle())) {
+        console.log(`Valid move from (${fromRow}, ${fromCol}) to (${row}, ${col})`);
+        
         // Make the move
         makeMove(fromRow, fromCol, row, col);
-      } else {
-        // Invalid move, deselect the horse
+        
+        // Clear the selected square
         magicHorseSelectedSquare = null;
         clearHighlights();
-        highlightValidMoves();
+      } else {
+        console.log(`Invalid move from (${fromRow}, ${fromCol}) to (${row}, ${col})`);
+        
+        // Check if the new click is on the horse, if so, update the selected square
+        if (magicHorseBoard[row][col] && magicHorseBoard[row][col].type === 'horse') {
+          magicHorseSelectedSquare = { row, col };
+          clearHighlights();
+          highlightValidMoves();
+        } else {
+          // Otherwise, just clear the selection
+          magicHorseSelectedSquare = null;
+          clearHighlights();
+        }
       }
     } else {
-      // Try to select the horse
-      const piece = magicHorseBoard[row][col];
-      if (piece && piece.type === 'horse') {
+      // If we haven't selected a square yet, check if the clicked square has the horse
+      if (magicHorseBoard[row][col] && magicHorseBoard[row][col].type === 'horse') {
         magicHorseSelectedSquare = { row, col };
         clearHighlights();
         highlightValidMoves();
       }
     }
   }
+  
+  // Check if the horse is on a castle square
+  function horseOnCastle() {
+    // In Castle Wars, castles are in specific positions
+    if (challengeLevel !== 4) return false;
+    
+    // Get the horse position
+    const { row, col } = horsePosition;
+    
+    // Check if any of these positions match the castle positions
+    const castlePositions = [
+      {row: 0, col: 0},  // Top-left
+      {row: 0, col: 7},  // Top-right
+      {row: 7, col: 0},  // Bottom-left
+      {row: 7, col: 7},  // Bottom-right
+      {row: 3, col: 3},  // Center left
+      {row: 3, col: 4},  // Center right
+      {row: 4, col: 3},  // Center bottom-left
+      {row: 4, col: 4}   // Center bottom-right
+    ];
+    
+    return castlePositions.some(pos => pos.row === row && pos.col === col);
+  }
 
   // Make a move
   function makeMove(fromRow, fromCol, toRow, toCol) {
-    console.log(`Making move from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
+    console.log(`makeMove called from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
     
-    // Get the piece at the destination
-    const targetPiece = magicHorseBoard[toRow][toCol];
+    // Show capture animation
+    showCaptureAnimation(toRow, toCol);
     
-    // Move the horse
+    // We're removing a queen
+    if (magicHorseBoard[toRow][toCol] && magicHorseBoard[toRow][toCol].type === 'queen') {
+      queensRemaining--;
+      
+      // Set the flag that we've started capturing
+      hasStartedCapturing = true;
+    }
+    
+    // Move the horse to the new position
     magicHorseBoard[toRow][toCol] = magicHorseBoard[fromRow][fromCol];
     magicHorseBoard[fromRow][fromCol] = null;
     
-    // Update the horse position
+    // Update the horse's position
     horsePosition = { row: toRow, col: toCol };
     
-    // Update the piece's row and col
-    magicHorseBoard[toRow][toCol].row = toRow;
-    magicHorseBoard[toRow][toCol].col = toCol;
-    
-    // Increment move count
+    // Update the move count
     magicHorseMoveCount++;
     
-    // If the target was a queen, decrement the queen count
-    if (targetPiece && targetPiece.type === 'queen') {
-      queensRemaining--;
-      hasStartedCapturing = true;
-      
-      // Show capture animation
-      showCaptureAnimation(toRow, toCol);
-    }
+    // Highlight the last move
+    highlightLastMove(fromRow, fromCol, toRow, toCol);
     
-    // Deselect the horse
-    magicHorseSelectedSquare = null;
-    
-    // Update the board UI
-    createBoardUI();
-    
-    // Update game info
+    // Update the game info
     updateGameInfo();
     
-    // Check if the game is over
-    checkGameOver();
-    
-    // Highlight valid moves
-    highlightValidMoves();
+    // Update the progress indicator
+    updateProgressIndicator();
     
     // Send the move to the server
     sendMoveToServer(fromRow, fromCol, toRow, toCol);
+    
+    // Check if the game is over
+    checkGameOver();
+  }
+  
+  // Highlight last move
+  function highlightLastMove(fromRow, fromCol, toRow, toCol) {
+    // Clear previous highlights
+    clearHighlights();
+    
+    // Highlight the from and to squares
+    const fromSquare = getSquareElement(fromRow, fromCol);
+    const toSquare = getSquareElement(toRow, toCol);
+    
+    if (fromSquare) {
+      fromSquare.classList.add('last-move');
+    }
+    
+    if (toSquare) {
+      toSquare.classList.add('last-move');
+    }
   }
 
   // Check if the game is over
   function checkGameOver() {
-    // Check if the player has reached the win condition
-    if (queensRemaining === magicHorseWinCondition) {
-      magicHorseGameStatus = 'won';
-      showGameResult(true);
-      return;
+    console.log('Checking if game is over. Queens remaining:', queensRemaining);
+    
+    // Get possible moves from current position
+    let validMoves = [];
+    
+    // For Castle Wars, we can continue if we're on a castle
+    const isCastleWars = challengeLevel === 4;
+    const canContinueViaCastle = isCastleWars && horseOnCastle();
+    
+    // Only check for valid moves if we're not on a castle in Castle Wars
+    if (!canContinueViaCastle) {
+      validMoves = getValidMoves();
     }
     
-    // Check if there are no valid moves left
-    const validMoves = getValidMoves();
-    if (validMoves.length === 0) {
-      // If the player hasn't started capturing queens, they lose
-      if (!hasStartedCapturing) {
-        magicHorseGameStatus = 'lost';
-        showGameResult(false);
-        return;
-      }
-      
-      // If the player has captured queens but not reached the win condition, they lose
-      if (queensRemaining !== magicHorseWinCondition) {
-        magicHorseGameStatus = 'lost';
-        showGameResult(false);
-        return;
-      }
+    // Check win condition based on level
+    let isWin = false;
+    
+    if (isCastleWars) {
+      // Castle Wars: Win if all queens are captured
+      isWin = queensRemaining === 0;
+    } else {
+      // Normal levels: Win if queensRemaining equals the win condition
+      isWin = queensRemaining === magicHorseWinCondition;
     }
+    
+    // Check if the game is over
+    if (isWin) {
+      console.log('Win condition met! Queens remaining:', queensRemaining);
+      magicHorseGameStatus = 'win';
+      showGameResult(true);
+      return true;
+    } else if (validMoves.length === 0 && !canContinueViaCastle) {
+      // No more moves available and not on a castle in Castle Wars
+      if (queensRemaining < magicHorseWinCondition) {
+        console.log('Game over: Too few queens remaining');
+        magicHorseGameStatus = 'loss';
+        showGameResult(false, 'too_few');
+      } else {
+        console.log('Game over: No more valid moves');
+        magicHorseGameStatus = 'loss';
+        showGameResult(false, 'no_moves');
+      }
+      return true;
+    }
+    
+    return false;
   }
 
   // Show game result
-  function showGameResult(isWin) {
-    // Update game status
-    if (isWin) {
-      magicHorseStatusEl.textContent = `Level ${challengeLevel} Challenge: You won!`;
-      
-      // Show success message
-      showError(`Congratulations! You completed the Level ${challengeLevel} Magic Horse Challenge!`, 'success');
-      
-      // Update user progress on the server
-      updateUserProgress(challengeLevel, 'completed');
-    } else {
-      magicHorseStatusEl.textContent = `Level ${challengeLevel} Challenge: You lost!`;
-      
-      // Show failure message
-      showError(`You failed the Level ${challengeLevel} Magic Horse Challenge. Try again!`, 'error');
+  function showGameResult(isWin, reason = '') {
+    console.log(`Game over - ${isWin ? 'Win' : 'Loss'}`);
+    
+    // Get appropriate modal
+    const modalId = isWin ? 'success-modal' : 'failure-modal';
+    const modal = document.getElementById(modalId);
+    
+    // Get message element
+    const messageEl = document.getElementById(isWin ? 'success-message' : 'failure-message');
+    
+    if (!modal || !messageEl) {
+      console.error('Modal or message element not found');
+      return;
     }
+    
+    // Create appropriate message
+    let message = '';
+    let rewardMessage = '';
+    
+    if (isWin) {
+      // Win messages
+      if (challengeLevel === 4) {
+        // Castle Wars challenge
+        message = `
+          <h3>Castle Wars Completed!</h3>
+          <p>Congratulations! You've conquered the Castle Wars challenge by capturing all queens in ${magicHorseMoveCount} moves.</p>
+          <p>You navigated the castles like a true strategist!</p>
+        `;
+        rewardMessage = `<p class="reward">Reward: 500 coins added to your balance!</p>`;
+      } else {
+        // Standard Magic Horse challenge
+        message = `
+          <h3>Challenge Completed!</h3>
+          <p>Congratulations! You've completed the Magic Horse challenge level ${challengeLevel}!</p>
+          <p>You left exactly ${queensRemaining} queens on the board in ${magicHorseMoveCount} moves.</p>
+        `;
+        
+        // Different rewards based on level
+        const rewards = [100, 200, 300, 500];
+        rewardMessage = `<p class="reward">Reward: ${rewards[challengeLevel-1]} coins added to your balance!</p>`;
+      }
+    } else {
+      // Loss messages
+      if (challengeLevel === 4) {
+        // Castle Wars challenge
+        if (reason === 'too_few') {
+          message = `
+            <h3>Castle Wars Failed</h3>
+            <p>Your objective was to capture all queens, but you've run out of moves with ${queensRemaining} queens remaining.</p>
+            <p>Try to use the castle network more efficiently to access all queens!</p>
+          `;
+        } else {
+          message = `
+            <h3>Castle Wars Failed</h3>
+            <p>You've run out of moves! Remember that you can teleport between castle squares to reach different parts of the board.</p>
+            <p>Try to plan your route through the castles strategically.</p>
+          `;
+        }
+      } else {
+        // Standard Magic Horse challenge
+        if (reason === 'too_few') {
+          message = `
+            <h3>Challenge Failed</h3>
+            <p>You've captured too many queens! The target was to leave exactly ${magicHorseWinCondition} queens, but you have ${queensRemaining} remaining.</p>
+            <p>Try to plan your moves more carefully.</p>
+          `;
+        } else {
+          message = `
+            <h3>Challenge Failed</h3>
+            <p>You've run out of moves! There are no more valid moves available.</p>
+            <p>Try to position your horse more strategically to avoid getting stuck.</p>
+          `;
+        }
+      }
+    }
+    
+    // Set message
+    messageEl.innerHTML = message + rewardMessage;
+    
+    // Update user progress
+    if (isWin) {
+      updateUserProgress(challengeLevel, 'completed');
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
   }
 
   // Update user progress on the server
@@ -394,27 +604,50 @@
 
   // Show capture animation
   function showCaptureAnimation(row, col) {
-    // Create a capture effect element
-    const captureEffect = document.createElement('div');
-    captureEffect.className = 'capture-effect';
-    
-    // Position it at the captured queen
     const square = getSquareElement(row, col);
-    if (square) {
-      const rect = square.getBoundingClientRect();
-      captureEffect.style.left = `${rect.left}px`;
-      captureEffect.style.top = `${rect.top}px`;
-      captureEffect.style.width = `${rect.width}px`;
-      captureEffect.style.height = `${rect.height}px`;
-      
-      // Add it to the document
-      document.body.appendChild(captureEffect);
-      
-      // Remove it after the animation completes
-      setTimeout(() => {
-        document.body.removeChild(captureEffect);
-      }, 500);
+    if (!square) {
+      console.error(`Square element not found for capture animation at row ${row}, col ${col}`);
+      return;
     }
+    
+    // Find the piece element in the square
+    const pieceEl = square.querySelector('.piece');
+    if (!pieceEl) {
+      console.error(`Piece element not found in square at row ${row}, col ${col}`);
+      return;
+    }
+    
+    // Create a visual effect for the capture
+    const effect = document.createElement('div');
+    effect.className = 'capture-effect';
+    square.appendChild(effect);
+    
+    // Play capture sound if available
+    if (typeof playSound === 'function') {
+      playSound('capture');
+    }
+    
+    // Add the capturing class to trigger the animation
+    pieceEl.classList.add('capturing');
+    
+    // Remove the effect and piece after the animation completes
+    setTimeout(() => {
+      // Remove the effect
+      if (effect.parentNode) {
+        effect.parentNode.removeChild(effect);
+      }
+      
+      // Remove the piece
+      if (pieceEl.parentNode) {
+        pieceEl.parentNode.removeChild(pieceEl);
+      }
+      
+      // Update the progress indicator
+      updateProgressIndicator();
+      
+    }, 500);
+    
+    console.log(`Capture animation shown at row ${row}, col ${col}`);
   }
 
   // Check if a move is valid
@@ -433,31 +666,105 @@
 
   // Highlight valid moves
   function highlightValidMoves() {
-    // If no horse is selected, highlight the horse
+    console.log('highlightValidMoves called');
+    clearHighlights();
+    
     if (!magicHorseSelectedSquare) {
+      // If no square is selected but we have a horse position, highlight the horse
       const horseSquare = getSquareElement(horsePosition.row, horsePosition.col);
       if (horseSquare) {
         horseSquare.classList.add('highlight');
+        
+        // Add pulsing effect to indicate it can be selected
+        horseSquare.classList.add('pulse');
       }
       return;
     }
     
-    // Get valid moves
     const validMoves = getValidMoves();
+    console.log('Valid moves:', validMoves);
     
-    // Highlight the selected horse
-    const horseSquare = getSquareElement(magicHorseSelectedSquare.row, magicHorseSelectedSquare.col);
-    if (horseSquare) {
-      horseSquare.classList.add('selected');
+    // Highlight the selected square
+    const selectedSquare = getSquareElement(magicHorseSelectedSquare.row, magicHorseSelectedSquare.col);
+    if (selectedSquare) {
+      selectedSquare.classList.add('selected');
     }
     
-    // Highlight valid destination squares
+    // Special handling for Castle Wars challenge
+    if (challengeLevel === 4 && horseOnCastle()) {
+      // Highlight all other castles as valid destinations
+      const castlePositions = [
+        {row: 0, col: 0},  // Top-left
+        {row: 0, col: 7},  // Top-right
+        {row: 7, col: 0},  // Bottom-left
+        {row: 7, col: 7},  // Bottom-right
+        {row: 3, col: 3},  // Center left
+        {row: 3, col: 4},  // Center right
+        {row: 4, col: 3},  // Center bottom-left
+        {row: 4, col: 4}   // Center bottom-right
+      ];
+      
+      castlePositions.forEach(pos => {
+        // Don't highlight the current position
+        if (pos.row === horsePosition.row && pos.col === horsePosition.col) return;
+        
+        const castleSquare = getSquareElement(pos.row, pos.col);
+        if (castleSquare) {
+          castleSquare.classList.add('castle-valid-move');
+          castleSquare.setAttribute('data-move-type', 'castle-jump');
+        }
+      });
+    }
+    
+    // Highlight normal valid moves (queens that can be captured)
+    let moveCount = 0;
     validMoves.forEach(move => {
-      const square = getSquareElement(move.row, move.col);
-      if (square) {
-        square.classList.add('highlight');
+      moveCount++;
+      const validSquare = getSquareElement(move.row, move.col);
+      if (validSquare) {
+        validSquare.classList.add('highlight');
+        
+        // Add information about the move direction for better visual cues
+        const direction = getMoveDirection(
+          magicHorseSelectedSquare.row, 
+          magicHorseSelectedSquare.col, 
+          move.row, 
+          move.col
+        );
+        validSquare.setAttribute('data-move-direction', direction);
       }
     });
+    
+    // Update game status to show number of possible moves
+    const statusEl = document.getElementById('magic-horse-status');
+    if (statusEl) {
+      if (moveCount === 0 && !horseOnCastle()) {
+        // No more moves, but the game might not be over if we're on a castle in level 4
+        statusEl.textContent = `Warning: No valid moves available! ${challengeLevel === 4 ? 'Try to reach a castle!' : ''}`;
+        statusEl.style.color = 'red';
+      } else {
+        const baseText = document.getElementById('magic-horse-status').textContent.split(':')[0];
+        statusEl.textContent = `${baseText}: ${moveCount} possible moves${challengeLevel === 4 ? ' (or castle jumps)' : ''}`;
+        statusEl.style.color = '';
+      }
+    }
+  }
+  
+  // Get move direction for visual indicators
+  function getMoveDirection(fromRow, fromCol, toRow, toCol) {
+    const rowDiff = toRow - fromRow;
+    const colDiff = toCol - fromCol;
+    
+    if (rowDiff === -2 && colDiff === -1) return 'up-left';
+    if (rowDiff === -2 && colDiff === 1) return 'up-right';
+    if (rowDiff === -1 && colDiff === -2) return 'left-up';
+    if (rowDiff === -1 && colDiff === 2) return 'right-up';
+    if (rowDiff === 1 && colDiff === -2) return 'left-down';
+    if (rowDiff === 1 && colDiff === 2) return 'right-down';
+    if (rowDiff === 2 && colDiff === -1) return 'down-left';
+    if (rowDiff === 2 && colDiff === 1) return 'down-right';
+    
+    return '';
   }
 
   // Clear highlights
@@ -468,25 +775,62 @@
     });
   }
 
-  // Get square element by row and col
+  // Get a square element by row and column
   function getSquareElement(row, col) {
-    return document.querySelector(`.square[data-row="${row}"][data-col="${col}"]`);
+    if (!magicHorseBoardEl) return null;
+    
+    const square = magicHorseBoardEl.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    if (!square) {
+      console.error(`Square element not found for row ${row}, col ${col}`);
+      return null;
+    }
+    
+    return square;
   }
 
   // Update game info
   function updateGameInfo() {
-    // Update move count
-    if (magicHorseMoveCountEl) {
-      magicHorseMoveCountEl.textContent = magicHorseMoveCount;
+    console.log('Updating game info...');
+    
+    if (!magicHorseMoveCountEl || !magicHorseQueensRemainingEl || !magicHorseStatusEl) {
+      console.error('Game info elements not found');
+      return;
     }
     
-    // Update queens remaining
-    if (magicHorseQueensRemainingEl) {
-      magicHorseQueensRemainingEl.textContent = queensRemaining;
+    // Update move count and queens remaining
+    magicHorseMoveCountEl.textContent = magicHorseMoveCount;
+    magicHorseQueensRemainingEl.textContent = queensRemaining;
+    
+    // Update status message based on challenge level
+    let statusText = '';
+    
+    switch (challengeLevel) {
+      case 1:
+        statusText = `Level 1 Challenge: Leave ${magicHorseWinCondition} queens to win`;
+        break;
+      case 2:
+        statusText = `Level 2 Challenge: Leave ${magicHorseWinCondition} queens to win`;
+        break;
+      case 3:
+        statusText = `Level 3 Challenge: Leave ${magicHorseWinCondition} queen to win`;
+        break;
+      case 4:
+        statusText = 'Castle Wars Challenge: Clear all queens to unlock Battle Chess!';
+        break;
+      default:
+        statusText = `Level ${challengeLevel} Challenge: Leave ${magicHorseWinCondition} queens to win`;
     }
     
-    // Update progress indicator
-    updateProgressIndicator();
+    // Show different message if game is over
+    if (magicHorseGameStatus === 'won') {
+      statusText = `Level ${challengeLevel} Challenge: You won!`;
+    } else if (magicHorseGameStatus === 'lost') {
+      statusText = `Level ${challengeLevel} Challenge: You lost!`;
+    }
+    
+    magicHorseStatusEl.textContent = statusText;
+    
+    console.log(`Game info updated: Moves: ${magicHorseMoveCount}, Queens: ${queensRemaining}, Status: ${statusText}`);
   }
   
   // Update the progress indicator
@@ -641,16 +985,94 @@
   // Helper function for showing errors if not defined in global scope
   if (typeof showError !== 'function') {
     window.showError = function(message, type = 'error') {
-      console.error(message);
-      alert(message);
+      console.log(`[${type.toUpperCase()}]: ${message}`);
+      
+      // Create a toast notification container if it doesn't exist
+      let toastContainer = document.getElementById('toast-container');
+      if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.position = 'fixed';
+        toastContainer.style.top = '20px';
+        toastContainer.style.right = '20px';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+      }
+      
+      // Create the toast element
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.style.backgroundColor = type === 'success' ? '#4caf50' : 
+                                     type === 'info' ? '#2196f3' : '#f44336';
+      toast.style.color = 'white';
+      toast.style.padding = '12px 20px';
+      toast.style.borderRadius = '4px';
+      toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+      toast.style.marginBottom = '10px';
+      toast.style.minWidth = '250px';
+      toast.style.display = 'flex';
+      toast.style.justifyContent = 'space-between';
+      toast.style.alignItems = 'center';
+      toast.style.animation = 'fadeIn 0.3s, fadeOut 0.3s 4.7s';
+      
+      // Add message and close button
+      toast.innerHTML = `
+        <div>${message}</div>
+        <button style="background: transparent; border: none; color: white; font-size: 16px; cursor: pointer; margin-left: 10px;">×</button>
+      `;
+      
+      // Add to container
+      toastContainer.appendChild(toast);
+      
+      // Add close button functionality
+      const closeBtn = toast.querySelector('button');
+      closeBtn.addEventListener('click', () => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      });
+      
+      // Auto remove after 5 seconds
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, 5000);
+      
+      // Add animation styles if they don't exist
+      if (!document.getElementById('toast-animations')) {
+        const style = document.createElement('style');
+        style.id = 'toast-animations';
+        style.textContent = `
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+          @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(20px); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
     };
   }
 
   // Helper function for showing success messages if not defined in global scope
   if (typeof showSuccess !== 'function') {
     window.showSuccess = function(message) {
-      console.log(message);
-      alert(message);
+      if (typeof showError === 'function') {
+        showError(message, 'success');
+      } else {
+        console.log(message);
+        alert(message);
+      }
     };
   }
 
@@ -735,4 +1157,172 @@
 
   // Make initMagicHorseGame globally accessible
   window.initMagicHorseGame = initMagicHorseGame;
+
+  // At the beginning of the file, add these lines
+  document.addEventListener('DOMContentLoaded', () => {
+    setupChallengeButtons();
+  });
+
+  function setupChallengeButtons() {
+    // Get all Start Challenge buttons
+    const challengeButtons = document.querySelectorAll('.start-challenge-btn');
+    
+    // Add event listeners to each button
+    challengeButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const challengeLevel = e.target.dataset.challenge;
+        startChallenge(challengeLevel);
+      });
+    });
+  }
+
+  function startChallenge(challengeLevel) {
+    // Check if the user is authenticated
+    if (!window.authManager || !window.authManager.isAuthenticated) {
+      // Show login required message
+      showLoginRequiredMessage();
+      return;
+    }
+    
+    // If authenticated, proceed with starting the challenge
+    console.log(`Starting challenge: ${challengeLevel}`);
+    // Your existing code to start the challenge
+    // ...
+  }
+
+  function showLoginRequiredMessage() {
+    // Create a message element
+    const messageContainer = document.createElement('div');
+    messageContainer.className = 'login-required-message';
+    messageContainer.innerHTML = `
+      <div class="login-message-content">
+        <h3>Login Required</h3>
+        <p>You must be logged in to start a challenge.</p>
+        <div class="login-buttons">
+          <button id="login-now-btn" class="btn btn-primary">Login</button>
+          <button id="use-test-account-btn" class="btn btn-secondary">Use Test Account</button>
+        </div>
+      </div>
+    `;
+    
+    // Add to the document
+    document.body.appendChild(messageContainer);
+    
+    // Add event listeners
+    document.getElementById('login-now-btn').addEventListener('click', () => {
+      messageContainer.remove();
+      openModal('loginModal');
+    });
+    
+    document.getElementById('use-test-account-btn').addEventListener('click', () => {
+      messageContainer.remove();
+      // Use the test account functionality
+      if (window.authManager) {
+        window.authManager.createTestAccount();
+      }
+    });
+    
+    // Allow clicking outside to dismiss
+    messageContainer.addEventListener('click', (e) => {
+      if (e.target === messageContainer) {
+        messageContainer.remove();
+      }
+    });
+  }
+
+  // Setup the magic horse board
+  function setupBoard() {
+    console.log('Setting up board for level:', challengeLevel);
+    magicHorseBoard = [];
+    
+    // Create an empty 8x8 board
+    for (let i = 0; i < 8; i++) {
+      magicHorseBoard[i] = Array(8).fill(null);
+    }
+    
+    if (challengeLevel === 4) {
+      // Castle Wars Challenge setup
+      setupCastleWarsBoard();
+    } else {
+      // Standard Magic Horse Challenge setup
+      setupStandardBoard();
+    }
+    
+    renderBoard();
+    highlightValidMoves();
+    updateGameInfo();
+    updateProgressIndicator();
+  }
+  
+  // Setup a standard Magic Horse Challenge board
+  function setupStandardBoard() {
+    // Place queens on the board
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        // Skip the center 2x2 area
+        if ((i === 3 || i === 4) && (j === 3 || j === 4)) continue;
+        
+        magicHorseBoard[i][j] = { type: 'queen' };
+      }
+    }
+    
+    // Place the horse in the center
+    horsePosition = { row: 3, col: 3 };
+    magicHorseBoard[horsePosition.row][horsePosition.col] = { type: 'horse' };
+    
+    // Reset the move count and queens remaining
+    magicHorseMoveCount = 0;
+    queensRemaining = 24;
+  }
+  
+  // Setup the board for Castle Wars Challenge
+  function setupCastleWarsBoard() {
+    // Place castles in the four corners and center
+    const castlePositions = [
+      {row: 0, col: 0},  // Top-left
+      {row: 0, col: 7},  // Top-right
+      {row: 7, col: 0},  // Bottom-left
+      {row: 7, col: 7},  // Bottom-right
+      {row: 3, col: 3},  // Center left
+      {row: 3, col: 4},  // Center right
+      {row: 4, col: 3},  // Center bottom-left
+      {row: 4, col: 4}   // Center bottom-right
+    ];
+    
+    // Place queens around the board
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        // Skip castle positions
+        if (castlePositions.some(pos => pos.row === i && pos.col === j)) {
+          magicHorseBoard[i][j] = { type: 'castle' };
+        }
+        // Place queens in specific patterns
+        else if ((i + j) % 2 === 0) {  // Checkered pattern
+          magicHorseBoard[i][j] = { type: 'queen' };
+        }
+      }
+    }
+    
+    // Place the horse in the center castle
+    horsePosition = { row: 3, col: 3 };
+    magicHorseBoard[horsePosition.row][horsePosition.col] = { type: 'horse' };
+    
+    // Reset the move count and queens remaining
+    // Count the actual queens on the board
+    queensRemaining = 0;
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (magicHorseBoard[i][j] && magicHorseBoard[i][j].type === 'queen') {
+          queensRemaining++;
+        }
+      }
+    }
+    
+    magicHorseMoveCount = 0;
+  }
+  
+  // Render the board
+  function renderBoard() {
+    // ... existing code ...
+  }
 })(); 

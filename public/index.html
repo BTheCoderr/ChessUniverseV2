@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="magicHorse.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -30,6 +31,7 @@
         <button id="play-btn" class="btn primary-btn">Play</button>
         <button id="tournaments-btn" class="btn">Tournaments</button>
         <button id="magic-horse-btn" class="btn">Magic Horse Challenge</button>
+        <a href="chess-map.html" class="btn" style="margin-left: 10px; background-color: #4a6fa5; color: white;"><i class="fas fa-map"></i> Chess App Guide</a>
       </div>
     </div>
 
@@ -707,19 +709,19 @@
           <div class="tutorial-slide active" data-step="1">
             <h3>Chess Universe Basics</h3>
             <div class="tutorial-image">
-              <img src="https://i.imgur.com/XYZ123.png" alt="Chess Universe Logo" class="placeholder-image">
+              <div class="placeholder-image">Chess Universe Logo</div>
             </div>
-            <p>Welcome to Chess Universe, where chess evolves as you play! In this game, Black moves first, and as you progress, you'll unlock new abilities for your pieces.</p>
+            <p>Welcome to Chess Universe, where chess evolves as you play! In this game, White moves first (traditional chess), and as you progress, you'll unlock new abilities for your pieces.</p>
           </div>
           
           <div class="tutorial-slide" data-step="2">
             <h3>Progressive Chess Levels</h3>
             <div class="tutorial-image">
-              <img src="https://i.imgur.com/XYZ123.png" alt="Chess Levels" class="placeholder-image">
+              <div class="placeholder-image">Chess Levels</div>
             </div>
             <p>Chess Universe features 4 levels with evolving queen abilities:</p>
             <ul>
-              <li><strong>Level 1:</strong> Traditional chess with Black moving first</li>
+              <li><strong>Level 1:</strong> Traditional chess with White moving first</li>
               <li><strong>Level 2:</strong> Queens move like Bishop + King + Knight</li>
               <li><strong>Level 3:</strong> Queens move like Rook + King + Knight</li>
               <li><strong>Level 4:</strong> Queens have all traditional moves + Knight moves</li>
@@ -729,7 +731,7 @@
           <div class="tutorial-slide" data-step="3">
             <h3>Magic Horse Challenge</h3>
             <div class="tutorial-image">
-              <img src="https://i.imgur.com/XYZ123.png" alt="Magic Horse Challenge" class="placeholder-image">
+              <div class="placeholder-image">Magic Horse Challenge</div>
             </div>
             <p>Complete special challenges to unlock new levels! In the Magic Horse Challenge, you control a Knight that can only move to squares with Queens. Your goal is to leave a specific number of Queens on the board.</p>
           </div>
@@ -737,7 +739,7 @@
           <div class="tutorial-slide" data-step="4">
             <h3>Battle Chess & Custom Setup</h3>
             <div class="tutorial-image">
-              <img src="https://i.imgur.com/XYZ123.png" alt="Battle Chess" class="placeholder-image">
+              <div class="placeholder-image">Battle Chess</div>
             </div>
             <p><strong>Battle Chess:</strong> All pieces start in the center of the board, face-to-face!</p>
             <p><strong>Custom Setup:</strong> Arrange your pieces behind the pawns however you want, with Queens in any level form.</p>
@@ -746,7 +748,7 @@
           <div class="tutorial-slide" data-step="5">
             <h3>Betting & Tournaments</h3>
             <div class="tutorial-image">
-              <img src="https://i.imgur.com/XYZ123.png" alt="Betting & Tournaments" class="placeholder-image">
+              <div class="placeholder-image">Betting & Tournaments</div>
             </div>
             <p>Place bets on games you play or as a spectator. Join tournaments with entry fees and compete for prize pools!</p>
             <p>Ready to start your chess evolution?</p>
@@ -768,10 +770,9 @@
   <audio id="chat-sound" src="https://lichess1.org/assets/sound/standard/NewChallenge.mp3" preload="auto"></audio>
 
   <!-- Scripts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="chessRules.js"></script>
   <script src="magicHorse.js"></script>
-  <script src="script.js"></script>
+  <script src="simple-chess.js"></script>
 </body>
 </html> 

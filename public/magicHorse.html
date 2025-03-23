@@ -6,23 +6,13 @@
   <title>Magic Horse Challenge - Chess Universe</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="magicHorse.css">
+  <link rel="stylesheet" href="css/navigation.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
   <div class="app-container">
-    <!-- Header -->
-    <header>
-      <h1>Chess Universe - Magic Horse Challenge</h1>
-      <div class="user-info">
-        <span id="username-display">Guest</span>
-        <span id="balance-display">Balance: 0</span>
-        <button id="profile-btn" class="btn hidden"><i class="fas fa-user"></i> Profile</button>
-        <button id="login-btn" class="btn">Login</button>
-        <button id="register-btn" class="btn">Register</button>
-        <button id="logout-btn" class="btn hidden">Logout</button>
-      </div>
-    </header>
-
+    <!-- Header with unified navigation will be injected by navigation.js -->
+    
     <!-- Main Content -->
     <main>
       <!-- Magic Horse Section -->
@@ -54,12 +44,14 @@
             
             <div class="controls-panel">
               <button id="restart-challenge-btn" class="btn primary-btn">Restart Challenge</button>
+              <button id="castle-wars-btn" class="btn">Play Castle Wars</button>
               <button id="hint-btn" class="btn">Show Hint</button>
             </div>
           </div>
           
           <div class="magic-horse-board-container">
             <div id="magic-horse-board" class="magic-horse-board"></div>
+            <div class="progress-indicator" id="progress-indicator"></div>
           </div>
         </div>
       </div>
@@ -140,9 +132,15 @@
   <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
+  <script src="js/navigation.js"></script>
   <script src="magicHorse.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Initialize navigation
+      if (typeof ChessNavigation !== 'undefined') {
+        new ChessNavigation().init();
+      }
+
       // Back to game button
       document.getElementById('back-to-game-btn').addEventListener('click', () => {
         window.MagicHorse.hide();
@@ -153,9 +151,14 @@
         window.MagicHorse.show(challengeLevel);
       });
       
+      // Castle Wars button
+      document.getElementById('castle-wars-btn').addEventListener('click', () => {
+        window.MagicHorse.show(4);  // Level 4 is Castle Wars
+      });
+      
       // Hint button
       document.getElementById('hint-btn').addEventListener('click', () => {
-        showError('Hint: Try to keep the horse in the center of the board to maximize your options.');
+        showError('Hint: Try to keep the horse in the center of the board to maximize your options.', 'info');
       });
       
       // Success modal buttons

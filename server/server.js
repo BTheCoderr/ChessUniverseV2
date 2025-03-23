@@ -9,10 +9,20 @@ const passport = require('passport');
 const socketio = require('socket.io');
 const { Chess } = require('chess.js');
 const Game = require('../models/Game');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
+const { isAuthenticated } = require('../middleware/auth');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const connectDB = require('../config/db');
+const socketManager = require('../socket/socketManager');
 
 // Import routes
 const authRoutes = require('../routes/auth');
-const gameRoutes = require('../routes/game');
+const gameRoutes = require('../routes/games');
 const bettingRoutes = require('../routes/betting');
 const tournamentRoutes = require('../routes/tournament');
 const magicHorseRoutes = require('../routes/magicHorse');
@@ -36,7 +46,6 @@ app.use(express.json({ limit: '1mb' })); // Limit payload size
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Compression middleware to reduce bandwidth
-const compression = require('compression');
 app.use(compression());
 
 // Static file caching
@@ -69,8 +78,49 @@ app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Passport configuration
+passport.use(new LocalStrategy(async (username, password, done) => {
+  try {
+    // Find user by username
+    const user = await User.findOne({ username });
+    
+    if (!user) {
+      return done(null, false, { message: 'Incorrect username' });
+    }
+    
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    
+    if (!isMatch) {
+      return done(null, false, { message: 'Incorrect password' });
+    }
+    
+    // Update last login
+    user.lastLogin = new Date();
+    user.isOnline = true;
+    await user.save();
+    
+    return done(null, user);
+  } catch (error) {
+    return done(error);
+  }
+}));
+
+// Serialize/deserialize user
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error);
+  }
+});
+
 // Rate limiting for API routes
-const rateLimit = require('express-rate-limit');
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
@@ -82,9 +132,7 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chess-app')
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -264,13 +312,18 @@ app.get('*', (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Server error'
+  });
 }); 

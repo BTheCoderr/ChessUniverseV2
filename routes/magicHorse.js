@@ -179,4 +179,185 @@ async function updateUserProgress(userId, level) {
   }
 }
 
+// Get user's magic horse progress
+router.get('/progress', isAuthenticated, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({
+      progress: user.magicHorseProgress || { 
+        bestQueensRemaining: 24,
+        completedChallenges: 0
+      },
+      unlockedLevels: user.unlockedLevels || ['level1']
+    });
+  } catch (error) {
+    console.error('Error fetching magic horse progress:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update challenge status
+router.post('/complete-challenge', isAuthenticated, async (req, res) => {
+  try {
+    const { level, success, queenCount } = req.body;
+    
+    // Validate level
+    if (!level || isNaN(level) || level < 1 || level > 5) {
+      return res.status(400).json({ message: 'Invalid level' });
+    }
+    
+    // Validate success
+    if (typeof success !== 'boolean') {
+      return res.status(400).json({ message: 'Invalid success parameter' });
+    }
+    
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Initialize magic horse progress if it doesn't exist
+    if (!user.magicHorseProgress) {
+      user.magicHorseProgress = {
+        bestQueensRemaining: 24,
+        completedChallenges: 0
+      };
+    }
+    
+    if (success) {
+      // Update completed challenges count
+      if (!user.magicHorseProgress.completedChallenges || 
+          user.magicHorseProgress.completedChallenges < level) {
+        user.magicHorseProgress.completedChallenges = level;
+      }
+      
+      // Update best queens remaining if applicable
+      if (queenCount !== undefined && 
+          queenCount < user.magicHorseProgress.bestQueensRemaining) {
+        user.magicHorseProgress.bestQueensRemaining = queenCount;
+      }
+      
+      // Award coins based on level
+      const coinsAwarded = level * 200;
+      user.balance += coinsAwarded;
+      
+      // Unlock next level if not already unlocked
+      if (level < 5) {
+        const nextLevel = `level${level + 1}`;
+        if (!user.unlockedLevels.includes(nextLevel)) {
+          user.unlockedLevels.push(nextLevel);
+        }
+      }
+      
+      await user.save();
+      
+      res.json({
+        message: `Challenge ${level} completed successfully!`,
+        coinsAwarded,
+        progress: user.magicHorseProgress,
+        unlockedLevels: user.unlockedLevels
+      });
+    } else {
+      // Challenge failed
+      res.json({
+        message: `Challenge ${level} not completed.`,
+        progress: user.magicHorseProgress,
+        unlockedLevels: user.unlockedLevels
+      });
+    }
+  } catch (error) {
+    console.error('Error updating challenge status:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get challenge details
+router.get('/challenge/:level', isAuthenticated, async (req, res) => {
+  try {
+    const level = parseInt(req.params.level);
+    
+    // Validate level
+    if (isNaN(level) || level < 1 || level > 5) {
+      return res.status(400).json({ message: 'Invalid level' });
+    }
+    
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Define challenge details
+    const challenges = [
+      {
+        level: 1,
+        title: 'Knight\'s Path Beginner',
+        description: 'Move the knight to capture all queens using the fewest moves possible.',
+        reward: 200,
+        prerequisites: []
+      },
+      {
+        level: 2,
+        title: 'Knight\'s Path Intermediate',
+        description: 'Navigate a more complex board layout with obstacles.',
+        reward: 400,
+        prerequisites: ['level1']
+      },
+      {
+        level: 3,
+        title: 'Knight\'s Path Advanced',
+        description: 'Face moving targets that react to your movements.',
+        reward: 600,
+        prerequisites: ['level2']
+      },
+      {
+        level: 4,
+        title: 'Knight\'s Path Expert',
+        description: 'Complete the challenge with a time limit and more queens.',
+        reward: 800,
+        prerequisites: ['level3']
+      },
+      {
+        level: 5,
+        title: 'Knight\'s Path Master',
+        description: 'The ultimate challenge with all previous mechanics combined.',
+        reward: 1000,
+        prerequisites: ['level4']
+      }
+    ];
+    
+    const challenge = challenges[level - 1];
+    
+    // Check prerequisites
+    const prerequisites = challenge.prerequisites || [];
+    const meetsPrerequisites = prerequisites.every(prereq => 
+      user.unlockedLevels.includes(prereq)
+    );
+    
+    if (!meetsPrerequisites) {
+      return res.status(403).json({ 
+        message: 'You must complete the previous challenges first',
+        unlockedLevels: user.unlockedLevels
+      });
+    }
+    
+    res.json({
+      challenge,
+      progress: user.magicHorseProgress || { 
+        bestQueensRemaining: 24,
+        completedChallenges: 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching challenge details:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router; 

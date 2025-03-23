@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* Modern Button Styles */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 ease-in-out;
+  }
+
+  .btn-primary {
+    @apply bg-chess-primary text-white hover:bg-chess-primary/90 hover:shadow-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-chess-secondary text-white hover:bg-chess-secondary/90 hover:shadow-hover;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-accent/90 hover:shadow-hover;
+  }
+
+  .btn-outline {
+    @apply border-2 border-chess-primary text-chess-primary hover:bg-chess-primary hover:text-white;
+  }
+
+  /* Card Styles */
+  .card {
+    @apply bg-white rounded-lg shadow-card p-4 transition-all duration-200 hover:shadow-hover;
+  }
+
+  /* Input Styles */
+  .input {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-chess-primary focus:ring-2 focus:ring-chess-primary/20 outline-none transition-all duration-200;
+  }
+
+  /* Badge Styles */
+  .badge {
+    @apply px-2 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-success {
+    @apply bg-success/20 text-success;
+  }
+
+  .badge-error {
+    @apply bg-error/20 text-error;
+  }
+
+  .badge-warning {
+    @apply bg-warning/20 text-warning;
+  }
+}
+
+/* Chess Board */
+.chessboard {
+  @apply grid grid-cols-8 w-full max-w-2xl aspect-square bg-white shadow-lg rounded-lg overflow-hidden mx-auto animate-fade-in;
+}
+
+.square {
+  @apply relative w-full aspect-square flex items-center justify-center transition-all duration-200;
+}
+
+.square.light {
+  @apply bg-board-light;
+}
+
+.square.dark {
+  @apply bg-board-dark;
+}
+
+.square.highlight {
+  @apply before:absolute before:w-1/3 before:h-1/3 before:rounded-full before:bg-chess-primary/30 before:animate-pulse;
+}
+
+.piece {
+  @apply absolute w-[90%] h-[90%] cursor-grab transition-all duration-200 hover:scale-110 bg-center bg-no-repeat bg-contain;
+}
+
+.piece.dragging {
+  @apply cursor-grabbing scale-110 shadow-piece animate-bounce-soft;
+}
+
+.piece.selected-piece {
+  @apply scale-110 shadow-selected;
+}
+
+/* Game Controls */
+.game-controls {
+  @apply flex gap-4 justify-center mt-4 p-4 animate-slide-up;
+}
+
+.control-btn {
+  @apply px-4 py-2 bg-chess-primary text-white rounded-lg hover:bg-chess-primary/90 transition-colors;
+}
+
+/* Move History */
+.history-container {
+  @apply mt-4 p-4 bg-white rounded-lg shadow-card;
+}
+
+.move-list {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.move-item {
+  @apply p-2 bg-gray-50 rounded hover:bg-gray-100 transition-all duration-200;
+}
+
+/* Chat System */
+.chat-container {
+  @apply fixed right-4 bottom-4 w-80 bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out;
+}
+
+.chat-header {
+  @apply p-4 bg-chess-primary text-white rounded-t-lg cursor-pointer hover:bg-chess-primary/90 transition-colors;
+}
+
+.chat-messages {
+  @apply max-h-96 overflow-y-auto p-4 space-y-2;
+}
+
+.message {
+  @apply p-3 rounded-lg animate-fade-in;
+}
+
+.message.sent {
+  @apply bg-chess-primary text-white ml-auto max-w-[80%] rounded-br-none;
+}
+
+.message.received {
+  @apply bg-gray-100 max-w-[80%] rounded-bl-none;
+}
+
+/* Betting Interface */
+.betting-panel {
+  @apply fixed left-4 bottom-4 w-80 bg-white rounded-lg shadow-lg p-4 animate-slide-up;
+}
+
+.bet-input {
+  @apply w-full p-2 border rounded-lg mb-2;
+}
+
+.bet-btn {
+  @apply w-full py-2 bg-chess-secondary text-white rounded-lg hover:bg-chess-secondary/90 transition-colors;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .chessboard {
+    @apply max-w-full;
+  }
+  
+  .chat-container, .betting-panel {
+    @apply w-full left-0 right-0 bottom-0 rounded-none;
+  }
+}
+
+/* Loading States */
+.loading {
+  @apply animate-pulse bg-gray-200;
+}
+
+/* Tooltips */
+.tooltip {
+  @apply relative group;
+}
+
+.tooltip-text {
+  @apply invisible absolute z-10 p-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 
+         group-hover:visible group-hover:opacity-100 transition-all duration-200 -translate-y-2
+         group-hover:translate-y-0;
+}
+
+/* Notifications */
+.notification {
+  @apply fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white animate-slide-up;
+}
+
+.notification-success {
+  @apply bg-success;
+}
+
+.notification-error {
+  @apply bg-error;
+}
+
+.notification-warning {
+  @apply bg-warning;
+}
+
+/* Animations */
+@keyframes movePiece {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.piece-moving {
+  animation: movePiece 0.3s ease-in-out;
+} 

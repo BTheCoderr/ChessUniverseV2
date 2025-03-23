@@ -96,13 +96,12 @@
 }
 
 .square {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  cursor: pointer;
 }
 
 .light-square {
@@ -114,24 +113,32 @@
 }
 
 .piece {
-  width: 80%;
-  height: 80%;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 90%;
+  height: 90%;
+  font-size: 2.5em;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
 .queen {
-  background-image: url('https://lichess1.org/assets/piece/cburnett/wQ.svg');
+  color: gold;
 }
 
 .horse {
-  background-image: url('https://lichess1.org/assets/piece/cburnett/wN.svg');
+  color: black;
+  font-weight: bold;
 }
 
 .selected {
-  background-color: rgba(106, 159, 181, 0.5);
+  background-color: rgba(173, 216, 230, 0.5) !important;
+}
+
+.last-move {
+  background-color: rgba(255, 255, 0, 0.3) !important;
 }
 
 .highlight {
@@ -141,13 +148,11 @@
 .highlight::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(106, 159, 181, 0.5);
+  width: 30%;
+  height: 30%;
+  background-color: rgba(0, 128, 0, 0.5);
   border-radius: 50%;
-  z-index: 0;
+  z-index: 1;
 }
 
 .hint {
@@ -287,4 +292,20 @@
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+}
+
+/* Animation for captures */
+@keyframes capture {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.capturing {
+  animation: capture 0.5s forwards;
 } 

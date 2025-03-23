@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chess</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .player-info {
+            background-color: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .active-player {
+            background-color: #4a6fa5;
+            color: white;
+        }
+        
+        #game-status {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .chessboard {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 500px;
+            height: 500px;
+            border: 3px solid #333;
+            margin-bottom: 20px;
+        }
+        
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .light-square {
+            background-color: #f0d9b5;
+        }
+        
+        .dark-square {
+            background-color: #b58863;
+        }
+        
+        .piece {
+            width: 90%;
+            height: 90%;
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .piece:hover {
+            transform: scale(1.1);
+        }
+        
+        .piece img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .selected {
+            box-shadow: inset 0 0 0 4px rgba(0, 128, 255, 0.7);
+        }
+        
+        .possible-move::after {
+            content: '';
+            position: absolute;
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .last-move-from,
+        .last-move-to {
+            background-color: rgba(255, 255, 0, 0.3) !important;
+        }
+        
+        .game-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #4a6fa5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #3a5d8f;
+        }
+        
+        .danger-btn {
+            background-color: #d9534f;
+        }
+        
+        .danger-btn:hover {
+            background-color: #c9302c;
+        }
+        
+        .message-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 4px;
+            color: white;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+        
+        .info-message {
+            background-color: #4a6fa5;
+        }
+        
+        .error-message {
+            background-color: #d9534f;
+        }
+        
+        .success-message {
+            background-color: #5cb85c;
+        }
+        
+        .fade-out {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Chess</h1>
+    
+    <div class="game-container">
+        <div class="game-info">
+            <div id="white-player" class="player-info">
+                <div class="player-name">White</div>
+            </div>
+            <div id="game-status">Black to move</div>
+            <div id="black-player" class="player-info active-player">
+                <div class="player-name">You (Black)</div>
+            </div>
+        </div>
+        
+        <div id="chessboard" class="chessboard"></div>
+        
+        <div class="game-controls">
+            <button id="new-game-btn">New Game</button>
+            <button id="resign-btn" class="danger-btn">Resign</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="simple-chess.js"></script>
+</body>
+</html> 

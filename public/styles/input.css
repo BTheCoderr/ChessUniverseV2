@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --light-square: #f0d9b5;
+    --dark-square: #b58863;
+    --highlight-color: rgba(155, 199, 0, 0.41);
+    --last-move-color: rgba(155, 199, 0, 0.41);
+    --check-color: rgba(255, 0, 0, 0.2);
+  }
+
+  body {
+    @apply font-sans bg-gray-100 text-gray-800;
+  }
+
+  h1 {
+    @apply text-2xl font-bold text-chess-primary;
+  }
+
+  h2 {
+    @apply text-xl font-bold text-chess-secondary;
+  }
+
+  h3 {
+    @apply text-lg font-medium text-chess-secondary;
+  }
+
+  a {
+    @apply text-chess-primary hover:text-chess-primary/80 transition-colors;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 ease-in-out;
+  }
+
+  .btn-primary {
+    @apply bg-chess-primary text-white hover:bg-chess-primary/90 hover:shadow-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-chess-secondary text-white hover:bg-chess-secondary/90 hover:shadow-hover;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-accent/90 hover:shadow-hover;
+  }
+
+  .btn-outline {
+    @apply border-2 border-chess-primary text-chess-primary hover:bg-chess-primary hover:text-white;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-card p-4 transition-all duration-200 hover:shadow-hover;
+  }
+
+  .input {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-chess-primary focus:ring-2 focus:ring-chess-primary/20 outline-none transition-all duration-200;
+  }
+
+  .badge {
+    @apply px-2 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-success {
+    @apply bg-success/20 text-success;
+  }
+
+  .badge-error {
+    @apply bg-error/20 text-error;
+  }
+
+  .badge-warning {
+    @apply bg-warning/20 text-warning;
+  }
+}
+
+/* Chess Board Specific Styles */
+@layer components {
+  .chessboard {
+    @apply grid grid-cols-8 w-full max-w-2xl aspect-square bg-white shadow-lg rounded-lg overflow-hidden mx-auto animate-fade-in;
+  }
+
+  .square {
+    @apply relative w-full aspect-square flex items-center justify-center transition-all duration-200;
+  }
+
+  .square.light {
+    @apply bg-board-light;
+  }
+
+  .square.dark {
+    @apply bg-board-dark;
+  }
+
+  .square.highlight {
+    @apply before:absolute before:w-1/3 before:h-1/3 before:rounded-full before:bg-chess-primary/30 before:animate-pulse;
+  }
+
+  .piece {
+    @apply absolute w-[90%] h-[90%] cursor-grab transition-all duration-200 hover:scale-110 bg-center bg-no-repeat bg-contain;
+  }
+
+  .piece.dragging {
+    @apply cursor-grabbing scale-110 shadow-piece animate-bounce-soft;
+  }
+
+  .piece.selected-piece {
+    @apply scale-110 shadow-selected;
+  }
+} 

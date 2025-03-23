@@ -1,0 +1,24 @@
+{
+  "verbose": true,
+  "ignore": [
+    "public/stockfish.*",
+    "public/js/main.js",
+    "*.test.js",
+    "node_modules/*",
+    ".git/*",
+    "*.md",
+    "package-lock.json"
+  ],
+  "delay": "2000",
+  "execMap": {
+    "js": "node"
+  },
+  "events": {
+    "restart": "ps -ef | grep node"
+  },
+  "watch": [
+    "server/",
+    "routes/",
+    "models/"
+  ]
+} 
