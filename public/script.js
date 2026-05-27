@@ -25,6 +25,9 @@ let chatOpen = true;
 let lobbyMessages = [];
 let gameMessages = [];
 let chessAI = null;
+let gameOver = false;
+let currentLevel = 1;
+let gameIncrement = 0;
 
 function getPieceColorFromElement(pieceElement) {
   if (!pieceElement) return null;
@@ -416,7 +419,7 @@ function init() {
   gameResultModal = document.getElementById('game-result-modal');
   resultMessageEl = document.getElementById('result-message');
   bettingResultEl = document.getElementById('betting-result');
-  newGameAfterResultBtn = document.getElementById('new-game-after-result');
+  newGameAfterResultBtn = document.getElementById('new-game-after-result-btn');
   viewProfileAfterResultBtn = document.getElementById('view-profile-after-result');
   
   // Sound Elements
@@ -536,6 +539,7 @@ function init() {
     
     // Check if tutorial should be shown
     checkTutorial();
+    loadSettings();
   } catch (error) {
     console.error('Error during initialization:', error);
   }
@@ -893,9 +897,10 @@ function makeMove(move) {
         return result;
       }
       
-      // If it's AI's turn, make an AI move after a delay
-      if (playingAgainstAI && !isPlayerTurn) {
-        setTimeout(makeAIMove, aiMoveSpeed);
+      // If it's AI's turn, get Stockfish move after a delay
+      if (isAiGame && !chess.game_over()) {
+        isPlayerTurn = false;
+        setTimeout(getAiMove, 500);
       }
       
       return result;
@@ -1893,46 +1898,6 @@ function setupDragAndDrop() {
   }, { passive: false });
 }
 
-// Initialize a new game
-function initGame(gameLevel = currentLevel) {
-  console.log(`Initializing game at level ${gameLevel} with black moving first`);
-  
-  // Set the current level
-  currentLevel = gameLevel;
-  
-  // Initialize a new chess instance with a modified starting position where black moves first
-  // The FEN string represents the board state, active color, castling availability, 
-  // en passant target square, halfmove clock, and fullmove number
-  // We're changing the 'w' (white to move) to 'b' (black to move) in the standard starting position
-  chess = new Chess('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
-  
-  // Reset game state
-  gameOver = false;
-  selectedSquare = null;
-  
-  // Update the board display
-  updateBoard();
-  
-  // Update UI for the current level
-  updateUIForLevel(gameLevel);
-  
-  // Set default player information
-  document.getElementById('white-player').textContent = 'White';
-  document.getElementById('black-player').textContent = 'You (Black)';
-  
-  // Set player as black by default
-  playerColor = 'black';
-  isPlayerTurn = true; // Since black moves first
-  
-  // Update game status
-  updateGameStatus();
-  
-  // If we're playing against AI and it's the AI's turn (white), make an AI move
-  if (playingAgainstAI && !isPlayerTurn) {
-    setTimeout(makeAIMove, aiMoveSpeed);
-  }
-}
-
 // Update UI elements based on the current level
 function updateUIForLevel(level) {
   // Update the new game button text
@@ -2455,6 +2420,20 @@ function setupGameEventListeners() {
       isPlayerTurn = true;
       
       showError('New game started - Black moves first', 'info');
+    });
+  }
+
+  if (playAiBtn && aiOptions && aiVsAiOptions) {
+    playAiBtn.addEventListener('click', () => {
+      aiOptions.classList.remove('hidden');
+      aiVsAiOptions.classList.add('hidden');
+    });
+  }
+
+  if (aiVsAiBtn && aiOptions && aiVsAiOptions) {
+    aiVsAiBtn.addEventListener('click', () => {
+      aiVsAiOptions.classList.remove('hidden');
+      aiOptions.classList.add('hidden');
     });
   }
   
@@ -4097,23 +4076,16 @@ function setupEventListeners() {
     }
     
     // Game result modal buttons - ensure these are properly set up
-    const newGameBtn = document.getElementById('new-game-btn');
-    if (newGameBtn) {
-      // Remove any existing event listeners
-      const newBtn = newGameBtn.cloneNode(true);
-      if (newGameBtn.parentNode) {
-        newGameBtn.parentNode.replaceChild(newBtn, newGameBtn);
-      }
-      
-      // Add new event listener
-      newBtn.addEventListener('click', function() {
-        console.log('New Game button clicked');
+    const newGameAfterResultBtnEl = document.getElementById('new-game-after-result-btn');
+    if (newGameAfterResultBtnEl) {
+      newGameAfterResultBtnEl.addEventListener('click', function() {
+        console.log('New Game after result button clicked');
         closeGameOverModal();
         resetTimers();
-        initGame(1); // Start a new game at level 1
+        initGame(1);
       });
     } else {
-      console.error('New Game button not found');
+      console.error('New Game after result button not found');
     }
     
     const viewProfileBtn = document.getElementById('view-profile-btn');
@@ -4863,45 +4835,40 @@ function initGame(level = 1) {
   try {
     console.log(`Initializing game at level ${level}`);
     
-    // Reset game state
     currentLevel = level;
-    selectedPiece = null;
+    gameOver = false;
+    isAiGame = false;
+    selectedSquare = null;
     chess = new Chess();
-    
-    // Set up the board with BLACK to move first (custom starting position)
     chess.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
     
-    // Update board
     updateBoard();
-    
-    // Reset timers
+    updateUIForLevel(level);
     resetTimers();
-    
-    // Start timers
     startTimers();
-    
-    // Start timer for black since they move first
     startTimer('black');
-    
-    // Update game status
     updateGameStatus();
     
-    // Clear move history
-    document.getElementById('moves-list').innerHTML = '';
+    const movesList = document.getElementById('moves-list');
+    if (movesList) movesList.innerHTML = '';
     
-    // Enable/disable appropriate controls
-    document.getElementById('resign-btn').disabled = false;
-    document.getElementById('offer-draw-btn').disabled = false;
+    const resignEl = document.getElementById('resign-btn');
+    const offerDrawEl = document.getElementById('offer-draw-btn');
+    if (resignEl) resignEl.disabled = false;
+    if (offerDrawEl) offerDrawEl.disabled = false;
     
-    // Check if current game is AI game
-    const isAiGame = document.getElementById('ai-difficulty') && document.getElementById('ai-difficulty').value > 0;
+    playerColor = 'black';
+    isPlayerTurn = true;
     
-    // If AI is playing as black, get AI move since black moves first
-    if (isAiGame && playerColor === 'white') {
-      // Add small delay before AI move
-      setTimeout(() => {
-        getAiMove('black');
-      }, 500);
+    const whiteEl = document.getElementById('white-player');
+    const blackEl = document.getElementById('black-player');
+    if (whiteEl) {
+      const nameEl = whiteEl.querySelector('.player-name');
+      if (nameEl) nameEl.textContent = 'White';
+    }
+    if (blackEl) {
+      const nameEl = blackEl.querySelector('.player-name');
+      if (nameEl) nameEl.textContent = 'You (Black)';
     }
     
     return true;
@@ -4911,111 +4878,6 @@ function initGame(level = 1) {
     return false;
   }
 }
-
-// Update the New Game button click handler
-document.addEventListener('DOMContentLoaded', () => {
-  const newGameBtn = document.getElementById('new-game-btn');
-  if (newGameBtn) {
-    newGameBtn.removeEventListener('click', initGame);
-    newGameBtn.addEventListener('click', showGameOptionsModal);
-  }
-});
-
-document.getElementById('play-ai-btn').addEventListener('click', function() {
-  document.getElementById('ai-options').classList.remove('hidden');
-  document.getElementById('ai-vs-ai-options').classList.add('hidden');
-});
-
-document.getElementById('start-ai-game-btn').addEventListener('click', function() {
-  const difficultySlider = document.getElementById('ai-difficulty');
-  const difficulty = parseInt(difficultySlider.value);
-  
-  // Initialize game with current level
-  if (initGame(currentLevel || 1)) {
-    isAiGame = true;
-    
-    // Player is black (moves first), AI is white
-    playerColor = 'black';
-    
-    // Set AI difficulty
-    if (window.stockfish) {
-      stockfish.postMessage('setoption name Skill Level value ' + difficulty);
-    }
-    
-    // Update player info
-    const whiteEl = document.getElementById('white-player');
-    const blackEl = document.getElementById('black-player');
-    
-    if (whiteEl) {
-      const nameEl = whiteEl.querySelector('.player-name');
-      if (nameEl) nameEl.textContent = `AI (White)`;
-    }
-    
-    if (blackEl) {
-      const nameEl = blackEl.querySelector('.player-name');
-      if (nameEl) nameEl.textContent = `You (Black)`;
-    }
-    
-    // Hide AI options
-    document.getElementById('ai-options').classList.add('hidden');
-    
-    showError(`Playing against AI (Level ${difficulty})`, 'info');
-  }
-});
-
-document.getElementById('ai-vs-ai-btn').addEventListener('click', function() {
-  document.getElementById('ai-vs-ai-options').classList.remove('hidden');
-  document.getElementById('ai-options').classList.add('hidden');
-});
-
-document.getElementById('start-ai-vs-ai-btn').addEventListener('click', function() {
-  const whiteAIDifficulty = parseInt(document.getElementById('ai-white-difficulty').value);
-  const blackAIDifficulty = parseInt(document.getElementById('ai-black-difficulty').value);
-  const moveSpeed = parseInt(document.getElementById('ai-move-speed').value);
-  
-  // Hide the AI vs AI options
-  document.getElementById('ai-vs-ai-options').classList.add('hidden');
-  
-  // Initialize AI vs AI game with black to move first
-  isAiVsAiGame = true;
-  aiMoveSpeed = moveSpeed;
-  
-  // Set up the game
-  chess = new Chess('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
-  updateBoard();
-  
-  // Clear move history
-  document.getElementById('moves-list').innerHTML = '';
-  
-  // Update player info
-  const whiteEl = document.getElementById('white-player');
-  const blackEl = document.getElementById('black-player');
-  
-  if (whiteEl) {
-    const nameEl = whiteEl.querySelector('.player-name');
-    if (nameEl) nameEl.textContent = `AI (White)`;
-  }
-  
-  if (blackEl) {
-    const nameEl = blackEl.querySelector('.player-name');
-    if (nameEl) nameEl.textContent = `AI (Black)`;
-  }
-  
-  // Update game status
-  document.getElementById('game-status').textContent = 'Black to move';
-  
-  // Disable controls
-  document.getElementById('resign-btn').disabled = true;
-  document.getElementById('offer-draw-btn').disabled = true;
-  
-  // Show notification
-  showError(`AI vs AI game started (White: ${whiteAIDifficulty}, Black: ${blackAIDifficulty})`, 'info');
-  
-  // Schedule the first move
-  setTimeout(() => {
-    getAiMove();
-  }, moveSpeed);
-});
 
 // Update the level description function to correctly show black moves first
 function updateLevelDescription(level) {
@@ -5040,396 +4902,6 @@ function updateLevelDescription(level) {
   
   // Show a notification with the level description
   showError(levelDescription, 'info');
-}
-
-// Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Chess app initializing...');
-  
-  // Create the board
-  createBoard();
-  
-  // Setup event listeners for buttons and other controls
-  setupGameEventListeners();
-  
-  // Initialize the game with black moving first
-  initGame(1);
-  
-  console.log('Chess app initialized');
-});
-
-// Make an AI move
-function makeAIMove() {
-  if (gameOver || isPlayerTurn) return;
-  
-  console.log(`AI (${playerColor === 'black' ? 'white' : 'black'}) is making a move at level ${currentLevel}`);
-  
-  let aiMove;
-  const aiColor = playerColor === 'black' ? 'white' : 'black';
-  const difficulty = aiColor === 'white' ? aiWhiteDifficulty : aiBlackDifficulty;
-  
-  // Determine the move based on the level
-  switch (currentLevel) {
-    case 1:
-      // Standard chess rules
-      aiMove = calculateBestMove(chess, difficulty, aiColor);
-      break;
-    case 2:
-      // Queens move like Bishop, King, or Knight (not Rook)
-      aiMove = calculateBestMoveLevel2(chess, difficulty, aiColor);
-      break;
-    case 3:
-      // Queens move like Rook, King, or Knight (not Bishop)
-      aiMove = calculateBestMoveLevel3(chess, difficulty, aiColor);
-      break;
-    case 4:
-      // Queens have all traditional moves plus Knight moves
-      aiMove = calculateBestMoveLevel4(chess, difficulty, aiColor);
-      break;
-    default:
-      aiMove = calculateBestMove(chess, difficulty, aiColor);
-  }
-  
-  if (aiMove) {
-    console.log(`AI move: ${aiMove.from} to ${aiMove.to}`);
-    
-    try {
-      // Make the move on the chess board
-      const moveResult = chess.move({
-        from: aiMove.from,
-        to: aiMove.to,
-        promotion: aiMove.promotion || 'q' // default to queen promotion
-      });
-      
-      if (moveResult) {
-        // Highlight the move
-        highlightMove(aiMove.from, aiMove.to);
-        
-        // Update the board
-        updateBoard();
-        
-        // Update turn status
-        isPlayerTurn = !isPlayerTurn;
-        
-        // Add move to history
-        addMoveToHistory(moveResult);
-        
-        // Play move sound
-        playMoveSound(moveResult);
-        
-        // Check for game end conditions
-        checkGameEnd();
-      } else {
-        console.error('Invalid AI move:', aiMove);
-        showError('AI attempted an invalid move');
-      }
-    } catch (error) {
-      console.error('Error making AI move:', error);
-      showError('Error making AI move');
-    }
-  } else {
-    console.error('AI could not find a valid move');
-    showError('AI could not find a valid move');
-  }
-  
-  // If the game continues and it's the AI's turn again (AI vs AI), make another move
-  if (!gameOver && !isPlayerTurn && aiVsAiMode) {
-    setTimeout(makeAIMove, aiMoveSpeed);
-  }
-}
-
-// Standard chess AI move calculation
-function calculateBestMove(chess, depth, aiColor) {
-  console.log(`Calculating best move for ${aiColor} at depth ${depth}`);
-  
-  try {
-    // Get all possible moves
-    const moves = chess.moves({ verbose: true });
-    
-    if (moves.length === 0) return null;
-    
-    // For depth 0, just return a random move
-    if (depth === 0) {
-      return moves[Math.floor(Math.random() * moves.length)];
-    }
-    
-    let bestMove = null;
-    let bestScore = aiColor === 'white' ? -Infinity : Infinity;
-    
-    // Evaluate each move
-    for (const move of moves) {
-      // Make the move
-      chess.move(move);
-      
-      // Calculate score for this move
-      const score = minimax(chess, depth - 1, -Infinity, Infinity, aiColor === 'white' ? false : true);
-      
-      // Undo the move
-      chess.undo();
-      
-      // Update best move if better score found
-      if ((aiColor === 'white' && score > bestScore) || 
-          (aiColor === 'black' && score < bestScore)) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-    
-    return bestMove;
-  } catch (error) {
-    console.error('Error calculating best move:', error);
-    return null;
-  }
-}
-
-// Level 2: Queens move like Bishop, King, or Knight (not Rook)
-function calculateBestMoveLevel2(chess, depth, aiColor) {
-  console.log(`Calculating level 2 move for ${aiColor} at depth ${depth}`);
-  
-  try {
-    // Get all possible moves
-    const moves = chess.moves({ verbose: true });
-    
-    // Filter out invalid queen moves for level 2
-    const validMoves = moves.filter(move => {
-      // If it's a queen move
-      if (chess.get(move.from).type === 'q') {
-        // Get the direction of movement
-        const fromFile = move.from.charCodeAt(0) - 97; // 'a' is 97 in ASCII
-        const fromRank = parseInt(move.from.charAt(1)) - 1;
-        const toFile = move.to.charCodeAt(0) - 97;
-        const toRank = parseInt(move.to.charAt(1)) - 1;
-        
-        // Calculate direction
-        const fileDirection = Math.abs(toFile - fromFile);
-        const rankDirection = Math.abs(toRank - fromRank);
-        
-        // Check if it's a rook-like move (straight line)
-        const isRookMove = (fileDirection === 0 && rankDirection > 0) || 
-                          (fileDirection > 0 && rankDirection === 0);
-        
-        // In level 2, queens can't move like rooks
-        return !isRookMove;
-      }
-      return true; // All other piece moves are valid
-    });
-    
-    if (validMoves.length === 0) return null;
-    
-    // For depth 0, just return a random move
-    if (depth === 0) {
-      return validMoves[Math.floor(Math.random() * validMoves.length)];
-    }
-    
-    // Rest of the function similar to standard calculateBestMove
-    // but use validMoves instead of moves
-    let bestMove = null;
-    let bestScore = aiColor === 'white' ? -Infinity : Infinity;
-    
-    // Evaluate each move
-    for (const move of validMoves) {
-      // Make the move
-      chess.move(move);
-      
-      // Calculate score for this move
-      const score = minimax(chess, depth - 1, -Infinity, Infinity, aiColor === 'white' ? false : true);
-      
-      // Undo the move
-      chess.undo();
-      
-      // Update best move if better score found
-      if ((aiColor === 'white' && score > bestScore) || 
-          (aiColor === 'black' && score < bestScore)) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-    
-    return bestMove;
-  } catch (error) {
-    console.error('Error calculating level 2 move:', error);
-    return null;
-  }
-}
-
-// Level 3: Queens move like Rook, King, or Knight (not Bishop)
-function calculateBestMoveLevel3(chess, depth, aiColor) {
-  console.log(`Calculating level 3 move for ${aiColor} at depth ${depth}`);
-  
-  try {
-    // Get all possible moves
-    const moves = chess.moves({ verbose: true });
-    
-    // Filter out invalid queen moves for level 3
-    const validMoves = moves.filter(move => {
-      // If it's a queen move
-      if (chess.get(move.from).type === 'q') {
-        // Get the direction of movement
-        const fromFile = move.from.charCodeAt(0) - 97; // 'a' is 97 in ASCII
-        const fromRank = parseInt(move.from.charAt(1)) - 1;
-        const toFile = move.to.charCodeAt(0) - 97;
-        const toRank = parseInt(move.to.charAt(1)) - 1;
-        
-        // Calculate direction
-        const fileDirection = Math.abs(toFile - fromFile);
-        const rankDirection = Math.abs(toRank - fromRank);
-        
-        // Check if it's a bishop-like move (diagonal)
-        const isBishopMove = fileDirection === rankDirection && fileDirection > 0;
-        
-        // In level 3, queens can't move like bishops
-        return !isBishopMove;
-      }
-      return true; // All other piece moves are valid
-    });
-    
-    if (validMoves.length === 0) return null;
-    
-    // For depth 0, just return a random move
-    if (depth === 0) {
-      return validMoves[Math.floor(Math.random() * validMoves.length)];
-    }
-    
-    // Rest of the function similar to standard calculateBestMove
-    // but use validMoves instead of moves
-    let bestMove = null;
-    let bestScore = aiColor === 'white' ? -Infinity : Infinity;
-    
-    // Evaluate each move
-    for (const move of validMoves) {
-      // Make the move
-      chess.move(move);
-      
-      // Calculate score for this move
-      const score = minimax(chess, depth - 1, -Infinity, Infinity, aiColor === 'white' ? false : true);
-      
-      // Undo the move
-      chess.undo();
-      
-      // Update best move if better score found
-      if ((aiColor === 'white' && score > bestScore) || 
-          (aiColor === 'black' && score < bestScore)) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-    
-    return bestMove;
-  } catch (error) {
-    console.error('Error calculating level 3 move:', error);
-    return null;
-  }
-}
-
-// Level 4: Queens have all traditional moves plus Knight moves
-function calculateBestMoveLevel4(chess, depth, aiColor) {
-  console.log(`Calculating level 4 move for ${aiColor} at depth ${depth}`);
-  
-  try {
-    // Get all possible moves
-    const moves = chess.moves({ verbose: true });
-    
-    // In level 4, all moves are valid plus additional queen knight moves
-    // which are already handled by the chess.js library's moves() function
-    
-    if (moves.length === 0) return null;
-    
-    // For depth 0, just return a random move
-    if (depth === 0) {
-      return moves[Math.floor(Math.random() * moves.length)];
-    }
-    
-    let bestMove = null;
-    let bestScore = aiColor === 'white' ? -Infinity : Infinity;
-    
-    // Evaluate each move
-    for (const move of moves) {
-      // Make the move
-      chess.move(move);
-      
-      // Calculate score for this move
-      const score = minimax(chess, depth - 1, -Infinity, Infinity, aiColor === 'white' ? false : true);
-      
-      // Undo the move
-      chess.undo();
-      
-      // Update best move if better score found
-      if ((aiColor === 'white' && score > bestScore) || 
-          (aiColor === 'black' && score < bestScore)) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-    
-    return bestMove;
-  } catch (error) {
-    console.error('Error calculating level 4 move:', error);
-    return null;
-  }
-}
-
-// Minimax algorithm with alpha-beta pruning
-function minimax(chess, depth, alpha, beta, isMaximizingPlayer) {
-  if (depth === 0 || chess.game_over()) {
-    return evaluateBoard(chess);
-  }
-  
-  const moves = chess.moves({ verbose: true });
-  
-  if (isMaximizingPlayer) {
-    let maxEval = -Infinity;
-    for (const move of moves) {
-      chess.move(move);
-      const eval = minimax(chess, depth - 1, alpha, beta, false);
-      chess.undo();
-      maxEval = Math.max(maxEval, eval);
-      alpha = Math.max(alpha, eval);
-      if (beta <= alpha) break; // Beta cutoff
-    }
-    return maxEval;
-  } else {
-    let minEval = Infinity;
-    for (const move of moves) {
-      chess.move(move);
-      const eval = minimax(chess, depth - 1, alpha, beta, true);
-      chess.undo();
-      minEval = Math.min(minEval, eval);
-      beta = Math.min(beta, eval);
-      if (beta <= alpha) break; // Alpha cutoff
-    }
-    return minEval;
-  }
-}
-
-// Evaluate the board position
-function evaluateBoard(chess) {
-  // Piece values: pawn=1, knight=3, bishop=3, rook=5, queen=9
-  const pieceValues = {
-    p: 1,
-    n: 3,
-    b: 3,
-    r: 5,
-    q: 9,
-    k: 0 // King's value isn't used for evaluation
-  };
-  
-  let score = 0;
-  
-  // Loop through all squares
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      const square = String.fromCharCode(97 + j) + (i + 1);
-      const piece = chess.get(square);
-      
-      if (piece) {
-        // Add or subtract the piece value based on color
-        const value = pieceValues[piece.type];
-        score += piece.color === 'w' ? value : -value;
-      }
-    }
-  }
-  
-  return score;
 }
 
 // Highlight a square
@@ -5542,89 +5014,6 @@ function playSound(soundName) {
     console.error('Error playing sound:', error);
   }
 }
-
-// Show an error or info message
-function showError(message, type = 'error') {
-  console.log(`Showing message: ${message} (${type})`);
-  
-  const notification = document.getElementById('notification');
-  if (!notification) return;
-  
-  // Set the message
-  notification.textContent = message;
-  
-  // Set the type
-  notification.className = 'notification';
-  notification.classList.add(type);
-  
-  // Show the notification
-  notification.style.display = 'block';
-  
-  // Hide after a delay
-  clearTimeout(notification.timeout);
-  notification.timeout = setTimeout(() => {
-    notification.style.display = 'none';
-  }, 3000);
-}
-
-// Ensure the document is ready before initializing the game
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Document ready, initializing chess game...');
-  
-  try {
-    // Initialize board element
-    chessboardEl = document.getElementById('chessboard');
-    if (!chessboardEl) {
-      console.error('Chessboard element not found!');
-      return;
-    }
-    
-    console.log('Chessboard element found');
-    
-    // Initialize other DOM elements
-    gameStatusEl = document.getElementById('game-status');
-    movesListEl = document.getElementById('moves-list');
-    whitePlayerEl = document.getElementById('white-player');
-    blackPlayerEl = document.getElementById('black-player');
-    
-    // Initialize chess.js
-    chess = new Chess('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1');
-    console.log('Chess.js initialized with board state:', chess.fen());
-    
-    // Set up the board
-    createBoard();
-    
-    // Set player to black (since we want black to move first)
-    playerColor = 'black';
-    isPlayerTurn = true;
-    
-    // Update player display
-    if (blackPlayerEl) {
-      blackPlayerEl.textContent = 'You (Black)';
-    }
-    
-    // Update game status
-    updateGameStatus();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Load any saved settings
-    loadSettings();
-    
-    console.log('Chess game initialization complete!');
-  } catch (error) {
-    console.error('Error during chess game initialization:', error);
-    
-    // Try to show an error to the user
-    const notification = document.getElementById('notification');
-    if (notification) {
-      notification.textContent = 'Error initializing chess game. Please try refreshing the page.';
-      notification.className = 'notification error-message';
-      notification.style.display = 'block';
-    }
-  }
-});
 
 // Load saved settings
 function loadSettings() {

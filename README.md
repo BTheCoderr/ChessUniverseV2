@@ -39,17 +39,39 @@ cd chess-app
 npm install
 ```
 
-3. Create a `.env` file in the root directory with the following variables:
+3. Copy environment variables:
 ```
-MONGO_URI=your_mongodb_connection_string
-SESSION_SECRET=your_session_secret
-PORT=3000
+cp .env.example .env
 ```
 
-4. Start the development server
+Edit `.env` and set at minimum:
+```
+MONGODB_URI=your_mongodb_connection_string
+SESSION_SECRET=your_session_secret
+PORT=3001
+```
+
+### Quick local play (no MongoDB)
+
+Best for testing the board and Stockfish AI:
+
+```
+npm test
+```
+
+Open **http://localhost:3000/** — standalone chess with Play vs AI.
+
+Other routes: `/launcher`, `/standalone`, `/simple`, `/start`, `/full` (static only; no API).
+
+### Full app (MongoDB required)
+
 ```
 npm run dev
 ```
+
+Open **http://localhost:3001/** or **http://localhost:3001/full**
+
+Requires MongoDB running and `MONGODB_URI` set in `.env`.
 
 ### Running with Docker
 
