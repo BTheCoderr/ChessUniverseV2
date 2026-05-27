@@ -757,6 +757,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
   </div>
 
   <!-- Audio Elements -->
@@ -770,9 +773,82 @@
   <audio id="chat-sound" src="https://lichess1.org/assets/sound/standard/NewChallenge.mp3" preload="auto"></audio>
 
   <!-- Scripts -->
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- Use CDN fallback for socket.io -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="js/stockfish.js"></script>
   <script src="chessRules.js"></script>
-  <script src="magicHorse.js"></script>
-  <script src="simple-chess.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Initialize game based on configuration
+    document.addEventListener('DOMContentLoaded', function() {
+      // First, make sure we have the correct image paths for chess pieces
+      window.chessPieceImagePath = function(piece) {
+        // Use SVG pieces which we know exist in the codebase 
+        // Format is like 'wP.svg', 'bK.svg', etc.
+        return `images/pieces/${piece}.svg`;
+      };
+      
+      // Check if we have a game configuration from the starter page
+      const gameConfigString = sessionStorage.getItem('gameConfig');
+      if (gameConfigString) {
+        try {
+          const gameConfig = JSON.parse(gameConfigString);
+          console.log('Found game configuration:', gameConfig);
+          
+          // Clear the configuration after using it
+          sessionStorage.removeItem('gameConfig');
+          
+          setTimeout(function() {
+            // Handle AI games
+            if (gameConfig.ai) {
+              // Show AI options and click the Play vs AI button
+              const playAiBtn = document.getElementById('play-ai-btn');
+              if (playAiBtn) {
+                console.log('Showing AI options...');
+                playAiBtn.click();
+              }
+              
+              // Set difficulty if provided
+              if (gameConfig.difficulty) {
+                const difficultySlider = document.getElementById('ai-difficulty');
+                const difficultyValue = document.getElementById('difficulty-value');
+                if (difficultySlider) difficultySlider.value = gameConfig.difficulty;
+                if (difficultyValue) difficultyValue.textContent = gameConfig.difficulty;
+              }
+              
+              // Click the start AI game button after a short delay
+              setTimeout(function() {
+                const startAiGameBtn = document.getElementById('start-ai-game-btn');
+                if (startAiGameBtn) {
+                  console.log('Starting AI game...');
+                  startAiGameBtn.click();
+                }
+              }, 500);
+            } else {
+              // If not an AI game, just start a regular game
+              const newGameBtn = document.getElementById('new-game-btn');
+              if (newGameBtn) {
+                console.log('Starting regular game...');
+                newGameBtn.click();
+              }
+            }
+          }, 500);
+        } catch (error) {
+          console.error('Error parsing game configuration:', error);
+        }
+      } else {
+        // If no configuration, just start a regular game after a delay
+        setTimeout(function() {
+          const newGameBtn = document.getElementById('new-game-btn');
+          if (newGameBtn) {
+            console.log('Auto-starting new game...');
+            newGameBtn.click();
+          } else {
+            console.error('Could not find new game button');
+          }
+        }, 1000);
+      }
+    });
+  </script>
 </body>
 </html> 

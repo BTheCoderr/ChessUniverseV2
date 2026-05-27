@@ -184,7 +184,11 @@
             
             // Create image element
             const img = document.createElement('img');
-            img.src = `images/pieces/${color}_${type}.png`;
+            const pieceCode = piece.color + piece.type.toUpperCase();
+            img.src = `images/pieces/${pieceCode}.svg`;
+            img.onerror = function() {
+                img.src = `https://lichess1.org/assets/piece/cburnett/${pieceCode}.svg`;
+            };
             img.alt = `${color} ${type}`;
             
             // Add to piece and square
@@ -271,16 +275,16 @@
         function updateStatus() {
             const statusElement = document.getElementById('status');
             
-            if (chess.isCheckmate()) {
+            if (chess.in_checkmate()) {
                 const winner = chess.turn() === 'w' ? 'Black' : 'White';
                 statusElement.textContent = `Checkmate! ${winner} wins`;
-            } else if (chess.isDraw()) {
+            } else if (chess.in_draw()) {
                 statusElement.textContent = 'Game over - Draw';
             } else {
                 const currentTurn = chess.turn() === 'w' ? 'White' : 'Black';
                 statusElement.textContent = `${currentTurn} to move`;
                 
-                if (chess.isCheck()) {
+                if (chess.in_check()) {
                     statusElement.textContent += ' (Check)';
                 }
             }

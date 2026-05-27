@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Universe</title>
+  <style>
+    :root {
+      --light-square: #f0d9b5;
+      --dark-square: #b58863;
+      --highlight: rgba(124, 252, 0, 0.5);
+      --selected: rgba(0, 100, 255, 0.4);
+      --last-move: rgba(255, 255, 0, 0.4);
+      --possible-move: rgba(0, 0, 0, 0.2);
+      --primary-color: #4a6fa5;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    h1 {
+      margin-bottom: 20px;
+      color: var(--primary-color);
+      text-align: center;
+    }
+    
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background-color: #e0e0e0;
+    }
+    
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+    
+    .primary-btn {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .board-container {
+      width: 90%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .chessboard {
+      width: 100%;
+      height: 0;
+      padding-bottom: 100%;
+      position: relative;
+      border: 3px solid #333;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+    }
+    
+    .square {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .light-square {
+      background-color: var(--light-square);
+    }
+    
+    .dark-square {
+      background-color: var(--dark-square);
+    }
+    
+    .piece {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: grab;
+      z-index: 10;
+      transition: transform 0.2s ease;
+    }
+    
+    .piece img {
+      width: 85%;
+      height: 85%;
+      object-fit: contain;
+      pointer-events: none;
+      transition: filter 0.2s ease;
+    }
+    
+    .piece:hover {
+      transform: scale(1.05);
+    }
+    
+    .piece:hover img {
+      filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
+    }
+    
+    .piece.dragging {
+      cursor: grabbing;
+      opacity: 0.8;
+      transform: scale(1.1);
+      z-index: 20;
+    }
+    
+    .square.selected {
+      background-color: var(--selected) !important;
+    }
+    
+    .square.possible-move {
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .square.possible-move::after {
+      content: '';
+      position: absolute;
+      width: 30%;
+      height: 30%;
+      border-radius: 50%;
+      background-color: var(--possible-move);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .square.last-move-from,
+    .square.last-move-to {
+      background-color: var(--last-move) !important;
+    }
+    
+    .status {
+      margin-top: 20px;
+      font-size: 15px;
+      padding: 15px;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      max-width: 600px;
+      width: 90%;
+      text-align: center;
+    }
+    
+    .status div {
+      margin-bottom: 8px;
+    }
+    
+    .status div:last-child {
+      margin-bottom: 0;
+    }
+    
+    #game-status {
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+    
+    #current-turn {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    
+    #current-turn.white {
+      background-color: #f1f1f1;
+      color: #333;
+    }
+    
+    #current-turn.black {
+      background-color: #333;
+      color: #fff;
+    }
+    
+    .debug {
+      margin-top: 20px;
+      width: 90%;
+      max-width: 600px;
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      display: none; /* Hide by default */
+    }
+    
+    .debug h2 {
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: var(--primary-color);
+    }
+    
+    #console {
+      font-family: monospace;
+      white-space: pre-wrap;
+      background-color: #333;
+      color: #fff;
+      padding: 10px;
+      border-radius: 3px;
+      height: 200px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+    
+    .debug-toggle {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 600px) {
+      .board-container {
+        width: 100%;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .btn {
+        width: 100%;
+        max-width: 200px;
+        text-align: center;
+      }
+    }
+    
+    .rank-label, .file-label {
+      position: absolute;
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.7);
+      z-index: 5;
+    }
+    
+    .rank-label {
+      left: 3px;
+      top: 3px;
+    }
+    
+    .file-label {
+      right: 3px;
+      bottom: 3px;
+    }
+    
+    .dark-square .rank-label, .dark-square .file-label {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .move-hint {
+      margin-top: 10px;
+      color: #666;
+      font-style: italic;
+      text-align: center;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="js/stockfish.js"></script>
+</head>
+<body>
+  <h1>Chess Universe</h1>
+  
+  <div class="controls">
+    <button id="reset" class="btn primary-btn">Reset Board</button>
+    <button id="flip" class="btn">Flip Board</button>
+    <button id="random" class="btn">Random Move</button>
+    <button id="undo" class="btn">Undo Move</button>
+    <button id="toggle-ai" class="btn primary-btn">Play vs AI: Off</button>
+    <label class="btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+      Difficulty
+      <select id="ai-difficulty" style="padding:4px;border-radius:4px;">
+        <option value="3">Beginner</option>
+        <option value="10" selected>Intermediate</option>
+        <option value="15">Advanced</option>
+        <option value="20">Expert</option>
+      </select>
+    </label>
+  </div>
+  
+  <div class="status">
+    <div>Game status: <span id="game-status">In progress</span></div>
+    <div>Current turn: <span id="current-turn" class="white">White</span></div>
+    <div id="ai-status" style="color:#666;font-size:0.9rem;"></div>
+  </div>
+  
+  <div class="move-hint">Click on a piece to select it, then click on a destination square to move</div>
+  
+  <div class="board-container">
+    <div id="board" class="chessboard"></div>
+  </div>
+  
+  <div class="debug-toggle" onclick="toggleDebug()">Show/Hide Debug Console</div>
+  
+  <div class="debug" id="debug-panel">
+    <h2>Debug Console</h2>
+    <div id="console"></div>
+  </div>
+  
+  <script>
+    // Debug logging
+    function log(message) {
+      const console = document.getElementById('console');
+      const time = new Date().toLocaleTimeString();
+      console.innerHTML += `[${time}] ${message}\n`;
+      console.scrollTop = console.scrollHeight;
+    }
+    
+    // Toggle debug panel
+    function toggleDebug() {
+      const debugPanel = document.getElementById('debug-panel');
+      if (debugPanel.style.display === 'none' || debugPanel.style.display === '') {
+        debugPanel.style.display = 'block';
+      } else {
+        debugPanel.style.display = 'none';
+      }
+    }
+    
+    // Initialize the chess game
+    let chess = new Chess();
+    let flipped = false;
+    let selectedSquare = null;
+    let aiEnabled = false;
+    let aiThinking = false;
+    let chessAI = null;
+    const humanColor = 'w';
+    
+    function setAiStatus(message) {
+      const el = document.getElementById('ai-status');
+      if (el) el.textContent = message || '';
+    }
+    
+    async function ensureChessAI() {
+      if (chessAI && chessAI.isReady) return chessAI;
+      const skill = parseInt(document.getElementById('ai-difficulty').value, 10) || 10;
+      chessAI = new ChessAI(skill);
+      setAiStatus('Loading Stockfish engine...');
+      await chessAI.initializeEngine();
+      setAiStatus('Stockfish ready');
+      return chessAI;
+    }
+    
+    function applyUciMove(uci) {
+      if (!uci || uci === '(none)') return null;
+      const from = uci.slice(0, 2);
+      const to = uci.slice(2, 4);
+      const promotion = uci.length > 4 ? uci[4] : 'q';
+      return chess.move({ from, to, promotion });
+    }
+    
+    async function makeAiMove() {
+      if (!aiEnabled || aiThinking || chess.game_over()) return;
+      if (chess.turn() === humanColor) return;
+      
+      aiThinking = true;
+      setAiStatus('Stockfish is thinking...');
+      
+      try {
+        const engine = await ensureChessAI();
+        const skill = parseInt(document.getElementById('ai-difficulty').value, 10) || 10;
+        engine.skillLevel = skill;
+        engine.engine.postMessage(`setoption name Skill Level value ${skill}`);
+        
+        const depth = skill <= 5 ? 8 : skill <= 12 ? 12 : 16;
+        const { bestMove } = await engine.getBestMove(chess.fen(), { depth, timeLimit: 800 });
+        const move = applyUciMove(bestMove);
+        
+        if (move) {
+          log(`AI move: ${move.san} (${bestMove})`);
+          updateBoard();
+          highlightLastMove(move.from, move.to);
+        } else {
+          log('AI could not find a valid move');
+        }
+      } catch (error) {
+        log(`AI error: ${error.message} — using random fallback`);
+        makeRandomMove();
+      } finally {
+        aiThinking = false;
+        setAiStatus(aiEnabled ? 'Playing vs Stockfish (you are White)' : '');
+      }
+    }
+    
+    function canHumanMove() {
+      if (!aiEnabled) return true;
+      return chess.turn() === humanColor && !aiThinking;
+    }
+    
+    // Create the chess board with rank and file labels
+    function createBoard() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+      
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          // Adjust row and column if board is flipped
+          const displayRow = flipped ? 7 - row : row;
+          const displayCol = flipped ? 7 - col : col;
+          
+          // Create square
+          const square = document.createElement('div');
+          square.className = 'square';
+          
+          // Set light or dark color
+          if ((row + col) % 2 === 0) {
+            square.classList.add('light-square');
+          } else {
+            square.classList.add('dark-square');
+          }
+          
+          // Set data attributes
+          square.setAttribute('data-row', displayRow);
+          square.setAttribute('data-col', displayCol);
+          
+          // Set algebraic notation (e.g., e4)
+          const file = String.fromCharCode(97 + displayCol);
+          const rank = 8 - displayRow;
+          square.setAttribute('data-square', file + rank);
+          
+          // Add rank and file labels on the edge squares
+          if (col === 0) {
+            const rankLabel = document.createElement('div');
+            rankLabel.className = 'rank-label';
+            rankLabel.textContent = rank;
+            square.appendChild(rankLabel);
+          }
+          
+          if (row === 7) {
+            const fileLabel = document.createElement('div');
+            fileLabel.className = 'file-label';
+            fileLabel.textContent = file;
+            square.appendChild(fileLabel);
+          }
+          
+          // Add to the board
+          board.appendChild(square);
+          
+          // Add click handler
+          square.addEventListener('click', () => {
+            handleSquareClick(square);
+          });
+          
+          // Add drop handlers for drag-and-drop
+          square.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          });
+          
+          square.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const fromSquare = e.dataTransfer.getData('text/plain');
+            if (!fromSquare) return;
+            
+            const toSquare = square.getAttribute('data-square');
+            log(`Drop: ${fromSquare} → ${toSquare}`);
+            
+            if (fromSquare === toSquare) return;
+            
+            makeMove({
+              from: fromSquare,
+              to: toSquare,
+              promotion: 'q' // Default to queen for simplicity
+            });
+          });
+        }
+      }
+      
+      updateBoard();
+      log('Chessboard created with rank and file labels');
+    }
+    
+    // Update the board with pieces
+    function updateBoard() {
+      // Update status displays
+      const currentTurnElement = document.getElementById('current-turn');
+      const currentTurn = chess.turn() === 'w' ? 'White' : 'Black';
+      currentTurnElement.textContent = currentTurn;
+      currentTurnElement.className = chess.turn() === 'w' ? 'white' : 'black';
+      
+      // Update game status
+      let status = 'In progress';
+      if (chess.in_check()) status = 'Check';
+      if (chess.in_checkmate()) status = 'Checkmate - ' + (chess.turn() === 'w' ? 'Black' : 'White') + ' wins!';
+      if (chess.in_stalemate()) status = 'Stalemate - Draw';
+      if (chess.in_draw()) status = 'Draw';
+      if (chess.in_threefold_repetition()) status = 'Draw (Threefold repetition)';
+      if (chess.insufficient_material()) status = 'Draw (Insufficient material)';
+      document.getElementById('game-status').textContent = status;
+      
+      // Clear existing pieces
+      document.querySelectorAll('.piece').forEach(piece => piece.remove());
+      
+      // Add pieces based on current position
+      const position = chess.board();
+      
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const piece = position[row][col];
+          if (!piece) continue;
+          
+          const displayRow = flipped ? 7 - row : row;
+          const displayCol = flipped ? 7 - col : col;
+          
+          const square = document.querySelector(`[data-row="${displayRow}"][data-col="${displayCol}"]`);
+          if (!square) continue;
+          
+          // Create piece element
+          const pieceElement = document.createElement('div');
+          pieceElement.className = 'piece';
+          
+          // Set piece color and type
+          const color = piece.color === 'w' ? 'white' : 'black';
+          const type = getPieceType(piece.type);
+          pieceElement.classList.add(`${color}-${type}`);
+          
+          // Create image element
+          const img = document.createElement('img');
+          
+          // Use SVG format with the piece code (wP, bK, etc.)
+          const pieceCode = piece.color + piece.type.toUpperCase();
+          img.src = `images/pieces/${pieceCode}.svg`;
+          
+          // Fallback to lichess CDN if image fails to load
+          img.onerror = function() {
+            log(`Failed to load: ${img.src}, using fallback`);
+            img.src = `https://lichess1.org/assets/piece/cburnett/${pieceCode}.svg`;
+          };
+          
+          img.alt = `${color} ${type}`;
+          pieceElement.appendChild(img);
+          square.appendChild(pieceElement);
+          
+          // Make draggable
+          pieceElement.setAttribute('draggable', 'true');
+          
+          // Drag start
+          pieceElement.addEventListener('dragstart', (e) => {
+            if (!canHumanMove()) {
+              e.preventDefault();
+              return false;
+            }
+            // Only allow dragging if it's this color's turn
+            if (piece.color !== chess.turn()) {
+              e.preventDefault();
+              return false;
+            }
+            
+            const squareName = square.getAttribute('data-square');
+            e.dataTransfer.setData('text/plain', squareName);
+            
+            setTimeout(() => {
+              pieceElement.classList.add('dragging');
+            }, 0);
+            
+            log(`Drag start: ${squareName}`);
+          });
+          
+          // Drag end
+          pieceElement.addEventListener('dragend', () => {
+            pieceElement.classList.remove('dragging');
+          });
+          
+          // Click
+          pieceElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handlePieceClick(square);
+          });
+        }
+      }
+    }
+    
+    // Handle click on a piece
+    function handlePieceClick(square) {
+      if (!canHumanMove()) return;
+      
+      const squareName = square.getAttribute('data-square');
+      const piece = chess.get(squareName);
+      
+      // If no piece or not this color's turn, do nothing
+      if (!piece || piece.color !== chess.turn()) {
+        log(`Not a valid piece to move`);
+        return;
+      }
+      
+      // If a piece is already selected, deselect it
+      if (selectedSquare) {
+        clearHighlights();
+        selectedSquare = null;
+      }
+      
+      // Select this piece
+      selectedSquare = squareName;
+      square.classList.add('selected');
+      
+      // Highlight possible moves
+      const moves = chess.moves({
+        square: squareName,
+        verbose: true
+      });
+      
+      moves.forEach(move => {
+        const targetSquare = document.querySelector(`[data-square="${move.to}"]`);
+        if (targetSquare) {
+          targetSquare.classList.add('possible-move');
+        }
+      });
+      
+      log(`Selected: ${squareName} (${piece.color} ${piece.type}), ${moves.length} possible moves`);
+    }
+    
+    // Handle click on a square
+    function handleSquareClick(square) {
+      if (!canHumanMove()) return;
+      
+      const squareName = square.getAttribute('data-square');
+      
+      // If a piece is selected
+      if (selectedSquare) {
+        // Clicking on the same square deselects it
+        if (selectedSquare === squareName) {
+          clearHighlights();
+          selectedSquare = null;
+          return;
+        }
+        
+        // Try to move
+        makeMove({
+          from: selectedSquare,
+          to: squareName,
+          promotion: 'q' // Default to queen for simplicity
+        });
+        
+        // Clear selection
+        clearHighlights();
+        selectedSquare = null;
+      } else {
+        // Check if there's a piece on this square
+        const piece = chess.get(squareName);
+        if (piece) {
+          handlePieceClick(square);
+        }
+      }
+    }
+    
+    // Make a move
+    function makeMove(moveObj) {
+      try {
+        const move = chess.move(moveObj);
+        if (move) {
+          log(`Move: ${move.san}`);
+          updateBoard();
+          highlightLastMove(move.from, move.to);
+          if (aiEnabled && !chess.game_over()) {
+            setTimeout(makeAiMove, 300);
+          }
+          return true;
+        } else {
+          log(`Invalid move: ${moveObj.from} → ${moveObj.to}`);
+          return false;
+        }
+      } catch (error) {
+        log(`Error: ${error.message}`);
+        return false;
+      }
+    }
+    
+    // Make a random move
+    function makeRandomMove() {
+      if (aiEnabled && chess.turn() === humanColor) return;
+      
+      const moves = chess.moves();
+      if (moves.length === 0) {
+        log('No legal moves available');
+        return;
+      }
+      
+      const randomIndex = Math.floor(Math.random() * moves.length);
+      const move = chess.move(moves[randomIndex]);
+      
+      log(`Random move: ${move.san}`);
+      updateBoard();
+      highlightLastMove(move.from, move.to);
+    }
+    
+    // Clear all highlights
+    function clearHighlights() {
+      document.querySelectorAll('.square').forEach(square => {
+        square.classList.remove('selected', 'possible-move', 'last-move-from', 'last-move-to');
+      });
+    }
+    
+    // Highlight last move
+    function highlightLastMove(from, to) {
+      clearHighlights();
+      
+      const fromSquare = document.querySelector(`[data-square="${from}"]`);
+      const toSquare = document.querySelector(`[data-square="${to}"]`);
+      
+      if (fromSquare) fromSquare.classList.add('last-move-from');
+      if (toSquare) toSquare.classList.add('last-move-to');
+    }
+    
+    // Utility function to get piece type name
+    function getPieceType(type) {
+      switch (type) {
+        case 'p': return 'pawn';
+        case 'r': return 'rook';
+        case 'n': return 'knight';
+        case 'b': return 'bishop';
+        case 'q': return 'queen';
+        case 'k': return 'king';
+        default: return type;
+      }
+    }
+    
+    // Reset the board
+    function resetBoard() {
+      chess.reset();
+      clearHighlights();
+      selectedSquare = null;
+      aiThinking = false;
+      updateBoard();
+      log('Board reset to starting position');
+      if (aiEnabled) setAiStatus('Playing vs Stockfish (you are White)');
+    }
+    
+    // Flip the board
+    function flipBoard() {
+      flipped = !flipped;
+      createBoard();
+      log(`Board flipped, ${flipped ? 'black' : 'white'} on bottom`);
+    }
+    
+    // Undo the last move
+    function undoMove() {
+      if (aiEnabled) chess.undo();
+      const move = chess.undo();
+      if (move) {
+        log(`Undid move: ${move.san}`);
+        clearHighlights();
+        selectedSquare = null;
+        aiThinking = false;
+        updateBoard();
+        return true;
+      }
+      log('No move to undo');
+      return false;
+    }
+    
+    // Set up event listeners
+    document.getElementById('reset').addEventListener('click', resetBoard);
+    document.getElementById('flip').addEventListener('click', flipBoard);
+    document.getElementById('random').addEventListener('click', makeRandomMove);
+    document.getElementById('undo').addEventListener('click', undoMove);
+    document.getElementById('toggle-ai').addEventListener('click', async function() {
+      aiEnabled = !aiEnabled;
+      this.textContent = aiEnabled ? 'Play vs AI: On' : 'Play vs AI: Off';
+      if (aiEnabled) {
+        setAiStatus('Loading Stockfish...');
+        try {
+          await ensureChessAI();
+          setAiStatus('Playing vs Stockfish (you are White)');
+          if (chess.turn() !== humanColor && !chess.game_over()) {
+            setTimeout(makeAiMove, 300);
+          }
+        } catch (err) {
+          log(`Failed to start AI: ${err.message}`);
+          aiEnabled = false;
+          this.textContent = 'Play vs AI: Off';
+          setAiStatus('');
+        }
+      } else {
+        setAiStatus('');
+      }
+    });
+    
+    // Initialize the board
+    createBoard();
+    log('Chess board initialized - ready to play!');
+  </script>
+</body>
+</html> 

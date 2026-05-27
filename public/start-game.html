@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Universe - Game Starter</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    
+    h1 {
+      color: #4a6fa5;
+      margin-bottom: 30px;
+    }
+    
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    .game-option {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-left: 5px solid #4a6fa5;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .game-option:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .game-option h2 {
+      margin-top: 0;
+      font-size: 1.4rem;
+      color: #4a6fa5;
+    }
+    
+    .game-option p {
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background-color: #e0e0e0;
+    }
+    
+    .btn:hover {
+      opacity: 0.9;
+    }
+    
+    .primary-btn {
+      background-color: #4a6fa5;
+      color: white;
+    }
+    
+    .ai-settings {
+      display: none;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+    
+    .ai-settings.visible {
+      display: block;
+    }
+    
+    .slider-container {
+      margin-bottom: 10px;
+    }
+    
+    .slider-container label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+    
+    .slider-value {
+      margin-left: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Chess Universe - Start a Game</h1>
+  
+  <div class="options-container">
+    <div class="game-option">
+      <h2>Play Against Computer</h2>
+      <p>Challenge the AI to a game of chess with customizable difficulty.</p>
+      <div class="action-buttons">
+        <button id="play-as-black" class="btn primary-btn">Play as Black</button>
+        <button id="play-as-white" class="btn">Play as White</button>
+        <button id="configure-ai" class="btn">Configure AI</button>
+      </div>
+      
+      <div id="ai-settings" class="ai-settings">
+        <div class="slider-container">
+          <label for="ai-difficulty">AI Difficulty:</label>
+          <input type="range" id="ai-difficulty" min="1" max="10" value="5">
+          <span id="difficulty-value" class="slider-value">5</span>
+        </div>
+        <button id="start-ai-game" class="btn primary-btn">Start Game</button>
+      </div>
+    </div>
+    
+    <div class="game-option">
+      <h2>Practice Mode</h2>
+      <p>Practice chess by freely moving pieces on both sides. Great for learning and exploring strategies.</p>
+      <div class="action-buttons">
+        <button id="start-practice" class="btn primary-btn">Start Practice</button>
+      </div>
+    </div>
+    
+    <div class="game-option">
+      <h2>Quick Game</h2>
+      <p>Start a standard chess game right away playing as Black (moves first).</p>
+      <div class="action-buttons">
+        <button id="quick-game" class="btn primary-btn">Start Now</button>
+      </div>
+    </div>
+    
+    <div class="game-option">
+      <h2>View Examples</h2>
+      <p>Explore preconfigured chess positions and famous games.</p>
+      <div class="action-buttons">
+        <a href="/standalone" class="btn primary-btn">Standalone Board</a>
+        <a href="/test" class="btn">Test Board</a>
+      </div>
+    </div>
+    
+    <div class="game-option">
+      <h2>Simple Chess Game</h2>
+      <p>A streamlined chess game with minimal features. Perfect if you're having issues with the main game.</p>
+      <div class="action-buttons">
+        <a href="/simple" class="btn primary-btn">Start Simple Game</a>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Configure AI settings toggle
+      const configureAiBtn = document.getElementById('configure-ai');
+      const aiSettings = document.getElementById('ai-settings');
+      
+      configureAiBtn.addEventListener('click', function() {
+        aiSettings.classList.toggle('visible');
+      });
+      
+      // AI difficulty slider
+      const difficultySlider = document.getElementById('ai-difficulty');
+      const difficultyValue = document.getElementById('difficulty-value');
+      
+      difficultySlider.addEventListener('input', function() {
+        difficultyValue.textContent = this.value;
+      });
+      
+      // Quick game button
+      document.getElementById('quick-game').addEventListener('click', function() {
+        window.location.href = '/';
+      });
+      
+      // Play as black button
+      document.getElementById('play-as-black').addEventListener('click', function() {
+        sessionStorage.setItem('gameConfig', JSON.stringify({color: 'black', ai: true}));
+        window.location.href = '/';
+      });
+      
+      // Play as white button
+      document.getElementById('play-as-white').addEventListener('click', function() {
+        sessionStorage.setItem('gameConfig', JSON.stringify({color: 'white', ai: true}));
+        window.location.href = '/';
+      });
+      
+      // Start AI game with configured settings
+      document.getElementById('start-ai-game').addEventListener('click', function() {
+        const difficulty = document.getElementById('ai-difficulty').value;
+        sessionStorage.setItem('gameConfig', JSON.stringify({ai: true, difficulty: difficulty}));
+        window.location.href = '/';
+      });
+      
+      // Start practice mode
+      document.getElementById('start-practice').addEventListener('click', function() {
+        window.location.href = '/standalone';
+      });
+    });
+  </script>
+</body>
+</html> 

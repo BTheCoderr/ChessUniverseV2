@@ -7,7 +7,8 @@
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
     "seed": "node scripts/seed.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test-server.js",
+    "postinstall": "node scripts/copy-stockfish.js"
   },
   "keywords": [
     "chess",
@@ -35,7 +36,8 @@
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "passport.socketio": "^3.7.0",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "stockfish": "^16.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

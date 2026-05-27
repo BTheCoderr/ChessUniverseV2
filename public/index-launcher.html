@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Universe - Game Launcher</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+      line-height: 1.6;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #4a6fa5;
+      padding-bottom: 20px;
+    }
+    
+    h1 {
+      color: #4a6fa5;
+      margin-bottom: 10px;
+    }
+    
+    .game-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .option-card {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      transition: transform 0.3s ease;
+    }
+    
+    .option-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .option-title {
+      color: #4a6fa5;
+      font-size: 1.3rem;
+      margin-top: 0;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    
+    .option-description {
+      margin-bottom: 20px;
+    }
+    
+    .option-features {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    
+    .option-features ul {
+      padding-left: 20px;
+    }
+    
+    .option-status {
+      font-size: 0.9rem;
+      padding: 5px 10px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 15px;
+    }
+    
+    .status-working {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .status-partial {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-issues {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    .launch-btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4a6fa5;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+    
+    .launch-btn:hover {
+      background-color: #3a5985;
+    }
+    
+    .footer {
+      margin-top: 50px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Chess Universe Game Launcher</h1>
+    <p>Choose the version that works best for your needs</p>
+  </header>
+  
+  <div class="game-options">
+    <div class="option-card">
+      <h2 class="option-title">Simple Chess Game</h2>
+      <span class="option-status status-working">Fully Working</span>
+      <div class="option-description">
+        A streamlined, minimal chess implementation focused only on core gameplay. Perfect if you're having issues with other versions.
+      </div>
+      <div class="option-features">
+        <strong>Features:</strong>
+        <ul>
+          <li>Standard chess rules</li>
+          <li>Move history</li>
+          <li>Flip board option</li>
+          <li>Undo moves</li>
+          <li>No connectivity requirements</li>
+        </ul>
+      </div>
+      <a href="/simple" class="launch-btn">Launch Simple Chess</a>
+    </div>
+    
+    <div class="option-card">
+      <h2 class="option-title">Standalone Chess Board</h2>
+      <span class="option-status status-working">Fully Working</span>
+      <div class="option-description">
+        A standalone chessboard with basic functionality. Useful for practice and debugging.
+      </div>
+      <div class="option-features">
+        <strong>Features:</strong>
+        <ul>
+          <li>Basic chess movement</li>
+          <li>Clean interface</li>
+          <li>SVG chess pieces</li>
+          <li>Debug console</li>
+        </ul>
+      </div>
+      <a href="/standalone" class="launch-btn">Launch Standalone Board</a>
+    </div>
+    
+    <div class="option-card">
+      <h2 class="option-title">Full Chess Universe</h2>
+      <span class="option-status status-partial">Some Features Working</span>
+      <div class="option-description">
+        The complete Chess Universe experience with all features enabled.
+      </div>
+      <div class="option-features">
+        <strong>Features:</strong>
+        <ul>
+          <li>Multiple game levels and variants</li>
+          <li>Magic Horse Challenge</li>
+          <li>AI opponents with adjustable difficulty</li>
+          <li>Tournaments and betting (requires server)</li>
+          <li>Social features (requires server)</li>
+        </ul>
+      </div>
+      <a href="/full" class="launch-btn">Launch Full Version</a>
+    </div>
+    
+    <div class="option-card">
+      <h2 class="option-title">Game Starter Page</h2>
+      <span class="option-status status-working">Fully Working</span>
+      <div class="option-description">
+        Choose from different game modes and configure options before starting.
+      </div>
+      <div class="option-features">
+        <strong>Options:</strong>
+        <ul>
+          <li>Play against AI</li>
+          <li>Choose your color</li>
+          <li>Set AI difficulty</li>
+          <li>Practice mode</li>
+          <li>Quick game options</li>
+        </ul>
+      </div>
+      <a href="/start" class="launch-btn">Go to Game Starter</a>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>Chess Universe v2 - Select the appropriate version based on your needs.</p>
+    <p>If you encounter issues, try the Simple Chess Game first to confirm basic functionality.</p>
+  </div>
+</body>
+</html> 

@@ -24,6 +24,18 @@ let availablePlayers = [];
 let chatOpen = true;
 let lobbyMessages = [];
 let gameMessages = [];
+let chessAI = null;
+
+function getPieceColorFromElement(pieceElement) {
+  if (!pieceElement) return null;
+  for (const cls of pieceElement.classList) {
+    if (cls.startsWith('white-')) return 'w';
+    if (cls.startsWith('black-')) return 'b';
+  }
+  if (pieceElement.classList.contains('white')) return 'w';
+  if (pieceElement.classList.contains('black')) return 'b';
+  return null;
+}
 
 // Function to ensure all modal close buttons work properly
 function setupModalCloseButtons() {
@@ -608,9 +620,13 @@ function updateBoard() {
           // Add appropriate class for the piece
           pieceElement.classList.add(`${color}-${type}`);
           
-          // Create and add the piece image
+          // Create and add the piece image (wP.svg, bK.svg, etc.)
           const img = document.createElement('img');
-          img.src = `images/pieces/${color}_${type}.png`;
+          const pieceCode = piece.color + piece.type.toUpperCase();
+          img.src = `images/pieces/${pieceCode}.svg`;
+          img.onerror = function() {
+            img.src = `https://lichess1.org/assets/piece/cburnett/${pieceCode}.svg`;
+          };
           img.alt = `${color} ${type}`;
           pieceElement.appendChild(img);
           
@@ -642,7 +658,8 @@ function getPieceType(type) {
 function setupPieceDragEvents(pieceElement) {
   pieceElement.addEventListener('dragstart', (e) => {
     // Only allow dragging if it's the player's turn and the piece belongs to the player
-    const pieceColor = pieceElement.classList.contains('white') ? 'w' : 'b';
+    const pieceColor = getPieceColorFromElement(pieceElement);
+    if (!pieceColor) return;
     const currentTurn = chess.turn();
     
     if (currentTurn !== pieceColor) {
@@ -740,9 +757,13 @@ function handleSquareClick(event) {
     
     console.log(`Clicked on ${squareNotation}`);
     
-    // Don't allow moves if game is over
+    // Don't allow moves if game is over or it's not the player's turn in AI mode
     if (gameOver) {
         console.log('Game is over');
+        return;
+    }
+    if (isAiGame && !isPlayerTurn) {
+        console.log('Waiting for AI');
         return;
     }
     
@@ -777,9 +798,9 @@ function handleSquareClick(event) {
                 // Update game status
                 updateGameStatus();
                 
-                // If in AI mode, make the AI move after a short delay
-                if (gameMode === 'ai' && !gameOver) {
-                    setTimeout(makeAIMove, 500);
+                isPlayerTurn = false;
+                if (isAiGame && !chess.game_over()) {
+                    setTimeout(getAiMove, 500);
                 }
             } else {
                 console.log('Invalid move');
@@ -800,7 +821,7 @@ function handleSquareClick(event) {
             const isPlayerPiece = (playerColor === 'white' && piece.color === 'w') || 
                                  (playerColor === 'black' && piece.color === 'b');
             
-            if (!isPlayerPiece && gameMode !== 'analysis') {
+            if (!isPlayerPiece) {
                 console.log('Not your piece');
                 return;
             }
@@ -983,10 +1004,10 @@ function addMoveToHistory(move) {
   let notation = move.san;
   
   // Add special symbols for checks and checkmates
-  if (chess.isCheck()) {
+  if (chess.in_check()) {
     notation += '+';
   }
-  if (chess.isCheckmate()) {
+  if (chess.in_checkmate()) {
     // Replace + with # for checkmate
     notation = notation.replace('+', '#');
     if (!notation.includes('#')) {
@@ -1127,16 +1148,16 @@ function updateGameStatus() {
   let status = '';
   
   // Check if the game is over
-  if (chess.isCheckmate()) {
+  if (chess.in_checkmate()) {
     const winner = chess.turn() === 'w' ? 'Black' : 'White';
     status = `Checkmate! ${winner} wins!`;
     gameOver = true;
-  } else if (chess.isDraw()) {
-    if (chess.isStalemate()) {
+  } else if (chess.in_draw()) {
+    if (chess.in_stalemate()) {
       status = 'Game over - Stalemate';
-    } else if (chess.isThreefoldRepetition()) {
+    } else if (chess.in_threefold_repetition()) {
       status = 'Game over - Draw by repetition';
-    } else if (chess.isInsufficientMaterial()) {
+    } else if (chess.insufficient_material()) {
       status = 'Game over - Draw by insufficient material';
     } else {
       status = 'Game over - Draw';
@@ -1148,7 +1169,7 @@ function updateGameStatus() {
     status = `${currentTurn} to move`;
     
     // Add check indicator
-    if (chess.isCheck()) {
+    if (chess.in_check()) {
       status += ' (Check)';
     }
   }
@@ -1710,7 +1731,8 @@ function setupDragAndDrop() {
     if (!pieceElement) return;
     
     // Only allow dragging if it's the player's turn and the piece is the player's color
-    const pieceColor = pieceElement.classList.contains('white') ? 'w' : 'b';
+    const pieceColor = getPieceColorFromElement(pieceElement);
+    if (!pieceColor) return;
     if (!isPlayerTurn || (pieceColor === 'w' && playerColor === 'black') || (pieceColor === 'b' && playerColor === 'white')) {
       return;
     }
@@ -1822,7 +1844,7 @@ function setupDragAndDrop() {
             isPlayerTurn = false;
             
             // If playing against AI, get AI move
-            if (isAiGame && !chess.isGameOver()) {
+            if (isAiGame && !chess.game_over()) {
     setTimeout(() => {
                 getAiMove();
     }, 500);
@@ -1846,7 +1868,8 @@ function setupDragAndDrop() {
     if (!pieceElement) return;
     
     // Only allow dragging if it's the player's turn and the piece is the player's color
-    const pieceColor = pieceElement.classList.contains('white') ? 'w' : 'b';
+    const pieceColor = getPieceColorFromElement(pieceElement);
+    if (!pieceColor) return;
     if (!isPlayerTurn || (pieceColor === 'w' && playerColor === 'black') || (pieceColor === 'b' && playerColor === 'white')) {
       return;
     }
@@ -2777,79 +2800,98 @@ function updateUIForGuest() {
   document.getElementById('find-opponent-btn').disabled = true;
 }
 
-// Get AI move
-function getAiMove(color = null) {
+// Apply a completed AI move to the board and UI
+function applyAiMoveResult(moveResult) {
+  if (!moveResult) return;
+
+  if (moveResult.captured) {
+    playSound('capture');
+  } else if (moveResult.flags.includes('k') || moveResult.flags.includes('q')) {
+    playSound('castle');
+  } else {
+    playSound('move');
+  }
+
+  if (chess.in_check()) {
+    playSound('check');
+  }
+
+  updateBoard();
+  addMoveToHistory(moveResult);
+  highlightLastMove(moveResult.from, moveResult.to);
+
+  if (isAiVsAiGame) {
+    if (chess.game_over()) {
+      clearTimeout(aiVsAiTimer);
+      return;
+    }
+    aiVsAiTimer = setTimeout(() => getAiMove(), aiMoveSpeed);
+  } else {
+    isPlayerTurn = true;
+    updateGameStatus();
+    switchTimer();
+  }
+}
+
+function applyUciMove(uci) {
+  if (!uci || uci === '(none)') return null;
+  const from = uci.slice(0, 2);
+  const to = uci.slice(2, 4);
+  const promotion = uci.length > 4 ? uci[4] : 'q';
+  return chess.move({ from, to, promotion });
+}
+
+async function ensureChessAI() {
+  if (chessAI && chessAI.isReady) return chessAI;
+  if (typeof ChessAI === 'undefined') {
+    throw new Error('Stockfish wrapper not loaded');
+  }
+  const difficultyEl = document.getElementById('ai-difficulty');
+  const skill = difficultyEl ? parseInt(difficultyEl.value, 10) || 10 : 10;
+  chessAI = new ChessAI(skill);
+  await chessAI.initializeEngine();
+  return chessAI;
+}
+
+function getRandomAiMove() {
+  const moves = chess.moves({ verbose: true });
+  if (!moves.length) return null;
+  return moves[Math.floor(Math.random() * moves.length)];
+}
+
+// Get AI move (Stockfish with random fallback)
+async function getAiMove(color = null) {
   console.log('Getting AI move, current turn:', chess.turn());
-  
-  // If specific color is passed, make sure it's the current turn
-  const currentTurn = chess.turn(); // 'b' for black, 'w' for white
-  if (color && ((color === 'white' && currentTurn !== 'w') || 
+
+  const currentTurn = chess.turn();
+  if (color && ((color === 'white' && currentTurn !== 'w') ||
                 (color === 'black' && currentTurn !== 'b'))) {
     console.error('Not the AI\'s turn');
     return;
   }
-  
-  // In a real implementation, this would call the Stockfish API
-  // For this MVP, we'll simulate an AI move with a random legal move
-  const moves = chess.moves({ verbose: true });
-  
-  if (moves.length > 0) {
-    // Select a random move
-    const randomMove = moves[Math.floor(Math.random() * moves.length)];
-    
-    console.log('AI selected move:', randomMove);
-    
-    // Make the move
-    chess.move(randomMove);
-    
-    // Play appropriate sound
-    if (randomMove.captured) {
-      playSound('capture');
-    } else if (randomMove.flags.includes('k') || randomMove.flags.includes('q')) {
-      playSound('castle');
-    } else {
-      playSound('move');
-    }
-    
-    // Check if the move puts the opponent in check
-    if (chess.isCheck()) {
-      playSound('check');
-    }
-    
-    // Update the board
-    updateBoard();
-    
-    // Add move to history
-    addMoveToHistory(randomMove);
-    
-    // Highlight the move
-    highlightLastMove(randomMove.from, randomMove.to);
-    
-    // If this is an AI vs AI game, schedule the next move
-    if (isAiVsAiGame) {
-      // Check if the game is over
-      if (chess.game_over()) {
-        clearTimeout(aiVsAiTimer);
-        return;
-      }
-      
-      // Schedule the next AI move
-      aiVsAiTimer = setTimeout(() => {
-        getAiMove();
-      }, aiMoveSpeed);
-    } else {
-      // Switch turns back to player
-      isPlayerTurn = true;
-      
-      // Update game status
-      updateGameStatus();
-      
-      // Switch timer
-      switchTimer();
-      
-      console.log('AI move complete, setting isPlayerTurn to true');
-    }
+
+  if (chess.game_over()) return;
+
+  let moveResult = null;
+
+  try {
+    const engine = await ensureChessAI();
+    const difficultyEl = document.getElementById('ai-difficulty');
+    const skill = difficultyEl ? parseInt(difficultyEl.value, 10) || 10 : 10;
+    engine.skillLevel = skill;
+    engine.engine.postMessage(`setoption name Skill Level value ${skill}`);
+
+    const depth = skill <= 5 ? 8 : skill <= 12 ? 12 : 16;
+    const { bestMove } = await engine.getBestMove(chess.fen(), { depth, timeLimit: 1000 });
+    moveResult = applyUciMove(bestMove);
+    console.log('Stockfish move:', bestMove);
+  } catch (error) {
+    console.warn('Stockfish unavailable, using random move:', error.message);
+    const fallback = getRandomAiMove();
+    if (fallback) moveResult = chess.move(fallback);
   }
+
+  applyAiMoveResult(moveResult);
 }
 
 // Start AI vs AI game
@@ -4245,6 +4287,8 @@ function setupEventListeners() {
         isPlayerTurn = true;
         playerColor = 'black';
         
+        ensureChessAI().catch(err => console.warn('Stockfish preload:', err.message));
+        
         // Update player info
         if (whitePlayerEl && blackPlayerEl) {
           const whiteNameEl = whitePlayerEl.querySelector('.player-name');
@@ -4566,7 +4610,7 @@ function showPromotionDialog(move) {
       pieceElement.dataset.piece = pieceType;
       
       const img = document.createElement('img');
-      img.src = `images/${piece.color}${pieceType.toUpperCase()}.png`;
+      img.src = `images/pieces/${piece.color}${pieceType.toUpperCase()}.svg`;
       img.alt = pieceType;
       pieceElement.appendChild(img);
       
@@ -5440,18 +5484,18 @@ function highlightMove(from, to) {
 
 // Check if the game has ended
 function checkGameEnd() {
-  if (chess.isCheckmate()) {
+  if (chess.in_checkmate()) {
     const winner = chess.turn() === 'w' ? 'Black' : 'White';
     showError(`Checkmate! ${winner} wins!`, 'success');
     gameOver = true;
     return true;
-  } else if (chess.isDraw()) {
+  } else if (chess.in_draw()) {
     let reason = 'Draw';
-    if (chess.isStalemate()) {
+    if (chess.in_stalemate()) {
       reason = 'Stalemate';
-    } else if (chess.isThreefoldRepetition()) {
+    } else if (chess.in_threefold_repetition()) {
       reason = 'Threefold repetition';
-    } else if (chess.isInsufficientMaterial()) {
+    } else if (chess.insufficient_material()) {
       reason = 'Insufficient material';
     }
     showError(`Game drawn (${reason})`, 'info');
@@ -5473,7 +5517,7 @@ function playMoveSound(move) {
     }
     
     // Play check sound if the move puts the opponent in check
-    if (chess.isCheck()) {
+    if (chess.in_check()) {
       playSound('check');
     }
   } catch (error) {

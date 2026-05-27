@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Universe - Simple Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .game-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    
+    .options-panel {
+      flex: 1;
+      min-width: 250px;
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .board-container {
+      flex: 2;
+      min-width: 400px;
+    }
+    
+    .chessboard {
+      width: 100%;
+      aspect-ratio: 1/1;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      border: 2px solid #333;
+    }
+    
+    .square {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .light-square {
+      background-color: #f0d9b5;
+    }
+    
+    .dark-square {
+      background-color: #b58863;
+    }
+    
+    .piece {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: grab;
+      z-index: 10;
+    }
+    
+    .piece img {
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+    
+    .piece.dragging {
+      opacity: 0.8;
+      z-index: 100;
+    }
+    
+    .square.selected {
+      background-color: rgba(0, 100, 255, 0.4) !important;
+    }
+    
+    .square.possible-move::after {
+      content: '';
+      position: absolute;
+      width: 25%;
+      height: 25%;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.2);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .square.last-move-from,
+    .square.last-move-to {
+      background-color: rgba(255, 255, 0, 0.4) !important;
+    }
+    
+    .game-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      background-color: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .player-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .player-time {
+      font-weight: bold;
+      font-family: monospace;
+      font-size: 1.2rem;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      background-color: #e0e0e0;
+      margin: 5px 0;
+      transition: all 0.3s;
+      width: 100%;
+    }
+    
+    .btn:hover {
+      opacity: 0.9;
+    }
+    
+    .primary-btn {
+      background-color: #4a6fa5;
+      color: white;
+    }
+    
+    .moves-list {
+      height: 200px;
+      overflow-y: auto;
+      background-color: white;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .move-item {
+      display: inline-block;
+      padding: 3px 8px;
+      margin: 2px;
+      border-radius: 4px;
+      background-color: #f0f0f0;
+      cursor: pointer;
+    }
+    
+    .move-item:hover {
+      background-color: #e0e0e0;
+    }
+    
+    h2 {
+      margin-top: 0;
+      color: #4a6fa5;
+    }
+    
+    .status-message {
+      font-weight: bold;
+      text-align: center;
+      padding: 10px;
+      background-color: #fffde7;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+</head>
+<body>
+  <h1>Chess Universe - Simple Game</h1>
+  
+  <div class="game-container">
+    <div class="options-panel">
+      <h2>Game Options</h2>
+      <button id="new-game-btn" class="btn primary-btn">New Game</button>
+      <button id="play-as-white-btn" class="btn">Play as White</button>
+      <button id="play-as-black-btn" class="btn">Play as Black</button>
+      <button id="flip-board-btn" class="btn">Flip Board</button>
+      <button id="undo-move-btn" class="btn">Undo Move</button>
+      
+      <h2>Move History</h2>
+      <div id="moves-list" class="moves-list"></div>
+    </div>
+    
+    <div class="board-container">
+      <div class="game-info">
+        <div class="player-info">
+          <div class="player-name">White</div>
+          <div id="white-time" class="player-time">10:00</div>
+        </div>
+        <div id="game-status" class="status-message">Game not started</div>
+        <div class="player-info">
+          <div class="player-name">Black</div>
+          <div id="black-time" class="player-time">10:00</div>
+        </div>
+      </div>
+      
+      <div id="chessboard" class="chessboard"></div>
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    let chess = new Chess();
+    let selectedSquare = null;
+    let flipped = false;
+    let playerColor = 'white';
+    
+    // DOM Elements
+    const chessboardEl = document.getElementById('chessboard');
+    const statusEl = document.getElementById('game-status');
+    const movesListEl = document.getElementById('moves-list');
+    
+    // Initialize the board
+    function createBoard() {
+      chessboardEl.innerHTML = '';
+      
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          // Adjust for board flip
+          const displayRow = flipped ? 7 - row : row;
+          const displayCol = flipped ? 7 - col : col;
+          
+          // Create square
+          const square = document.createElement('div');
+          square.className = 'square';
+          
+          // Set light or dark
+          if ((row + col) % 2 === 0) {
+            square.classList.add('light-square');
+          } else {
+            square.classList.add('dark-square');
+          }
+          
+          // Set data attributes
+          square.setAttribute('data-row', displayRow);
+          square.setAttribute('data-col', displayCol);
+          
+          // Set algebraic notation
+          const file = String.fromCharCode(97 + displayCol);
+          const rank = 8 - displayRow;
+          square.setAttribute('data-square', file + rank);
+          
+          // Add click handler
+          square.addEventListener('click', () => handleSquareClick(square));
+          
+          // Add drop handlers
+          square.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          });
+          
+          square.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const fromSquare = e.dataTransfer.getData('text/plain');
+            if (!fromSquare) return;
+            
+            const toSquare = square.getAttribute('data-square');
+            if (fromSquare === toSquare) return;
+            
+            makeMove(fromSquare, toSquare);
+          });
+          
+          chessboardEl.appendChild(square);
+        }
+      }
+      
+      updateBoard();
+    }
+    
+    // Update the board to match the chess.js state
+    function updateBoard() {
+      // Remove all pieces
+      document.querySelectorAll('.piece').forEach(piece => piece.remove());
+      
+      // Get current position
+      const position = chess.board();
+      
+      // Add pieces
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const piece = position[row][col];
+          if (!piece) continue;
+          
+          const displayRow = flipped ? 7 - row : row;
+          const displayCol = flipped ? 7 - col : col;
+          
+          const square = document.querySelector(`[data-row="${displayRow}"][data-col="${displayCol}"]`);
+          if (!square) continue;
+          
+          // Create piece element
+          const pieceElement = document.createElement('div');
+          pieceElement.className = 'piece';
+          
+          // Create image
+          const img = document.createElement('img');
+          const color = piece.color === 'w' ? 'white' : 'black';
+          const type = getPieceType(piece.type);
+          
+          // Use the SVG pieces (wP.svg, bK.svg, etc)
+          const pieceCode = piece.color + piece.type.toUpperCase();
+          img.src = `images/pieces/${pieceCode}.svg`;
+          
+          // Add error handling for images
+          img.onerror = function() {
+            console.log(`Failed to load: ${img.src}, using fallback`);
+            img.src = `https://lichess1.org/assets/piece/cburnett/${pieceCode}.svg`;
+          };
+          
+          img.alt = `${color} ${type}`;
+          pieceElement.appendChild(img);
+          square.appendChild(pieceElement);
+          
+          // Make piece draggable
+          pieceElement.setAttribute('draggable', 'true');
+          
+          // Add drag start
+          pieceElement.addEventListener('dragstart', (e) => {
+            // Only allow dragging pieces of the current turn
+            if (piece.color !== chess.turn()) {
+              e.preventDefault();
+              return false;
+            }
+            
+            const squareNotation = square.getAttribute('data-square');
+            e.dataTransfer.setData('text/plain', squareNotation);
+            
+            setTimeout(() => pieceElement.classList.add('dragging'), 0);
+          });
+          
+          // Add drag end
+          pieceElement.addEventListener('dragend', () => {
+            pieceElement.classList.remove('dragging');
+          });
+          
+          // Add click
+          pieceElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handlePieceClick(square);
+          });
+        }
+      }
+      
+      // Update status
+      updateStatus();
+    }
+    
+    // Handle click on a piece
+    function handlePieceClick(square) {
+      const squareNotation = square.getAttribute('data-square');
+      const piece = chess.get(squareNotation);
+      
+      // Check if valid piece to move
+      if (!piece || piece.color !== chess.turn()) {
+        return;
+      }
+      
+      // If we already have a selected square, clear it
+      if (selectedSquare) {
+        clearHighlights();
+      }
+      
+      // Select this square
+      selectedSquare = squareNotation;
+      square.classList.add('selected');
+      
+      // Highlight possible moves
+      const moves = chess.moves({
+        square: squareNotation,
+        verbose: true
+      });
+      
+      moves.forEach(move => {
+        const targetSquare = document.querySelector(`[data-square="${move.to}"]`);
+        if (targetSquare) {
+          targetSquare.classList.add('possible-move');
+        }
+      });
+    }
+    
+    // Handle click on a square
+    function handleSquareClick(square) {
+      const squareNotation = square.getAttribute('data-square');
+      
+      // If we have a selected square, try to move
+      if (selectedSquare) {
+        // Don't do anything if clicking the same square
+        if (selectedSquare === squareNotation) {
+          selectedSquare = null;
+          clearHighlights();
+          return;
+        }
+        
+        // Try to make the move
+        makeMove(selectedSquare, squareNotation);
+        
+        // Clear selection
+        selectedSquare = null;
+        clearHighlights();
+      } else {
+        // If clicking on a square with a piece, select it
+        const piece = chess.get(squareNotation);
+        if (piece) {
+          handlePieceClick(square);
+        }
+      }
+    }
+    
+    // Make a move
+    function makeMove(from, to) {
+      try {
+        // Try to make the move
+        const moveObj = {
+          from: from,
+          to: to,
+          promotion: 'q' // Default to queen for simplicity
+        };
+        
+        const move = chess.move(moveObj);
+        
+        if (move) {
+          // Add to move history
+          addMoveToHistory(move);
+          
+          // Update the board
+          updateBoard();
+          
+          // Highlight the last move
+          highlightLastMove(from, to);
+          
+          return true;
+        } else {
+          console.log(`Invalid move: ${from} to ${to}`);
+          return false;
+        }
+      } catch (error) {
+        console.error(`Error making move: ${error.message}`);
+        return false;
+      }
+    }
+    
+    // Add move to history
+    function addMoveToHistory(move) {
+      const moveNumber = Math.floor((chess.history().length + 1) / 2);
+      
+      const moveItem = document.createElement('span');
+      moveItem.className = 'move-item';
+      
+      if (move.color === 'w') {
+        moveItem.textContent = `${moveNumber}. ${move.san}`;
+      } else {
+        moveItem.textContent = move.san;
+      }
+      
+      moveItem.addEventListener('click', () => {
+        // Could implement move replay here
+      });
+      
+      movesListEl.appendChild(moveItem);
+      movesListEl.scrollTop = movesListEl.scrollHeight;
+    }
+    
+    // Clear highlights
+    function clearHighlights() {
+      document.querySelectorAll('.square').forEach(square => {
+        square.classList.remove('selected', 'possible-move', 'last-move-from', 'last-move-to');
+      });
+    }
+    
+    // Highlight last move
+    function highlightLastMove(from, to) {
+      clearHighlights();
+      
+      const fromSquare = document.querySelector(`[data-square="${from}"]`);
+      const toSquare = document.querySelector(`[data-square="${to}"]`);
+      
+      if (fromSquare) fromSquare.classList.add('last-move-from');
+      if (toSquare) toSquare.classList.add('last-move-to');
+    }
+    
+    // Update game status
+    function updateStatus() {
+      let status = '';
+      
+      if (chess.in_checkmate()) {
+        const winner = chess.turn() === 'w' ? 'Black' : 'White';
+        status = `Checkmate! ${winner} wins.`;
+      } else if (chess.in_draw()) {
+        status = 'Game over. Draw!';
+      } else if (chess.in_check()) {
+        status = `${chess.turn() === 'w' ? 'White' : 'Black'} is in check.`;
+      } else {
+        status = `${chess.turn() === 'w' ? 'White' : 'Black'} to move.`;
+      }
+      
+      statusEl.textContent = status;
+    }
+    
+    // Utility function to get piece type name
+    function getPieceType(type) {
+      switch (type) {
+        case 'p': return 'pawn';
+        case 'r': return 'rook';
+        case 'n': return 'knight';
+        case 'b': return 'bishop';
+        case 'q': return 'queen';
+        case 'k': return 'king';
+        default: return type;
+      }
+    }
+    
+    // Reset board to starting position
+    function resetBoard() {
+      chess.reset();
+      selectedSquare = null;
+      clearHighlights();
+      updateBoard();
+      
+      // Clear move history
+      movesListEl.innerHTML = '';
+      
+      statusEl.textContent = 'New game started. White to move.';
+    }
+    
+    // Flip the board
+    function flipBoard() {
+      flipped = !flipped;
+      createBoard();
+    }
+    
+    // Set up event listeners
+    document.getElementById('new-game-btn').addEventListener('click', resetBoard);
+    document.getElementById('flip-board-btn').addEventListener('click', flipBoard);
+    document.getElementById('undo-move-btn').addEventListener('click', () => {
+      chess.undo();
+      updateBoard();
+    });
+    
+    document.getElementById('play-as-white-btn').addEventListener('click', () => {
+      playerColor = 'white';
+      resetBoard();
+    });
+    
+    document.getElementById('play-as-black-btn').addEventListener('click', () => {
+      playerColor = 'black';
+      resetBoard();
+      // TODO: Make an AI move for white here if implementing AI
+    });
+    
+    // Initialize
+    createBoard();
+    statusEl.textContent = 'Game ready. Click New Game to start.';
+  </script>
+</body>
+</html> 
