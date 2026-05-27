@@ -862,11 +862,15 @@ function clearHighlights() {
 
 // Highlight the last move made
 function highlightLastMove(from, to) {
-    const fromSquare = document.querySelector(`[data-square="${from}"]`);
-    const toSquare = document.querySelector(`[data-square="${to}"]`);
-    
-    if (fromSquare) fromSquare.classList.add('last-move-from');
-    if (toSquare) toSquare.classList.add('last-move-to');
+  document.querySelectorAll('.last-move-from, .last-move-to').forEach(square => {
+    square.classList.remove('last-move-from', 'last-move-to');
+  });
+
+  const fromSquare = document.querySelector(`[data-square="${from}"]`);
+  const toSquare = document.querySelector(`[data-square="${to}"]`);
+
+  if (fromSquare) fromSquare.classList.add('last-move-from');
+  if (toSquare) toSquare.classList.add('last-move-to');
 }
 
 // Make a move on the chess board

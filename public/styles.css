@@ -1,19 +1,22 @@
 /* Global Styles */
 :root {
-  --primary-color: #4a6fa5;
-  --secondary-color: #6b8cae;
-  --accent-color: #e6b35a;
+  --primary-color: #0e2a47;
+  --secondary-color: #1e88ff;
+  --accent-color: #d9a441;
   --danger-color: #d9534f;
-  --light-square: #f0d9b5;
-  --dark-square: #b58863;
-  --highlight-square: rgba(124, 252, 0, 0.5);
-  --last-move-highlight: rgba(255, 255, 0, 0.4);
-  --selected-piece-highlight: rgba(0, 100, 255, 0.4);
-  --valid-move-dot: rgba(0, 0, 0, 0.2);
-  --background-color: #f5f5f5;
-  --text-color: #333;
-  --border-color: #ddd;
-  --modal-bg: #fff;
+
+  --light-square: #eaf4ff;
+  --dark-square: #2f5f8f;
+
+  --highlight-square: rgba(30, 136, 255, 0.18);
+  --last-move-highlight: rgba(30, 136, 255, 0.22);
+  --selected-piece-highlight: rgba(14, 42, 71, 0.22);
+  --valid-move-dot: rgba(30, 136, 255, 0.55);
+
+  --background-color: #f5f8fc;
+  --text-color: #1f2933;
+  --border-color: #d8e4f2;
+  --modal-bg: #ffffff;
 }
 
 * {
@@ -156,7 +159,10 @@ header.authenticated {
   max-width: 600px;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
-  border: 3px solid #333;
+  border: 4px solid var(--primary-color);
+  box-shadow: 0 12px 30px rgba(14, 42, 71, 0.18);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .square {
@@ -169,46 +175,11 @@ header.authenticated {
 }
 
 .light-square {
-  background-color: #f0d9b5;
+  background-color: var(--light-square);
 }
 
 .dark-square {
-  background-color: #b58863;
-}
-
-.highlight {
-  position: relative;
-  z-index: 5;
-}
-
-.highlight::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 30%;
-  height: 30%;
-  border-radius: 50%;
-  background-color: rgba(0, 255, 0, 0.5);
-  z-index: 5;
-  animation: pulse 1.5s infinite;
-}
-
-.last-move {
-  position: relative;
-  background-color: var(--last-move-highlight);
-}
-
-.last-move::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 2px solid rgba(255, 215, 0, 0.6);
-  pointer-events: none;
+  background-color: var(--dark-square);
 }
 
 .selected-piece {
@@ -869,13 +840,10 @@ header.authenticated {
     transform: scale(1.1);
   }
   
-  .square.highlight {
-    background-color: var(--highlight-square);
-  }
-  
-  .square.highlight::before {
-    width: 30%;
-    height: 30%;
+  .square.highlight::before,
+  .square.possible-move::before {
+    width: 26%;
+    height: 26%;
   }
 }
 
@@ -2194,9 +2162,7 @@ input.error {
 
 /* Highlight styles for chess squares */
 .square.selected {
-  position: relative;
-  box-shadow: inset 0 0 0 3px rgba(0, 0, 255, 0.5);
-  z-index: 1;
+  box-shadow: inset 0 0 0 4px rgba(217, 164, 65, 0.85);
 }
 
 .square.possible-move {
@@ -2204,20 +2170,29 @@ input.error {
   cursor: pointer;
 }
 
-.square.possible-move::after {
-  content: '';
+.square.possible-move::before,
+.square.highlight::before {
+  content: "";
   position: absolute;
-  width: 25%;
-  height: 25%;
-  border-radius: 50%;
-  background-color: var(--valid-move-dot);
+  width: 22%;
+  height: 22%;
+  border-radius: 999px;
+  background: var(--valid-move-dot);
+  box-shadow: 0 0 0 6px rgba(30, 136, 255, 0.12);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
+  z-index: 3;
 }
 
-.square.last-move-from,
-.square.last-move-to {
-  background-color: var(--last-move-highlight) !important;
+.square.last-move-from::after,
+.square.last-move-to::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--last-move-highlight);
+  border: 2px solid rgba(30, 136, 255, 0.55);
+  pointer-events: none;
+  z-index: 2;
 } 
