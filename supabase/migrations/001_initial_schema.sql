@@ -116,7 +116,7 @@ returns uuid
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   created_id uuid;
 begin
@@ -148,7 +148,7 @@ begin
 
   return created_id;
 end;
-$;
+$$;
 
 revoke all on function public.create_waiting_game(text, integer) from public;
 grant execute on function public.create_waiting_game(text, integer) to authenticated;
