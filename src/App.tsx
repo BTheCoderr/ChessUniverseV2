@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AuthPanel } from "./components/AuthPanel";
 import { LocalGame } from "./components/LocalGame";
+import { OnlineGame } from "./components/OnlineGame";
 import { OnlineLobby } from "./components/OnlineLobby";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
@@ -10,6 +11,7 @@ type View = "home" | "play" | "online" | "account";
 export default function App() {
   const [view, setView] = useState<View>("home");
   const [session, setSession] = useState<Session | null>(null);
+  const [onlineGameId, setOnlineGameId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -39,7 +41,10 @@ export default function App() {
           </button>
           <button
             className={view === "online" ? "active" : ""}
-            onClick={() => setView("online")}
+            onClick={() => {
+              setView("online");
+              setOnlineGameId(null);
+            }}
           >
             Online
           </button>
@@ -73,7 +78,13 @@ export default function App() {
                 <button className="primary-action" onClick={() => setView("play")}>
                   Play now
                 </button>
-                <button className="secondary-action" onClick={() => setView("online")}>
+                <button
+                  className="secondary-action"
+                  onClick={() => {
+                    setView("online");
+                    setOnlineGameId(null);
+                  }}
+                >
                   Find a game
                 </button>
               </div>
@@ -102,7 +113,16 @@ export default function App() {
         ) : null}
 
         {view === "play" ? <LocalGame /> : null}
-        {view === "online" ? <OnlineLobby session={session} /> : null}
+        {view === "online" && session && onlineGameId ? (
+          <OnlineGame
+            gameId={onlineGameId}
+            session={session}
+            onBack={() => setOnlineGameId(null)}
+          />
+        ) : null}
+        {view === "online" && (!session || !onlineGameId) ? (
+          <OnlineLobby session={session} onOpenGame={setOnlineGameId} />
+        ) : null}
         {view === "account" ? <AuthPanel session={session} /> : null}
       </main>
     </div>
