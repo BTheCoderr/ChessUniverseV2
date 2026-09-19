@@ -12,7 +12,13 @@ type GameRow = {
   created_at: string;
 };
 
-export function OnlineLobby({ session }: { session: Session | null }) {
+export function OnlineLobby({
+  session,
+  onOpenGame,
+}: {
+  session: Session | null;
+  onOpenGame: (gameId: string) => void;
+}) {
   const client = supabase;
   const [games, setGames] = useState<GameRow[]>([]);
   const [message, setMessage] = useState("");
@@ -62,15 +68,19 @@ export function OnlineLobby({ session }: { session: Session | null }) {
 
   const createGame = async () => {
     setMessage("");
-    const { error } = await client.from("games").insert({
-      white_id: session.user.id,
-      status: "waiting",
-      variant: "traditional",
-      time_control_minutes: 10,
-    });
+    const { data, error } = await client
+      .from("games")
+      .insert({
+        white_id: session.user.id,
+        status: "waiting",
+        variant: "traditional",
+        time_control_minutes: 10,
+      })
+      .select("id")
+      .single();
 
     if (error) setMessage(error.message);
-    else setMessage("Game created. Waiting for an opponent.");
+    else if (data?.id) onOpenGame(String(data.id));
   };
 
   const joinGame = async (gameId: string) => {
@@ -80,7 +90,7 @@ export function OnlineLobby({ session }: { session: Session | null }) {
     });
 
     if (error) setMessage(error.message);
-    else setMessage(`Joined game ${String(data).slice(0, 8)}. Live board sync is next.`);
+    else if (data) onOpenGame(String(data));
   };
 
   return (
@@ -108,7 +118,12 @@ export function OnlineLobby({ session }: { session: Session | null }) {
                 <span>{game.id.slice(0, 8)}</span>
               </div>
               {game.white_id === session.user.id ? (
-                <span className="waiting-pill">Your table</span>
+                <button
+                  className="secondary-action compact"
+                  onClick={() => onOpenGame(game.id)}
+                >
+                  Open table
+                </button>
               ) : (
                 <button
                   className="secondary-action compact"
