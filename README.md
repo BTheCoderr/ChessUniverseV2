@@ -8,7 +8,8 @@ Chess Universe is being rebuilt as a Netlify-first web app with Supabase for aut
 - Traditional local chess
 - Browser AI using the existing Stockfish assets with a safe legal-move fallback
 - Supabase email/password authentication
-- Online lobby with create/join game primitives
+- Online lobby with guarded create/join RPCs
+- Realtime online chess table with persisted turn-by-turn moves
 - Postgres schema and RLS for profiles, games, and moves
 - Netlify deployment configuration
 - CI typecheck/build validation
@@ -44,7 +45,7 @@ Set the two `VITE_SUPABASE_*` environment variables in Netlify.
 
 1. Core local/AI chess
 2. Auth + profiles
-3. Online create/join + realtime move sync
+3. Apply/test Supabase auth + online realtime move sync
 4. Persistent game history and ratings
 5. Magic Horse + progressive variants
 6. Tournaments and leaderboards
