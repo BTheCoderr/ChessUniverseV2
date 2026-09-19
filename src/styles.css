@@ -339,3 +339,25 @@ code {
   .play-layout { grid-template-columns: 1fr; gap: 14px; }
   .game-panel { position: static; }
 }
+
+.back-link {
+  padding-left: 0;
+  margin-bottom: 18px;
+}
+
+.online-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+
+.online-meta span {
+  border: 1px solid var(--line);
+  background: #0f1314;
+  color: #cbd4d5;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
