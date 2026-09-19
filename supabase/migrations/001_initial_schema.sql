@@ -61,10 +61,6 @@ create policy "profiles are readable"
 on public.profiles for select
 using (true);
 
-create policy "authenticated users can create waiting games"
-on public.games for insert to authenticated
-with check (white_id = auth.uid() and black_id is null and status = 'waiting');
-
 create policy "users can read open or participating games"
 on public.games for select to authenticated
 using (status = 'waiting' or white_id = auth.uid() or black_id = auth.uid());
@@ -111,6 +107,51 @@ $$;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
+
+create or replace function public.create_waiting_game(
+  game_variant text default 'traditional',
+  game_minutes integer default 10
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  created_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if game_variant <> 'traditional' then
+    raise exception 'Variant is not available for online play yet';
+  end if;
+
+  if game_minutes < 1 or game_minutes > 180 then
+    raise exception 'Invalid time control';
+  end if;
+
+  insert into public.games (
+    white_id,
+    status,
+    variant,
+    time_control_minutes
+  )
+  values (
+    auth.uid(),
+    'waiting',
+    game_variant,
+    game_minutes
+  )
+  returning id into created_id;
+
+  return created_id;
+end;
+$;
+
+revoke all on function public.create_waiting_game(text, integer) from public;
+grant execute on function public.create_waiting_game(text, integer) to authenticated;
 
 create or replace function public.join_waiting_game(target_game_id uuid)
 returns uuid
