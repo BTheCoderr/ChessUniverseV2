@@ -79,17 +79,6 @@ using (
   )
 );
 
-create policy "participants can insert own moves"
-on public.game_moves for insert to authenticated
-with check (
-  player_id = auth.uid()
-  and exists (
-    select 1 from public.games g
-    where g.id = game_moves.game_id
-      and (g.white_id = auth.uid() or g.black_id = auth.uid())
-  )
-);
-
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
