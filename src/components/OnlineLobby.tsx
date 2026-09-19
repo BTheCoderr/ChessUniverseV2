@@ -13,12 +13,13 @@ type GameRow = {
 };
 
 export function OnlineLobby({ session }: { session: Session | null }) {
+  const client = supabase;
   const [games, setGames] = useState<GameRow[]>([]);
   const [message, setMessage] = useState("");
 
   const load = async () => {
-    if (!supabase || !session) return;
-    const { data, error } = await supabase
+    if (!client || !session) return;
+    const { data, error } = await client
       .from("games")
       .select("id,white_id,black_id,status,variant,time_control_minutes,created_at")
       .eq("status", "waiting")
@@ -31,9 +32,9 @@ export function OnlineLobby({ session }: { session: Session | null }) {
 
   useEffect(() => {
     void load();
-    if (!supabase || !session) return;
+    if (!client || !session) return;
 
-    const channel = supabase
+    const channel = client
       .channel("lobby")
       .on("postgres_changes", { event: "*", schema: "public", table: "games" }, () => {
         void load();
@@ -41,11 +42,11 @@ export function OnlineLobby({ session }: { session: Session | null }) {
       .subscribe();
 
     return () => {
-      void supabase?.removeChannel(channel);
+      void client?.removeChannel(channel);
     };
   }, [session?.user.id]);
 
-  if (!isSupabaseConfigured || !session || !supabase) {
+  if (!isSupabaseConfigured || !session || !client) {
     return (
       <div className="card">
         <div className="eyebrow">ONLINE</div>
@@ -61,7 +62,7 @@ export function OnlineLobby({ session }: { session: Session | null }) {
 
   const createGame = async () => {
     setMessage("");
-    const { error } = await supabase.from("games").insert({
+    const { error } = await client.from("games").insert({
       white_id: session.user.id,
       status: "waiting",
       variant: "traditional",
@@ -74,7 +75,7 @@ export function OnlineLobby({ session }: { session: Session | null }) {
 
   const joinGame = async (gameId: string) => {
     setMessage("");
-    const { data, error } = await supabase.rpc("join_waiting_game", {
+    const { data, error } = await client.rpc("join_waiting_game", {
       target_game_id: gameId,
     });
 
