@@ -52,3 +52,8 @@ Set the two `VITE_SUPABASE_*` environment variables in Netlify.
 7. Friends, notifications, polish
 
 Betting is intentionally outside the first rebuild milestone.
+
+
+## Production deployment note
+
+Production is deployed from `main` on Netlify. Supabase browser configuration is provided through Netlify environment variables.
