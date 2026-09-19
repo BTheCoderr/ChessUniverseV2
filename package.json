@@ -1,45 +1,26 @@
 {
-  "name": "chess-app",
-  "version": "1.0.0",
-  "description": "A chess application with betting, tournaments, and magic horse challenge",
-  "main": "server/server.js",
+  "name": "chess-universe",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Chess Universe web app rebuilt for Netlify and Supabase",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
-    "seed": "node scripts/seed.js",
-    "test": "node test-server.js",
-    "postinstall": "node scripts/copy-stockfish.js"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty false"
   },
-  "keywords": [
-    "chess",
-    "betting",
-    "tournament",
-    "game"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.2",
+    "@supabase/supabase-js": "^2.116.0",
     "chess.js": "^1.1.0",
-    "compression": "^1.8.0",
-    "connect-mongo": "^5.1.0",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-rate-limit": "^7.5.0",
-    "express-session": "^1.18.1",
-    "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.3.0",
-    "mongoose": "^8.0.3",
-    "passport": "^0.7.0",
-    "passport-local": "^1.0.0",
-    "passport.socketio": "^3.7.0",
-    "socket.io": "^4.8.1",
-    "stockfish": "^16.0.0"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
   }
 }
