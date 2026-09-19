@@ -157,3 +157,103 @@ grant execute on function public.join_waiting_game(uuid) to authenticated;
 
 alter publication supabase_realtime add table public.games;
 alter publication supabase_realtime add table public.game_moves;
+
+
+-- Casual online move submission.
+-- Chess legality is checked in the browser for this MVP. This function still
+-- enforces participation, turn ownership, sequencing, and atomic persistence.
+-- Rated play must remain disabled until move legality is independently
+-- validated by trusted server-side code.
+create or replace function public.submit_game_move(
+  target_game_id uuid,
+  move_from text,
+  move_to text,
+  move_promotion text,
+  move_san text,
+  next_fen text
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  game_row public.games%rowtype;
+  next_ply integer;
+  caller_color text;
+begin
+  if move_from !~ '^[a-h][1-8]$' or move_to !~ '^[a-h][1-8]$' then
+    raise exception 'Invalid square';
+  end if;
+
+  if move_promotion is not null and move_promotion not in ('q','r','b','n') then
+    raise exception 'Invalid promotion';
+  end if;
+
+  select *
+    into game_row
+    from public.games
+    where id = target_game_id
+    for update;
+
+  if not found then
+    raise exception 'Game not found';
+  end if;
+
+  if game_row.status <> 'active' then
+    raise exception 'Game is not active';
+  end if;
+
+  caller_color := case
+    when game_row.white_id = auth.uid() then 'w'
+    when game_row.black_id = auth.uid() then 'b'
+    else null
+  end;
+
+  if caller_color is null then
+    raise exception 'Not a participant';
+  end if;
+
+  if caller_color <> game_row.current_turn then
+    raise exception 'Not your turn';
+  end if;
+
+  select coalesce(max(ply), 0) + 1
+    into next_ply
+    from public.game_moves
+    where game_id = target_game_id;
+
+  insert into public.game_moves (
+    game_id,
+    player_id,
+    ply,
+    from_square,
+    to_square,
+    promotion,
+    san,
+    fen_after
+  )
+  values (
+    target_game_id,
+    auth.uid(),
+    next_ply,
+    move_from,
+    move_to,
+    nullif(move_promotion, ''),
+    move_san,
+    next_fen
+  );
+
+  update public.games
+  set
+    fen = next_fen,
+    current_turn = case when game_row.current_turn = 'w' then 'b' else 'w' end,
+    updated_at = now()
+  where id = target_game_id;
+
+  return next_ply;
+end;
+$$;
+
+revoke all on function public.submit_game_move(uuid, text, text, text, text, text) from public;
+grant execute on function public.submit_game_move(uuid, text, text, text, text, text) to authenticated;
