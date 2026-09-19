@@ -1,100 +1,54 @@
-# Chess App
+# Chess Universe
 
-A feature-rich chess application with betting, tournaments, and a unique "Magic Horse" challenge.
+Chess Universe is being rebuilt as a Netlify-first web app with Supabase for authentication, Postgres persistence, and realtime multiplayer.
 
-## Features
+## Current rebuild scope
 
-- **Traditional Chess:** Play standard chess against opponents online
-- **Betting System:** Place bets on your games or as a spectator
-- **Tournament System:** Create and join tournaments with various formats
-- **Magic Horse Challenge:** Unique chess puzzle mode with special rules
-- **User Profiles:** Track your stats, rating, and achievements
-- **Real-time Play:** Powered by Socket.IO for seamless gameplay
+- Responsive React/Vite/TypeScript shell
+- Traditional local chess
+- Browser AI using the existing Stockfish assets with a safe legal-move fallback
+- Supabase email/password authentication
+- Online lobby with guarded create/join RPCs
+- Realtime online chess table with persisted turn-by-turn moves
+- Postgres schema and RLS for profiles, games, and moves
+- Netlify deployment configuration
+- CI typecheck/build validation
 
-## Technology Stack
+The legacy Express/Mongo/Socket.IO code remains in the repository temporarily as migration reference, but the new app does not import or execute it.
 
-- **Frontend:** HTML, CSS, JavaScript
-- **Backend:** Node.js, Express
-- **Database:** MongoDB (with Mongoose)
-- **Real-time Communication:** Socket.IO
-- **Authentication:** Passport.js
+## Local setup
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v16+)
-- MongoDB (local or Atlas)
-
-### Installation
-
-1. Clone the repository
-```
-git clone https://github.com/yourusername/chess-app.git
-cd chess-app
-```
-
-2. Install dependencies
-```
+```bash
 npm install
-```
-
-3. Copy environment variables:
-```
 cp .env.example .env
-```
-
-Edit `.env` and set at minimum:
-```
-MONGODB_URI=your_mongodb_connection_string
-SESSION_SECRET=your_session_secret
-PORT=3001
-```
-
-### Quick local play (no MongoDB)
-
-Best for testing the board and Stockfish AI:
-
-```
-npm test
-```
-
-Open **http://localhost:3000/** — standalone chess with Play vs AI.
-
-Other routes: `/launcher`, `/standalone`, `/simple`, `/start`, `/full` (static only; no API).
-
-### Full app (MongoDB required)
-
-```
 npm run dev
 ```
 
-Open **http://localhost:3001/** or **http://localhost:3001/full**
+Supabase is optional for local/AI play. To enable accounts and online play:
 
-Requires MongoDB running and `MONGODB_URI` set in `.env`.
-
-### Running with Docker
-
-```
-docker-compose up
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
-## Game Modes
+Apply `supabase/migrations/001_initial_schema.sql` to the Supabase project before testing auth or online play.
 
-### Traditional Chess
-Standard chess rules apply. Players can bet coins on the outcome.
+## Netlify
 
-### Magic Horse Challenge
-A unique puzzle mode where you control only knights ("horses") and must capture all opponent queens within a certain number of moves.
+Build command: `npm run build`
 
-## API Documentation
+Publish directory: `dist`
 
-The API documentation is available at `/api-docs` when running the server.
+Set the two `VITE_SUPABASE_*` environment variables in Netlify.
 
-## Contributing
+## Migration plan
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Core local/AI chess
+2. Auth + profiles
+3. Apply/test Supabase auth + online realtime move sync
+4. Persistent game history and ratings
+5. Magic Horse + progressive variants
+6. Tournaments and leaderboards
+7. Friends, notifications, polish
 
-## License
-
-This project is licensed under the ISC License - see the LICENSE file for details. 
+Betting is intentionally outside the first rebuild milestone.
