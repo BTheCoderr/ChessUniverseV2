@@ -68,19 +68,13 @@ export function OnlineLobby({
 
   const createGame = async () => {
     setMessage("");
-    const { data, error } = await client
-      .from("games")
-      .insert({
-        white_id: session.user.id,
-        status: "waiting",
-        variant: "traditional",
-        time_control_minutes: 10,
-      })
-      .select("id")
-      .single();
+    const { data, error } = await client.rpc("create_waiting_game", {
+      game_variant: "traditional",
+      game_minutes: 10,
+    });
 
     if (error) setMessage(error.message);
-    else if (data?.id) onOpenGame(String(data.id));
+    else if (data) onOpenGame(String(data));
   };
 
   const joinGame = async (gameId: string) => {
