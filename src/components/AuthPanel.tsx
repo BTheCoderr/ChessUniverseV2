@@ -11,7 +11,9 @@ export function AuthPanel({ session }: Props) {
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
 
-  if (!isSupabaseConfigured || !supabase) {
+  const client = supabase;
+
+  if (!isSupabaseConfigured || !client) {
     return (
       <div className="card">
         <div className="eyebrow">ACCOUNT</div>
@@ -27,7 +29,7 @@ export function AuthPanel({ session }: Props) {
         <div className="eyebrow">ACCOUNT</div>
         <h2>{session.user.user_metadata.username || session.user.email}</h2>
         <p>Signed in and ready for online play.</p>
-        <button className="secondary-action" onClick={() => void supabase.auth.signOut()}>Sign out</button>
+        <button className="secondary-action" onClick={() => void client.auth.signOut()}>Sign out</button>
       </div>
     );
   }
@@ -36,14 +38,14 @@ export function AuthPanel({ session }: Props) {
     event.preventDefault();
     setMessage("");
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
+      const { error } = await client.auth.signUp({
         email,
         password,
         options: { data: { username } },
       });
       setMessage(error?.message ?? "Account created. Check your email if confirmation is enabled.");
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await client.auth.signInWithPassword({ email, password });
       setMessage(error?.message ?? "Signed in.");
     }
   };
