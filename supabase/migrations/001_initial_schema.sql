@@ -61,11 +61,6 @@ create policy "profiles are readable"
 on public.profiles for select
 using (true);
 
-create policy "users update own profile"
-on public.profiles for update to authenticated
-using (id = auth.uid())
-with check (id = auth.uid());
-
 create policy "authenticated users can create waiting games"
 on public.games for insert to authenticated
 with check (white_id = auth.uid() and black_id is null and status = 'waiting');
@@ -73,11 +68,6 @@ with check (white_id = auth.uid() and black_id is null and status = 'waiting');
 create policy "users can read open or participating games"
 on public.games for select to authenticated
 using (status = 'waiting' or white_id = auth.uid() or black_id = auth.uid());
-
-create policy "participants can update games"
-on public.games for update to authenticated
-using (white_id = auth.uid() or black_id = auth.uid())
-with check (white_id = auth.uid() or black_id = auth.uid());
 
 create policy "participants can read moves"
 on public.game_moves for select to authenticated
