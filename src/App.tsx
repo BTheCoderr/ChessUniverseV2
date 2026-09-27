@@ -70,7 +70,7 @@ export default function App() {
               <div className="eyebrow">CHESS, EVOLVED</div>
               <h1>Classic strategy. New worlds.</h1>
               <p>
-                Play traditional chess, challenge the computer, then unlock
+                Play Chess Universe with Black moving first, challenge the computer, then unlock
                 Chess Universe variants and live competition.
               </p>
 
@@ -92,8 +92,8 @@ export default function App() {
               <div className="feature-grid">
                 <article>
                   <span>01</span>
-                  <strong>Classic + AI</strong>
-                  <p>Fast browser play using the existing pieces and Stockfish assets.</p>
+                  <strong>Black first + AI</strong>
+                  <p>Play locally or challenge Stockfish with Black making the opening move.</p>
                 </article>
                 <article>
                   <span>02</span>

@@ -8,18 +8,20 @@ type Props = {
   legalTargets: Square[];
   onSquareClick: (square: Square) => void;
   disabled?: boolean;
+  orientation?: "w" | "b";
 };
 
 const files = ["a","b","c","d","e","f","g","h"] as const;
 
-export function ChessBoard({ pieces, selected, legalTargets, onSquareClick, disabled }: Props) {
+export function ChessBoard({ pieces, selected, legalTargets, onSquareClick, disabled, orientation = "w" }: Props) {
   const pieceMap = new Map(pieces.map((p) => [p.square, p]));
+  const displayedFiles = orientation === "b" ? [...files].reverse() : files;
 
   return (
     <div className="board" aria-label="Chess board">
       {Array.from({ length: 8 }, (_, row) =>
-        files.map((file, col) => {
-          const rank = 8 - row;
+        displayedFiles.map((file, col) => {
+          const rank = orientation === "b" ? row + 1 : 8 - row;
           const square = `${file}${rank}` as Square;
           const piece = pieceMap.get(square);
           const dark = (row + col) % 2 === 1;
