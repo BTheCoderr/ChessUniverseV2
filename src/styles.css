@@ -384,3 +384,39 @@ code {
   font-size: 12px;
   font-weight: 700;
 }
+
+
+.clock-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 18px 0 8px;
+}
+
+.clock {
+  border: 1px solid var(--line);
+  background: #0f1314;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.clock span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.clock strong {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock.active {
+  border-color: var(--accent);
+}
+
+.danger-action {
+  width: 100%;
+  margin-bottom: 12px;
+}
