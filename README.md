@@ -1,20 +1,24 @@
 # Chess Universe
 
-Chess Universe is being rebuilt as a Netlify-first web app with Supabase for authentication, Postgres persistence, and realtime multiplayer.
+Chess Universe is a Netlify-first React/Vite/TypeScript app with Supabase for authentication, Postgres persistence, realtime multiplayer, and trusted online game actions.
 
 ## Current rebuild scope
 
 - Responsive React/Vite/TypeScript shell
-- Traditional local chess
-- Browser AI using the existing Stockfish assets with a safe legal-move fallback
-- Supabase email/password authentication
+- Traditional local chess with Black moving first
+- Stockfish AI with Easy / Medium / Hard controls and visible engine status
+- Magic Horse as a separate playable challenge mode
+- Evolving Queens as a separate playable variant with a rules-aware AI
+- Supabase email/password authentication and profiles
 - Online lobby with guarded create/join RPCs
-- Realtime online chess table with persisted turn-by-turn moves
-- Postgres schema and RLS for profiles, games, and moves
-- Netlify deployment configuration
-- CI typecheck/build validation
+- Realtime online chess with Black moving first
+- Trusted Edge Function validation for online moves, results, resignations and timeouts
+- Server-timestamp game clocks and reconnect restoration
+- Postgres schema, RLS and atomic move persistence
+- Netlify production deployment
+- CI tests, typecheck and build validation
 
-The legacy Express/Mongo/Socket.IO code remains in the repository temporarily as migration reference, but the new app does not import or execute it.
+The legacy Express/Mongo/Socket.IO code remains temporarily as migration reference. The current React app does not import or execute it.
 
 ## Local setup
 
@@ -31,7 +35,13 @@ VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
-Apply `supabase/migrations/001_initial_schema.sql` to the Supabase project before testing auth or online play.
+Apply the SQL files in `supabase/migrations/` in order and deploy `supabase/functions/online-game/index.ts` before testing online multiplayer.
+
+## Online trust model
+
+The browser may preview legal moves for UI feedback, but it is not authoritative. The `online-game` Edge Function reloads the current game, validates the authenticated participant, applies the move with `chess.js`, calculates the server clock, determines game-over state, and commits through a service-role-only atomic RPC.
+
+The legacy browser move RPC is kept only long enough to deploy the new client safely and is disabled by the final migration.
 
 ## Netlify
 
@@ -39,21 +49,17 @@ Build command: `npm run build`
 
 Publish directory: `dist`
 
-Set the two `VITE_SUPABASE_*` environment variables in Netlify.
+Set the two `VITE_SUPABASE_*` environment variables in Netlify. Production deploys from `main`.
 
-## Migration plan
+## Roadmap
 
-1. Core local/AI chess
-2. Auth + profiles
-3. Apply/test Supabase auth + online realtime move sync
-4. Persistent game history and ratings
-5. Magic Horse + progressive variants
-6. Tournaments and leaderboards
-7. Friends, notifications, polish
+1. Finish two-account / two-device online multiplayer verification
+2. Persistent game history and ratings
+3. Matchmaking and private invite codes
+4. Battle Chess and custom setups
+5. Free tournaments and leaderboards
+6. Friends, notifications and spectator mode
+7. Play-money contests with a non-cash ledger
+8. Real-money contests only after jurisdiction, identity, geolocation and provider requirements are resolved
 
-Betting is intentionally outside the first rebuild milestone.
-
-
-## Production deployment note
-
-Production is deployed from `main` on Netlify. Supabase browser configuration is provided through Netlify environment variables.
+Real-money wagering is not enabled.
