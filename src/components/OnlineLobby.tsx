@@ -12,6 +12,17 @@ type GameRow = {
   created_at: string;
 };
 
+const timeOptions = [
+  { minutes: 0, label: "Untimed", detail: "Leave and resume later" },
+  { minutes: 10, label: "10 min", detail: "Quick casual game" },
+  { minutes: 15, label: "15 min", detail: "More thinking time" },
+  { minutes: 30, label: "30 min", detail: "Relaxed timed game" },
+];
+
+function timeLabel(minutes: number) {
+  return minutes === 0 ? "Untimed" : `${minutes} min`;
+}
+
 export function OnlineLobby({
   session,
   onOpenGame,
@@ -21,6 +32,8 @@ export function OnlineLobby({
 }) {
   const client = supabase;
   const [games, setGames] = useState<GameRow[]>([]);
+  const [activeGames, setActiveGames] = useState<GameRow[]>([]);
+  const [selectedMinutes, setSelectedMinutes] = useState(0);
   const [message, setMessage] = useState("");
 
   const load = async () => {
@@ -28,12 +41,24 @@ export function OnlineLobby({
     const { data, error } = await client
       .from("games")
       .select("id,white_id,black_id,status,variant,time_control_minutes,created_at")
-      .eq("status", "waiting")
+      .in("status", ["waiting", "active"])
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(40);
 
-    if (error) setMessage(error.message);
-    else setGames((data ?? []) as GameRow[]);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    const rows = (data ?? []) as GameRow[];
+    setGames(rows.filter((game) => game.status === "waiting"));
+    setActiveGames(
+      rows.filter(
+        (game) =>
+          game.status === "active" &&
+          (game.white_id === session.user.id || game.black_id === session.user.id)
+      )
+    );
   };
 
   useEffect(() => {
@@ -70,7 +95,7 @@ export function OnlineLobby({
     setMessage("");
     const { data, error } = await client.rpc("create_waiting_game", {
       game_variant: "traditional",
-      game_minutes: 10,
+      game_minutes: selectedMinutes,
     });
 
     if (error) setMessage(error.message);
@@ -88,48 +113,112 @@ export function OnlineLobby({
   };
 
   return (
-    <div className="card">
+    <div className="card online-lobby-card">
       <div className="lobby-heading">
         <div>
           <div className="eyebrow">ONLINE</div>
-          <h2>Open tables</h2>
+          <h2>Find your table</h2>
+          <p className="muted">Black moves first in every Chess Universe match.</p>
         </div>
-        <button className="primary-action compact" onClick={createGame}>
-          Create game
-        </button>
       </div>
 
       {message ? <p className="form-message">{message}</p> : null}
 
-      <div className="game-list">
-        {games.length === 0 ? (
-          <p className="muted">No open games yet.</p>
-        ) : (
-          games.map((game) => (
-            <div className="game-row" key={game.id}>
-              <div>
-                <strong>{game.time_control_minutes} min · Traditional</strong>
-                <span>{game.id.slice(0, 8)}</span>
-              </div>
-              {game.white_id === session.user.id ? (
+      {activeGames.length > 0 ? (
+        <section className="lobby-section">
+          <div className="section-heading">
+            <div>
+              <strong>My active games</strong>
+              <span>Pick up from any signed-in device.</span>
+            </div>
+          </div>
+          <div className="game-list compact-list">
+            {activeGames.map((game) => (
+              <div className="game-row" key={game.id}>
+                <div>
+                  <strong>{timeLabel(game.time_control_minutes)} · Traditional</strong>
+                  <span>{game.id.slice(0, 8)} · In progress</span>
+                </div>
                 <button
-                  className="secondary-action compact"
+                  className="primary-action compact"
                   onClick={() => onOpenGame(game.id)}
                 >
-                  Open table
+                  Resume
                 </button>
-              ) : (
-                <button
-                  className="secondary-action compact"
-                  onClick={() => void joinGame(game.id)}
-                >
-                  Join
-                </button>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="lobby-section create-table">
+        <div className="section-heading">
+          <div>
+            <strong>Create a casual game</strong>
+            <span>Untimed is best for learning or games you may finish later.</span>
+          </div>
+        </div>
+
+        <div className="time-control-grid" role="group" aria-label="Time control">
+          {timeOptions.map((option) => (
+            <button
+              type="button"
+              key={option.minutes}
+              className={selectedMinutes === option.minutes ? "time-choice active" : "time-choice"}
+              onClick={() => setSelectedMinutes(option.minutes)}
+            >
+              <strong>{option.label}</strong>
+              <span>{option.detail}</span>
+            </button>
+          ))}
+        </div>
+
+        <button className="primary-action create-game-button" onClick={() => void createGame()}>
+          Create {selectedMinutes === 0 ? "untimed" : `${selectedMinutes}-minute`} game
+        </button>
+        <p className="muted">
+          Untimed games can be left and resumed. Timed games keep running after they begin.
+        </p>
+      </section>
+
+      <section className="lobby-section">
+        <div className="section-heading">
+          <div>
+            <strong>Open tables</strong>
+            <span>Join another player's waiting game.</span>
+          </div>
+        </div>
+
+        <div className="game-list">
+          {games.length === 0 ? (
+            <p className="muted">No open games yet.</p>
+          ) : (
+            games.map((game) => (
+              <div className="game-row" key={game.id}>
+                <div>
+                  <strong>{timeLabel(game.time_control_minutes)} · Traditional</strong>
+                  <span>{game.id.slice(0, 8)}</span>
+                </div>
+                {game.white_id === session.user.id ? (
+                  <button
+                    className="secondary-action compact"
+                    onClick={() => onOpenGame(game.id)}
+                  >
+                    Open table
+                  </button>
+                ) : (
+                  <button
+                    className="secondary-action compact"
+                    onClick={() => void joinGame(game.id)}
+                  >
+                    Join
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   );
 }
