@@ -27,8 +27,11 @@ const inside = (file: number, rank: number) => file >= 0 && file < 8 && rank >= 
 export function newPosition(): Position {
   const board: (Piece | null)[] = Array(64).fill(null);
   start.split("/").forEach((row, rank) => {
-    [...row].forEach((char, file) => {
+    let file = 0;
+    [...row].forEach((char) => {
+      if (/^[1-8]$/.test(char)) { file += Number(char); return; }
       board[rank * 8 + file] = { type: char.toLowerCase() as Piece["type"], color: char === char.toUpperCase() ? "w" : "b" };
+      file++;
     });
   });
   return { board, turn: "b", castling: "KQkq", enPassant: null, halfmoves: 0, fullmoves: 1 };
@@ -136,7 +139,8 @@ function candidateMoves(position: Position, from: Square, level: QueenLevel): Mo
   return moves;
 }
 
-function apply(position: Position, move: Move): Position {
+// Only pass moves returned by legalMoves for this position.
+export function applyLegalMove(position: Position, move: Move): Position {
   const board = [...position.board];
   const piece = board[index(move.from)]!;
   const captured = board[index(move.to)];
@@ -168,12 +172,12 @@ function apply(position: Position, move: Move): Position {
 
 export function legalMoves(position: Position, level: QueenLevel, from?: Square): Move[] {
   const sources = from ? [from] : position.board.flatMap((piece, i) => piece?.color === position.turn ? [squareAt(i % 8, Math.floor(i / 8))] : []);
-  return sources.flatMap((source) => candidateMoves(position, source, level).filter((move) => !inCheck(apply(position, move), position.turn, level)));
+  return sources.flatMap((source) => candidateMoves(position, source, level).filter((move) => !inCheck(applyLegalMove(position, move), position.turn, level)));
 }
 
 export function playMove(position: Position, level: QueenLevel, from: Square, to: Square): Position | null {
   const move = legalMoves(position, level, from).find((option) => option.to === to);
-  return move ? apply(position, move) : null;
+  return move ? applyLegalMove(position, move) : null;
 }
 
 export function gameStatus(position: Position, level: QueenLevel): string {
