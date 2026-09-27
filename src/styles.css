@@ -264,6 +264,15 @@ nav button:hover, nav button.active { color: white; background: #1d2324; }
 }
 .game-settings p { margin: 0; }
 
+.horse-layout { display: grid; grid-template-columns: minmax(0, 720px) minmax(260px, 1fr); gap: 28px; align-items: start; }
+.horse-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 20px 0; }
+.horse-levels button { border: 1px solid var(--line); background: #0d1112; color: white; border-radius: 10px; padding: 10px; text-align: left; font-weight: 700; }
+.horse-levels button span { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 4px; }
+.horse-levels button.active { border-color: var(--accent); }
+.horse-levels button:disabled { opacity: .45; cursor: not-allowed; }
+.horse-progress { color: var(--accent); font-weight: 700; font-size: 14px; }
+.horse-next { width: 100%; }
+
 .card {
   padding: clamp(22px, 4vw, 36px);
   max-width: 760px;
@@ -347,7 +356,7 @@ code {
   .hero { grid-template-columns: 1fr; min-height: auto; }
   .hero-piece { display: none; }
   .feature-grid { grid-template-columns: 1fr; }
-  .play-layout { grid-template-columns: 1fr; gap: 14px; }
+  .play-layout, .horse-layout { grid-template-columns: 1fr; gap: 14px; }
   .game-panel { position: static; }
 }
 

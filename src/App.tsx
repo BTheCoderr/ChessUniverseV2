@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AuthPanel } from "./components/AuthPanel";
 import { LocalGame } from "./components/LocalGame";
+import { MagicHorseGame } from "./components/MagicHorseGame";
 import { OnlineGame } from "./components/OnlineGame";
 import { OnlineLobby } from "./components/OnlineLobby";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
-type View = "home" | "play" | "online" | "account";
+type View = "home" | "play" | "horse" | "online" | "account";
 
 export default function App() {
   const [view, setView] = useState<View>("home");
@@ -38,6 +39,9 @@ export default function App() {
             onClick={() => setView("play")}
           >
             Play
+          </button>
+          <button className={view === "horse" ? "active" : ""} onClick={() => setView("horse")} aria-label="Magic Horse">
+            Horse
           </button>
           <button
             className={view === "online" ? "active" : ""}
@@ -98,7 +102,7 @@ export default function App() {
                 <article>
                   <span>02</span>
                   <strong>Universe modes</strong>
-                  <p>Magic Horse, evolving queens, Battle Chess and custom setups stay in the roadmap.</p>
+                  <p>Magic Horse challenges are playable. Evolving queens, Battle Chess and custom setups are next.</p>
                 </article>
                 <article>
                   <span>03</span>
@@ -113,6 +117,7 @@ export default function App() {
         ) : null}
 
         {view === "play" ? <LocalGame /> : null}
+        {view === "horse" ? <MagicHorseGame /> : null}
         {view === "online" && session && onlineGameId ? (
           <OnlineGame
             gameId={onlineGameId}
