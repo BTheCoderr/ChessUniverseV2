@@ -6,6 +6,7 @@ type Props = {
   pieces: Piece[];
   selected: Square | null;
   legalTargets: Square[];
+  lastMove?: { from: Square; to: Square } | null;
   onSquareClick: (square: Square) => void;
   disabled?: boolean;
   orientation?: "w" | "b";
@@ -13,7 +14,15 @@ type Props = {
 
 const files = ["a","b","c","d","e","f","g","h"] as const;
 
-export function ChessBoard({ pieces, selected, legalTargets, onSquareClick, disabled, orientation = "w" }: Props) {
+export function ChessBoard({
+  pieces,
+  selected,
+  legalTargets,
+  lastMove,
+  onSquareClick,
+  disabled,
+  orientation = "w",
+}: Props) {
   const pieceMap = new Map(pieces.map((p) => [p.square, p]));
   const displayedFiles = orientation === "b" ? [...files].reverse() : files;
 
@@ -27,14 +36,15 @@ export function ChessBoard({ pieces, selected, legalTargets, onSquareClick, disa
           const dark = (row + col) % 2 === 1;
           const isSelected = selected === square;
           const isTarget = legalTargets.includes(square);
+          const isLastMove = lastMove?.from === square || lastMove?.to === square;
           return (
             <button
               key={square}
               type="button"
-              className={`square ${dark ? "dark" : "light"} ${isSelected ? "selected" : ""} ${isTarget ? "target" : ""}`}
+              className={`square ${dark ? "dark" : "light"} ${isLastMove ? "last-move" : ""} ${isSelected ? "selected" : ""} ${isTarget ? "target" : ""}`}
               onClick={() => onSquareClick(square)}
               disabled={disabled}
-              aria-label={square}
+              aria-label={`${square}${isTarget ? ", legal move" : ""}`}
             >
               {piece ? (
                 <img
