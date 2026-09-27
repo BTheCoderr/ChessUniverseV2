@@ -1,49 +1,56 @@
 import type { Chess } from "chess.js";
 
-const ENGINE_TIMEOUT_MS = 5000;
+const ENGINE_TIMEOUT_MS = 20000;
 
-function randomLegalMove(game: Chess): string | null {
-  const moves = game.moves();
-  if (!moves.length) return null;
-  return moves[Math.floor(Math.random() * moves.length)] ?? null;
-}
+export type Difficulty = "easy" | "medium" | "hard";
 
-export async function getComputerMove(game: Chess, depth = 10): Promise<string | null> {
-  if (typeof Worker === "undefined") return randomLegalMove(game);
+const settings: Record<Difficulty, { depth: number; skill: number }> = {
+  easy: { depth: 5, skill: 2 },
+  medium: { depth: 10, skill: 10 },
+  hard: { depth: 15, skill: 20 },
+};
 
-  return new Promise((resolve) => {
+export async function getComputerMove(game: Chess, difficulty: Difficulty): Promise<string> {
+  if (typeof Worker === "undefined") throw new Error("This browser cannot run the chess engine.");
+
+  return new Promise<string>((resolve, reject) => {
     let settled = false;
-    let worker: Worker | null = null;
+    let worker: Worker;
+    let timer: number;
 
-    const finish = (move: string | null) => {
+    const finish = (move?: string, error?: Error) => {
       if (settled) return;
       settled = true;
-      if (worker) worker.terminate();
-      resolve(move ?? randomLegalMove(game));
+      window.clearTimeout(timer);
+      worker?.terminate();
+      if (error || !move) reject(error ?? new Error("Stockfish returned no move."));
+      else resolve(move);
     };
-
-    const timer = window.setTimeout(() => finish(null), ENGINE_TIMEOUT_MS);
 
     try {
       worker = new Worker("/stockfish.js");
+      timer = window.setTimeout(
+        () => finish(undefined, new Error("Stockfish did not respond. Try a lower difficulty or reload.")),
+        ENGINE_TIMEOUT_MS
+      );
       worker.onmessage = (event) => {
         const line = String(event.data ?? "");
-        if (!line.startsWith("bestmove ")) return;
-        window.clearTimeout(timer);
-        const uci = line.split(/\s+/)[1];
-        if (!uci || uci === "(none)") return finish(null);
-        finish(uci);
+        if (line === "uciok") {
+          worker.postMessage(`setoption name Skill Level value ${settings[difficulty].skill}`);
+          worker.postMessage("isready");
+        } else if (line === "readyok") {
+          worker.postMessage(`position fen ${game.fen()}`);
+          worker.postMessage(`go depth ${settings[difficulty].depth}`);
+        } else if (line.startsWith("bestmove ")) {
+          const move = line.split(/\s+/)[1];
+          if (!move || move === "(none)") finish(undefined, new Error("Stockfish returned no move."));
+          else finish(move);
+        }
       };
-      worker.onerror = () => {
-        window.clearTimeout(timer);
-        finish(null);
-      };
+      worker.onerror = () => finish(undefined, new Error("Stockfish could not load in this browser."));
       worker.postMessage("uci");
-      worker.postMessage(`position fen ${game.fen()}`);
-      worker.postMessage(`go depth ${depth}`);
     } catch {
-      window.clearTimeout(timer);
-      finish(null);
+      finish(undefined, new Error("Stockfish could not start in this browser."));
     }
   });
 }
