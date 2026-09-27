@@ -104,7 +104,7 @@ export default function App() {
                 <article>
                   <span>02</span>
                   <strong>Universe modes</strong>
-                  <p>Magic Horse challenges are playable. Evolving queens and Magic Horse are playable. Battle Chess and custom setups are next.</p>
+                  <p>Evolving queens and Magic Horse are playable. Battle Chess and custom setups are next.</p>
                 </article>
                 <article>
                   <span>03</span>
