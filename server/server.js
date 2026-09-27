@@ -35,7 +35,7 @@ const socketSetup = require('./socket');
 const app = express();
 const server = http.createServer(app);
 
-// Trust proxy - needed for Render deployment
+// Trust the reverse proxy so client IPs and secure cookies stay correct.
 app.set('trust proxy', 1);
 
 // Initialize socket.io
