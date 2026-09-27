@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { Chess } from "npm:chess.js@1.1.0";
+import { isUntimed, participantColor, validateMoveTurn } from "./rules.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,8 @@ const response = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 function clocksAt(game: GameRow, nowMs: number) {
+  if (isUntimed(game)) return { white: 0, black: 0 };
+
   let white = Number(game.white_time_ms ?? game.time_control_minutes * 60_000);
   let black = Number(game.black_time_ms ?? game.time_control_minutes * 60_000);
 
@@ -81,10 +84,12 @@ Deno.serve(async (req: Request) => {
   if (gameError || !gameData) return response({ error: "Game not found" }, 404);
   const game = gameData as GameRow;
   const userId = authData.user.id;
-  const actorColor = game.white_id === userId ? "w" : game.black_id === userId ? "b" : null;
+  const actorColor = participantColor(game, userId) as "w" | "b" | null;
+
   if (!actorColor) return response({ error: "Not a participant" }, 403);
   if (game.status !== "active") return response({ error: "Game is not active" }, 409);
 
+  const untimed = isUntimed(game);
   const now = new Date();
   const nowMs = now.getTime();
   const clocks = clocksAt(game, nowMs);
@@ -110,6 +115,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "timeout") {
+      if (untimed) return response({ error: "Untimed games do not expire" }, 409);
       const remaining = game.current_turn === "w" ? clocks.white : clocks.black;
       if (remaining > 0) return response({ error: "Clock has not expired" }, 409);
       await finish(game.current_turn === "w" ? "black" : "white", "timeout");
@@ -117,12 +123,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action !== "move") return response({ error: "Unsupported action" }, 400);
-    if (game.current_turn !== actorColor) return response({ error: "Not your turn" }, 409);
 
-    const activeRemaining = actorColor === "w" ? clocks.white : clocks.black;
-    if (activeRemaining <= 0) {
-      await finish(actorColor === "w" ? "black" : "white", "timeout");
-      return response({ error: "Time expired" }, 409);
+    const turnError = validateMoveTurn(game, userId);
+    if (turnError) return response({ error: turnError }, turnError === "Not a participant" ? 403 : 409);
+
+    if (!untimed) {
+      const activeRemaining = actorColor === "w" ? clocks.white : clocks.black;
+      if (activeRemaining <= 0) {
+        await finish(actorColor === "w" ? "black" : "white", "timeout");
+        return response({ error: "Time expired" }, 409);
+      }
     }
 
     const chess = new Chess(game.fen);
@@ -139,8 +149,10 @@ Deno.serve(async (req: Request) => {
     }
     if (!move) return response({ error: "Illegal move" }, 400);
 
-    if (actorColor === "w") clocks.white += game.increment_seconds * 1000;
-    else clocks.black += game.increment_seconds * 1000;
+    if (!untimed) {
+      if (actorColor === "w") clocks.white += game.increment_seconds * 1000;
+      else clocks.black += game.increment_seconds * 1000;
+    }
 
     let nextStatus = "active";
     let nextResult: "white" | "black" | "draw" | null = null;
