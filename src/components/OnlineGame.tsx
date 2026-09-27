@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import type { Session } from "@supabase/supabase-js";
 import { ChessBoard } from "./ChessBoard";
@@ -9,9 +9,16 @@ type GameRow = {
   white_id: string;
   black_id: string | null;
   status: "waiting" | "active" | "completed" | "cancelled";
+  result: "white" | "black" | "draw" | null;
+  result_reason: string | null;
   fen: string;
   current_turn: "w" | "b";
   time_control_minutes: number;
+  increment_seconds: number;
+  white_time_ms: number | null;
+  black_time_ms: number | null;
+  started_at: string | null;
+  last_move_at: string | null;
 };
 
 function boardPieces(game: Chess) {
@@ -23,6 +30,26 @@ function boardPieces(game: Chess) {
       return [{ square, type: piece.type, color: piece.color }];
     })
   );
+}
+
+function remainingTime(game: GameRow, color: "w" | "b", now: number) {
+  const stored =
+    color === "w"
+      ? game.white_time_ms ?? game.time_control_minutes * 60_000
+      : game.black_time_ms ?? game.time_control_minutes * 60_000;
+
+  if (game.status !== "active" || game.current_turn !== color || !game.last_move_at) {
+    return Math.max(0, stored);
+  }
+
+  return Math.max(0, stored - Math.max(0, now - Date.parse(game.last_move_at)));
+}
+
+function formatClock(milliseconds: number) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 export function OnlineGame({
@@ -39,12 +66,14 @@ export function OnlineGame({
   const [selected, setSelected] = useState<Square | null>(null);
   const [message, setMessage] = useState("Loading game…");
   const [saving, setSaving] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const timeoutClaimed = useRef(false);
 
   const load = useCallback(async () => {
     if (!client) return;
     const { data, error } = await client
       .from("games")
-      .select("id,white_id,black_id,status,fen,current_turn,time_control_minutes")
+      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at")
       .eq("id", gameId)
       .single();
 
@@ -74,6 +103,7 @@ export function OnlineGame({
         (payload) => {
           setGameRow(payload.new as GameRow);
           setSelected(null);
+          timeoutClaimed.current = false;
         }
       )
       .subscribe();
@@ -82,6 +112,38 @@ export function OnlineGame({
       void client.removeChannel(channel);
     };
   }, [client, gameId, load]);
+
+  useEffect(() => {
+    if (gameRow?.status !== "active") return;
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [gameRow?.status]);
+
+  const myColor =
+    gameRow?.white_id === session.user.id
+      ? "w"
+      : gameRow?.black_id === session.user.id
+        ? "b"
+        : null;
+
+  const whiteRemaining = gameRow ? remainingTime(gameRow, "w", now) : 0;
+  const blackRemaining = gameRow ? remainingTime(gameRow, "b", now) : 0;
+
+  useEffect(() => {
+    if (!client || !gameRow || gameRow.status !== "active" || !myColor || timeoutClaimed.current) return;
+    const activeRemaining = gameRow.current_turn === "w" ? whiteRemaining : blackRemaining;
+    if (activeRemaining > 0) return;
+
+    timeoutClaimed.current = true;
+    void client.functions
+      .invoke("online-game", { body: { action: "timeout", gameId } })
+      .then(({ error }) => {
+        if (error) {
+          timeoutClaimed.current = false;
+          setMessage(error.message);
+        }
+      });
+  }, [blackRemaining, client, gameId, gameRow, myColor, whiteRemaining]);
 
   const chess = useMemo(() => {
     try {
@@ -107,26 +169,41 @@ export function OnlineGame({
     );
   }
 
-  const myColor =
-    gameRow.white_id === session.user.id
-      ? "w"
-      : gameRow.black_id === session.user.id
-        ? "b"
-        : null;
-
   const isMyTurn =
     gameRow.status === "active" &&
     myColor !== null &&
     gameRow.current_turn === myColor;
 
+  const resultText =
+    gameRow.result === "white"
+      ? "White wins"
+      : gameRow.result === "black"
+        ? "Black wins"
+        : gameRow.result === "draw"
+          ? "Draw"
+          : null;
+
   const status =
     gameRow.status === "waiting"
       ? "Waiting for an opponent…"
-      : gameRow.status !== "active"
-        ? `Game ${gameRow.status}`
-        : isMyTurn
-          ? "Your move"
-          : "Opponent's move";
+      : gameRow.status === "completed"
+        ? `${resultText ?? "Game over"}${gameRow.result_reason ? ` · ${gameRow.result_reason.replaceAll("_", " ")}` : ""}`
+        : gameRow.status === "cancelled"
+          ? "Game cancelled"
+          : isMyTurn
+            ? "Your move"
+            : "Opponent's move";
+
+  const invokeGameAction = async (body: Record<string, unknown>) => {
+    setSaving(true);
+    setMessage("");
+    const { error } = await client.functions.invoke("online-game", { body });
+    if (error) {
+      setMessage(error.message);
+      await load();
+    }
+    setSaving(false);
+  };
 
   const onSquareClick = async (square: Square) => {
     if (!isMyTurn || saving || !myColor) return;
@@ -137,39 +214,22 @@ export function OnlineGame({
       return;
     }
 
-    const next = new Chess(chess.fen());
-
     try {
-      const move = next.move({
-        from: selected,
-        to: square,
-        promotion: "q",
-      });
-
+      const preview = new Chess(chess.fen());
+      const move = preview.move({ from: selected, to: square, promotion: "q" });
       if (!move) return;
 
       setSelected(null);
-      setSaving(true);
-      setMessage("");
-
-      const { error } = await client.rpc("submit_game_move", {
-        target_game_id: gameId,
-        move_from: move.from,
-        move_to: move.to,
-        move_promotion: move.promotion ?? null,
-        move_san: move.san,
-        next_fen: next.fen(),
+      await invokeGameAction({
+        action: "move",
+        gameId,
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion ?? null,
       });
-
-      if (error) {
-        setMessage(error.message);
-        await load();
-      }
     } catch {
       if (piece?.color === myColor) setSelected(square);
       else setSelected(null);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -182,6 +242,7 @@ export function OnlineGame({
           legalTargets={legalTargets}
           onSquareClick={(square) => void onSquareClick(square)}
           disabled={!isMyTurn || saving}
+          orientation={myColor === "b" ? "b" : "w"}
         />
       </div>
 
@@ -189,15 +250,40 @@ export function OnlineGame({
         <button className="text-button back-link" onClick={onBack}>← Lobby</button>
         <div className="eyebrow">ONLINE TABLE</div>
         <h2>{myColor === "w" ? "You are White" : myColor === "b" ? "You are Black" : "Spectating"}</h2>
-        <p className="status">{saving ? "Sending move…" : status}</p>
+
+        <div className="clock-row" aria-label="Game clocks">
+          <div className={gameRow.current_turn === "b" && gameRow.status === "active" ? "clock active" : "clock"}>
+            <span>Black</span>
+            <strong>{formatClock(blackRemaining)}</strong>
+          </div>
+          <div className={gameRow.current_turn === "w" && gameRow.status === "active" ? "clock active" : "clock"}>
+            <span>White</span>
+            <strong>{formatClock(whiteRemaining)}</strong>
+          </div>
+        </div>
+
+        <p className="status">{saving ? "Updating game…" : status}</p>
         {message ? <p className="form-message">{message}</p> : null}
+
         <div className="online-meta">
           <span>{gameRow.time_control_minutes} min</span>
+          <span>Black moves first</span>
           <span>{gameRow.id.slice(0, 8)}</span>
         </div>
+
+        {gameRow.status === "active" && myColor ? (
+          <button
+            className="secondary-action danger-action"
+            disabled={saving}
+            onClick={() => void invokeGameAction({ action: "resign", gameId })}
+          >
+            Resign game
+          </button>
+        ) : null}
+
         <p className="muted">
-          Casual multiplayer MVP. Turn ownership and move sequencing are enforced in Supabase.
-          Rated play stays off until chess legality is also validated by trusted server-side code.
+          Moves are validated by the trusted game function before the database accepts them.
+          Clocks are calculated from server timestamps and the table restores after a refresh.
         </p>
       </aside>
     </section>

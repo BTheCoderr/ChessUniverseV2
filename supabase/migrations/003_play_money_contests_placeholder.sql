@@ -1,0 +1,4 @@
+-- This no-op records the play_money_contests migration name that was
+-- created directly in the hosted Supabase project during roadmap work.
+-- No play-money tables, balances, stakes, or settlement functions exist yet.
+-- Real-money wagering remains disabled.

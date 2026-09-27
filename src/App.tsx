@@ -9,11 +9,20 @@ import { OnlineLobby } from "./components/OnlineLobby";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 type View = "home" | "play" | "queens" | "horse" | "online" | "account";
+const ONLINE_GAME_KEY = "chess-universe-online-game";
+
+function savedOnlineGame() {
+  try {
+    return window.localStorage.getItem(ONLINE_GAME_KEY);
+  } catch {
+    return null;
+  }
+}
 
 export default function App() {
-  const [view, setView] = useState<View>("home");
+  const [onlineGameId, setOnlineGameId] = useState<string | null>(() => savedOnlineGame());
+  const [view, setView] = useState<View>(() => (savedOnlineGame() ? "online" : "home"));
   const [session, setSession] = useState<Session | null>(null);
-  const [onlineGameId, setOnlineGameId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -26,6 +35,25 @@ export default function App() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  const openOnlineGame = (gameId: string) => {
+    setOnlineGameId(gameId);
+    setView("online");
+    try {
+      window.localStorage.setItem(ONLINE_GAME_KEY, gameId);
+    } catch {
+      // Storage can be unavailable in privacy modes; the game still works for this session.
+    }
+  };
+
+  const leaveOnlineTable = () => {
+    setOnlineGameId(null);
+    try {
+      window.localStorage.removeItem(ONLINE_GAME_KEY);
+    } catch {
+      // Ignore storage failures.
+    }
+  };
+
   return (
     <div className="site-shell">
       <header className="topbar">
@@ -35,29 +63,19 @@ export default function App() {
         </button>
 
         <nav>
-          <button
-            className={view === "play" ? "active" : ""}
-            onClick={() => setView("play")}
-          >
+          <button className={view === "play" ? "active" : ""} onClick={() => setView("play")}>
             Play
           </button>
-          <button className={view === "queens" ? "active" : ""} onClick={() => setView("queens")}>Queens</button>
+          <button className={view === "queens" ? "active" : ""} onClick={() => setView("queens")}>
+            Queens
+          </button>
           <button className={view === "horse" ? "active" : ""} onClick={() => setView("horse")} aria-label="Magic Horse">
             Horse
           </button>
-          <button
-            className={view === "online" ? "active" : ""}
-            onClick={() => {
-              setView("online");
-              setOnlineGameId(null);
-            }}
-          >
+          <button className={view === "online" ? "active" : ""} onClick={() => setView("online")}>
             Online
           </button>
-          <button
-            className={view === "account" ? "active" : ""}
-            onClick={() => setView("account")}
-          >
+          <button className={view === "account" ? "active" : ""} onClick={() => setView("account")}>
             {session ? "Profile" : "Sign in"}
           </button>
         </nav>
@@ -84,13 +102,7 @@ export default function App() {
                 <button className="primary-action" onClick={() => setView("play")}>
                   Play now
                 </button>
-                <button
-                  className="secondary-action"
-                  onClick={() => {
-                    setView("online");
-                    setOnlineGameId(null);
-                  }}
-                >
+                <button className="secondary-action" onClick={() => setView("online")}>
                   Find a game
                 </button>
               </div>
@@ -109,7 +121,7 @@ export default function App() {
                 <article>
                   <span>03</span>
                   <strong>Online</strong>
-                  <p>Supabase auth, persistent games and realtime matchmaking without a separate server.</p>
+                  <p>Server-validated moves, persistent games, live clocks and realtime sync through Supabase.</p>
                 </article>
               </div>
             </div>
@@ -122,14 +134,10 @@ export default function App() {
         {view === "queens" ? <EvolvingQueensGame /> : null}
         {view === "horse" ? <MagicHorseGame /> : null}
         {view === "online" && session && onlineGameId ? (
-          <OnlineGame
-            gameId={onlineGameId}
-            session={session}
-            onBack={() => setOnlineGameId(null)}
-          />
+          <OnlineGame gameId={onlineGameId} session={session} onBack={leaveOnlineTable} />
         ) : null}
         {view === "online" && (!session || !onlineGameId) ? (
-          <OnlineLobby session={session} onOpenGame={setOnlineGameId} />
+          <OnlineLobby session={session} onOpenGame={openOnlineGame} />
         ) : null}
         {view === "account" ? <AuthPanel session={session} /> : null}
       </main>
