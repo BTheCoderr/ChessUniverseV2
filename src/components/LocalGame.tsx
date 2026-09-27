@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
-import { getComputerMove } from "../lib/stockfish";
+import { getComputerMove, type Difficulty } from "../lib/stockfish";
 
 type Mode = "local" | "ai";
 
@@ -22,6 +22,9 @@ export function LocalGame() {
   const [selected, setSelected] = useState<Square | null>(null);
   const [thinking, setThinking] = useState(false);
   const [message, setMessage] = useState("White to move");
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  const [engineStatus, setEngineStatus] = useState("Stockfish has not moved yet");
+  const gameToken = useRef(0);
 
   const pieces = useMemo(() => boardPieces(game), [game]);
   const legalTargets = useMemo(() => {
@@ -37,23 +40,23 @@ export function LocalGame() {
 
   const applyComputerMove = async (next: Chess) => {
     if (mode !== "ai" || next.isGameOver() || next.turn() !== "b") return;
+    const token = ++gameToken.current;
     setThinking(true);
-    const move = await getComputerMove(next, 10);
-    if (move) {
+    try {
+      const move = await getComputerMove(next, difficulty);
+      if (token !== gameToken.current) return;
       const aiGame = new Chess(next.fen());
-      try {
-        if (/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move)) {
-          aiGame.move({ from: move.slice(0, 2), to: move.slice(2, 4), promotion: move[4] ?? "q" });
-        } else {
-          aiGame.move(move);
-        }
-        setGame(aiGame);
-        setMessage(aiGame.isGameOver() ? statusTextFor(aiGame) : "Your move");
-      } catch {
-        setMessage("Computer move failed. Start a new game.");
-      }
+      aiGame.move({ from: move.slice(0, 2), to: move.slice(2, 4), promotion: move[4] ?? "q" });
+      setGame(aiGame);
+      setEngineStatus("Stockfish active");
+      setMessage(aiGame.isGameOver() ? statusTextFor(aiGame) : "Your move");
+    } catch (error) {
+      if (token !== gameToken.current) return;
+      setEngineStatus("Stockfish unavailable");
+      setMessage(error instanceof Error ? error.message : "Stockfish could not make a move.");
+    } finally {
+      if (token === gameToken.current) setThinking(false);
     }
-    setThinking(false);
   };
 
   const statusTextFor = (value: Chess) => {
@@ -87,11 +90,13 @@ export function LocalGame() {
   };
 
   const reset = () => {
+    gameToken.current++;
     const next = new Chess();
     setGame(next);
     setSelected(null);
     setThinking(false);
     setMessage("White to move");
+    setEngineStatus("Stockfish has not moved yet");
   };
 
   return (
@@ -113,8 +118,18 @@ export function LocalGame() {
           <button className={mode === "ai" ? "active" : ""} onClick={() => { setMode("ai"); reset(); }}>Vs AI</button>
           <button className={mode === "local" ? "active" : ""} onClick={() => { setMode("local"); reset(); }}>2 Player</button>
         </div>
+        {mode === "ai" ? (
+          <div className="game-settings">
+            <label htmlFor="ai-difficulty">AI difficulty</label>
+            <select id="ai-difficulty" value={difficulty} disabled={thinking} onChange={(event) => setDifficulty(event.target.value as Difficulty)}>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            <p className="muted" role="status">{engineStatus}</p>
+          </div>
+        ) : null}
         <button className="primary-action" onClick={reset}>New game</button>
-        <p className="muted">Stockfish runs in your browser. If the legacy worker cannot load, the game falls back to a legal computer move instead of breaking.</p>
       </aside>
     </section>
   );
