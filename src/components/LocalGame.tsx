@@ -5,6 +5,13 @@ import { getComputerMove, type Difficulty } from "../lib/stockfish";
 
 type Mode = "local" | "ai";
 
+// Chess Universe starts with Black. The normal starting position remains intact.
+function newUniverseGame() {
+  const game = new Chess();
+  game.load(game.fen().replace(" w ", " b "));
+  return game;
+}
+
 function boardPieces(game: Chess) {
   return game.board().flatMap((rank, rankIndex) =>
     rank.flatMap((piece, fileIndex) => {
@@ -17,11 +24,11 @@ function boardPieces(game: Chess) {
 }
 
 export function LocalGame() {
-  const [game, setGame] = useState(() => new Chess());
+  const [game, setGame] = useState(newUniverseGame);
   const [mode, setMode] = useState<Mode>("ai");
   const [selected, setSelected] = useState<Square | null>(null);
   const [thinking, setThinking] = useState(false);
-  const [message, setMessage] = useState("White to move");
+  const [message, setMessage] = useState("Black to move");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [engineStatus, setEngineStatus] = useState("Stockfish has not moved yet");
   const gameToken = useRef(0);
@@ -39,7 +46,7 @@ export function LocalGame() {
   };
 
   const applyComputerMove = async (next: Chess) => {
-    if (mode !== "ai" || next.isGameOver() || next.turn() !== "b") return;
+    if (mode !== "ai" || next.isGameOver() || next.turn() !== "w") return;
     const token = ++gameToken.current;
     setThinking(true);
     try {
@@ -67,7 +74,7 @@ export function LocalGame() {
 
   const onSquareClick = (square: Square) => {
     if (thinking || game.isGameOver()) return;
-    if (mode === "ai" && game.turn() === "b") return;
+    if (mode === "ai" && game.turn() === "w") return;
 
     const piece = game.get(square);
     if (!selected) {
@@ -91,11 +98,11 @@ export function LocalGame() {
 
   const reset = () => {
     gameToken.current++;
-    const next = new Chess();
+    const next = newUniverseGame();
     setGame(next);
     setSelected(null);
     setThinking(false);
-    setMessage("White to move");
+    setMessage("Black to move");
     setEngineStatus("Stockfish has not moved yet");
   };
 
@@ -108,11 +115,13 @@ export function LocalGame() {
           legalTargets={legalTargets}
           onSquareClick={onSquareClick}
           disabled={thinking}
+          orientation="b"
         />
       </div>
       <aside className="game-panel">
         <div className="eyebrow">PLAY</div>
-        <h2>{mode === "ai" ? "You vs Computer" : "Local Board"}</h2>
+        <h2>{mode === "ai" ? "You play Black" : "Local Board"}</h2>
+        <p className="muted">Chess Universe rule: Black moves first.</p>
         <p className="status">{thinking ? "Computer is thinking…" : message || statusText()}</p>
         <div className="segmented">
           <button className={mode === "ai" ? "active" : ""} onClick={() => { setMode("ai"); reset(); }}>Vs AI</button>
