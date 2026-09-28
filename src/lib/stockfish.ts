@@ -2,10 +2,11 @@ import type { Chess } from "chess.js";
 
 const ENGINE_TIMEOUT_MS = 20000;
 
-export type Difficulty = "easy" | "medium" | "hard";
+export type Difficulty = "beginner" | "easy" | "medium" | "hard";
 
-const settings: Record<Difficulty, { depth: number; skill: number }> = {
-  easy: { depth: 5, skill: 2 },
+export const STOCKFISH_LEVELS: Record<Difficulty, { depth: number; skill: number }> = {
+  beginner: { depth: 3, skill: 0 },
+  easy: { depth: 6, skill: 4 },
   medium: { depth: 10, skill: 10 },
   hard: { depth: 15, skill: 20 },
 };
@@ -36,11 +37,11 @@ export async function getComputerMove(game: Chess, difficulty: Difficulty): Prom
       worker.onmessage = (event) => {
         const line = String(event.data ?? "");
         if (line === "uciok") {
-          worker.postMessage(`setoption name Skill Level value ${settings[difficulty].skill}`);
+          worker.postMessage(`setoption name Skill Level value ${STOCKFISH_LEVELS[difficulty].skill}`);
           worker.postMessage("isready");
         } else if (line === "readyok") {
           worker.postMessage(`position fen ${game.fen()}`);
-          worker.postMessage(`go depth ${settings[difficulty].depth}`);
+          worker.postMessage(`go depth ${STOCKFISH_LEVELS[difficulty].depth}`);
         } else if (line.startsWith("bestmove ")) {
           const move = line.split(/\s+/)[1];
           if (!move || move === "(none)") finish(undefined, new Error("Stockfish returned no move."));
