@@ -4,6 +4,8 @@ import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type Props = { session: Session | null };
 
+const PRODUCTION_SITE_URL = "https://chessuniverse.netlify.app";
+
 export function AuthPanel({ session }: Props) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -38,10 +40,17 @@ export function AuthPanel({ session }: Props) {
     event.preventDefault();
     setMessage("");
     if (mode === "signup") {
+      const emailRedirectTo = import.meta.env.PROD
+        ? PRODUCTION_SITE_URL
+        : window.location.origin;
+
       const { error } = await client.auth.signUp({
         email,
         password,
-        options: { data: { username } },
+        options: {
+          data: { username },
+          emailRedirectTo,
+        },
       });
       setMessage(error?.message ?? "Account created. Check your email if confirmation is enabled.");
     } else {
