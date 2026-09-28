@@ -86,7 +86,7 @@ function validMode(value: unknown): value is PracticeMode {
   return value === "ai" || value === "local";
 }
 
-function validTimeControl(value: unknown) {
+function validTimeControl(value: unknown): value is number {
   return typeof value === "number" && PRACTICE_TIME_OPTIONS.some((option) => option.minutes === value);
 }
 
@@ -126,8 +126,8 @@ function loadSavedPractice(): SavedPractice & { game: Chess } {
       ? parsed.timedOutColor
       : null;
 
-    // If the browser was closed while Stockfish was due to move, restore as paused
-    // so the user chooses when to resume the engine.
+    // Any saved in-progress practice returns paused so a local clock never starts
+    // running again until the user explicitly resumes.
     const paused = Boolean(parsed.paused) || (moves.length > 0 && !game.isGameOver() && !timedOutColor);
 
     return {
