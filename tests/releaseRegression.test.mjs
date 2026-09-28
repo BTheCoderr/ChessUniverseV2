@@ -27,7 +27,7 @@ test("online lobby restores active games for either participant", async () => {
   const lobby = await source("src/components/OnlineLobby.tsx");
   assert.match(lobby, /\.in\("status", \["waiting", "active"\]\)/);
   assert.match(lobby, /game\.white_id === session\.user\.id \|\| game\.black_id === session\.user\.id/);
-  assert.match(lobby, />Resume</);
+  assert.match(lobby, /\bResume\b/);
 });
 
 test("casual lobby exposes untimed and timed choices", async () => {
