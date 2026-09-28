@@ -1,9 +1,46 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import { getComputerMove, type Difficulty } from "../lib/stockfish";
+import {
+  PRACTICE_TIME_OPTIONS,
+  formatClock,
+  initialClocks,
+  practiceMoveLabel,
+  practiceUndoPlies,
+  type PracticeColor,
+  type PracticeMode,
+} from "../lib/practice";
 
-type Mode = "local" | "ai";
+type ClockState = Record<PracticeColor, number>;
+
+type RecordedMove = {
+  from: Square;
+  to: Square;
+  promotion?: string;
+  san: string;
+  color: PracticeColor;
+  clocksBefore: ClockState;
+};
+
+type SavedPractice = {
+  mode: PracticeMode;
+  difficulty: Difficulty;
+  timeControlMinutes: number;
+  learningHelp: boolean;
+  moves: RecordedMove[];
+  clocks: ClockState;
+  paused: boolean;
+  timedOutColor: PracticeColor | null;
+};
+
+const PRACTICE_STORAGE_KEY = "chess-universe-practice-v2";
+const DIFFICULTY_COPY: Record<Difficulty, string> = {
+  beginner: "Slower search and the gentlest Stockfish setting.",
+  easy: "A forgiving opponent that still sees basic tactics.",
+  medium: "Balanced play for improving players.",
+  hard: "Full-strength challenge with deeper calculation.",
+};
 
 // Chess Universe starts with Black. The normal starting position remains intact.
 function newUniverseGame() {
@@ -23,40 +60,216 @@ function boardPieces(game: Chess) {
   );
 }
 
+function rebuildGame(moves: RecordedMove[]) {
+  const game = newUniverseGame();
+  for (const move of moves) {
+    game.move({
+      from: move.from,
+      to: move.to,
+      ...(move.promotion ? { promotion: move.promotion } : {}),
+    });
+  }
+  return game;
+}
+
+function statusTextFor(game: Chess) {
+  if (game.isCheckmate()) return `Checkmate — ${game.turn() === "w" ? "Black" : "White"} wins`;
+  if (game.isDraw()) return "Draw";
+  return `${game.turn() === "w" ? "White" : "Black"} to move${game.inCheck() ? " — check" : ""}`;
+}
+
+function validDifficulty(value: unknown): value is Difficulty {
+  return value === "beginner" || value === "easy" || value === "medium" || value === "hard";
+}
+
+function validMode(value: unknown): value is PracticeMode {
+  return value === "ai" || value === "local";
+}
+
+function validTimeControl(value: unknown) {
+  return typeof value === "number" && PRACTICE_TIME_OPTIONS.some((option) => option.minutes === value);
+}
+
+function freshPractice(): SavedPractice & { game: Chess } {
+  return {
+    game: newUniverseGame(),
+    mode: "ai",
+    difficulty: "beginner",
+    timeControlMinutes: 0,
+    learningHelp: true,
+    moves: [],
+    clocks: initialClocks(0),
+    paused: false,
+    timedOutColor: null,
+  };
+}
+
+function loadSavedPractice(): SavedPractice & { game: Chess } {
+  if (typeof window === "undefined") return freshPractice();
+
+  try {
+    const raw = window.localStorage.getItem(PRACTICE_STORAGE_KEY);
+    if (!raw) return freshPractice();
+
+    const parsed = JSON.parse(raw) as Partial<SavedPractice>;
+    const mode = validMode(parsed.mode) ? parsed.mode : "ai";
+    const difficulty = validDifficulty(parsed.difficulty) ? parsed.difficulty : "beginner";
+    const timeControlMinutes = validTimeControl(parsed.timeControlMinutes) ? parsed.timeControlMinutes : 0;
+    const moves = Array.isArray(parsed.moves) ? (parsed.moves as RecordedMove[]) : [];
+    const game = rebuildGame(moves);
+    const baseClocks = initialClocks(timeControlMinutes);
+    const clocks = {
+      w: typeof parsed.clocks?.w === "number" ? Math.max(0, parsed.clocks.w) : baseClocks.w,
+      b: typeof parsed.clocks?.b === "number" ? Math.max(0, parsed.clocks.b) : baseClocks.b,
+    };
+    const timedOutColor = parsed.timedOutColor === "w" || parsed.timedOutColor === "b"
+      ? parsed.timedOutColor
+      : null;
+
+    // If the browser was closed while Stockfish was due to move, restore as paused
+    // so the user chooses when to resume the engine.
+    const paused = Boolean(parsed.paused) || (mode === "ai" && game.turn() === "w" && !game.isGameOver());
+
+    return {
+      game,
+      mode,
+      difficulty,
+      timeControlMinutes,
+      learningHelp: parsed.learningHelp !== false,
+      moves,
+      clocks,
+      paused,
+      timedOutColor,
+    };
+  } catch {
+    return freshPractice();
+  }
+}
+
 export function LocalGame() {
-  const [game, setGame] = useState(newUniverseGame);
-  const [mode, setMode] = useState<Mode>("ai");
+  const initial = useRef(loadSavedPractice()).current;
+  const [game, setGame] = useState(initial.game);
+  const [mode, setMode] = useState<PracticeMode>(initial.mode);
   const [selected, setSelected] = useState<Square | null>(null);
   const [thinking, setThinking] = useState(false);
-  const [message, setMessage] = useState("Black to move");
-  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
-  const [engineStatus, setEngineStatus] = useState("Stockfish has not moved yet");
+  const [message, setMessage] = useState(initial.paused ? "Practice saved — press Resume when you're ready." : statusTextFor(initial.game));
+  const [difficulty, setDifficulty] = useState<Difficulty>(initial.difficulty);
+  const [engineStatus, setEngineStatus] = useState("Stockfish ready");
+  const [timeControlMinutes, setTimeControlMinutes] = useState(initial.timeControlMinutes);
+  const [learningHelp, setLearningHelp] = useState(initial.learningHelp);
+  const [moves, setMoves] = useState<RecordedMove[]>(initial.moves);
+  const [clocks, setClocks] = useState<ClockState>(initial.clocks);
+  const [paused, setPaused] = useState(initial.paused);
+  const [timedOutColor, setTimedOutColor] = useState<PracticeColor | null>(initial.timedOutColor);
   const gameToken = useRef(0);
+  const clocksRef = useRef(clocks);
+  const historyEndRef = useRef<HTMLDivElement | null>(null);
 
   const pieces = useMemo(() => boardPieces(game), [game]);
   const legalTargets = useMemo(() => {
     if (!selected) return [];
     return game.moves({ square: selected, verbose: true }).map((move) => move.to as Square);
   }, [game, selected]);
+  const lastMove = moves.length
+    ? { from: moves[moves.length - 1].from, to: moves[moves.length - 1].to }
+    : null;
 
-  const statusText = () => {
-    if (game.isCheckmate()) return `Checkmate — ${game.turn() === "w" ? "Black" : "White"} wins`;
-    if (game.isDraw()) return "Draw";
-    return `${game.turn() === "w" ? "White" : "Black"} to move${game.inCheck() ? " — check" : ""}`;
-  };
+  const resultText = timedOutColor
+    ? `${timedOutColor === "b" ? "Black" : "White"} ran out of time — ${timedOutColor === "b" ? "White" : "Black"} wins`
+    : game.isGameOver()
+      ? statusTextFor(game)
+      : null;
 
-  const applyComputerMove = async (next: Chess) => {
-    if (mode !== "ai" || next.isGameOver() || next.turn() !== "w") return;
+  useEffect(() => {
+    clocksRef.current = clocks;
+  }, [clocks]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const payload: SavedPractice = {
+        mode,
+        difficulty,
+        timeControlMinutes,
+        learningHelp,
+        moves,
+        clocks,
+        paused,
+        timedOutColor,
+      };
+      window.localStorage.setItem(PRACTICE_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // Practice still works when browser storage is unavailable.
+    }
+  }, [mode, difficulty, timeControlMinutes, learningHelp, moves, clocks, paused, timedOutColor]);
+
+  useEffect(() => {
+    historyEndRef.current?.scrollIntoView({ block: "nearest" });
+  }, [moves.length]);
+
+  useEffect(() => {
+    if (
+      timeControlMinutes === 0 ||
+      paused ||
+      timedOutColor ||
+      game.isGameOver()
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const side = game.turn() as PracticeColor;
+      setClocks((current) => ({
+        ...current,
+        [side]: Math.max(0, current[side] - 1),
+      }));
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [clocks, game, paused, timeControlMinutes, timedOutColor]);
+
+  useEffect(() => {
+    if (timeControlMinutes === 0 || timedOutColor || game.isGameOver()) return;
+    const side = game.turn() as PracticeColor;
+    if (clocks[side] > 0) return;
+
+    gameToken.current += 1;
+    setThinking(false);
+    setSelected(null);
+    setTimedOutColor(side);
+    setMessage(`${side === "b" ? "Black" : "White"} ran out of time.`);
+  }, [clocks, game, timeControlMinutes, timedOutColor]);
+
+  const applyComputerMove = async (next: Chess, movesBeforeAi: RecordedMove[]) => {
+    if (mode !== "ai" || next.isGameOver() || next.turn() !== "w" || paused || timedOutColor) return;
+
     const token = ++gameToken.current;
     setThinking(true);
+    setEngineStatus(`Stockfish thinking · ${difficulty}`);
+
     try {
-      const move = await getComputerMove(next, difficulty);
+      const uci = await getComputerMove(next, difficulty);
       if (token !== gameToken.current) return;
+
       const aiGame = new Chess(next.fen());
-      aiGame.move({ from: move.slice(0, 2), to: move.slice(2, 4), promotion: move[4] ?? "q" });
+      const made = aiGame.move({
+        from: uci.slice(0, 2),
+        to: uci.slice(2, 4),
+        promotion: uci[4] ?? "q",
+      });
+      const aiMove: RecordedMove = {
+        from: made.from as Square,
+        to: made.to as Square,
+        promotion: made.promotion,
+        san: made.san,
+        color: made.color as PracticeColor,
+        clocksBefore: { ...clocksRef.current },
+      };
+
       setGame(aiGame);
-      setEngineStatus("Stockfish active");
-      setMessage(aiGame.isGameOver() ? statusTextFor(aiGame) : "Your move");
+      setMoves([...movesBeforeAi, aiMove]);
+      setEngineStatus(`Stockfish active · ${difficulty}`);
+      setMessage(statusTextFor(aiGame));
     } catch (error) {
       if (token !== gameToken.current) return;
       setEngineStatus("Stockfish unavailable");
@@ -66,79 +279,284 @@ export function LocalGame() {
     }
   };
 
-  const statusTextFor = (value: Chess) => {
-    if (value.isCheckmate()) return `Checkmate — ${value.turn() === "w" ? "Black" : "White"} wins`;
-    if (value.isDraw()) return "Draw";
-    return `${value.turn() === "w" ? "White" : "Black"} to move${value.inCheck() ? " — check" : ""}`;
-  };
-
   const onSquareClick = (square: Square) => {
-    if (thinking || game.isGameOver()) return;
+    if (paused || thinking || timedOutColor || game.isGameOver()) return;
     if (mode === "ai" && game.turn() === "w") return;
 
     const piece = game.get(square);
     if (!selected) {
-      if (piece && piece.color === game.turn()) setSelected(square);
+      if (piece && piece.color === game.turn()) {
+        setSelected(square);
+        if (learningHelp) {
+          const count = game.moves({ square, verbose: true }).length;
+          setMessage(`${count} legal move${count === 1 ? "" : "s"} available from ${square}.`);
+        }
+      }
       return;
     }
 
     const next = new Chess(game.fen());
     try {
-      const move = next.move({ from: selected, to: square, promotion: "q" });
+      const made = next.move({ from: selected, to: square, promotion: "q" });
+      const recorded: RecordedMove = {
+        from: made.from as Square,
+        to: made.to as Square,
+        promotion: made.promotion,
+        san: made.san,
+        color: made.color as PracticeColor,
+        clocksBefore: { ...clocksRef.current },
+      };
+      const nextMoves = [...moves, recorded];
+
       setSelected(null);
-      if (!move) return;
       setGame(next);
+      setMoves(nextMoves);
       setMessage(statusTextFor(next));
-      void applyComputerMove(next);
+      void applyComputerMove(next, nextMoves);
     } catch {
-      if (piece && piece.color === game.turn()) setSelected(square);
-      else setSelected(null);
+      if (piece && piece.color === game.turn()) {
+        setSelected(square);
+        if (learningHelp) setMessage(`That move isn't legal. Selected ${square} instead.`);
+      } else {
+        setSelected(null);
+        if (learningHelp) setMessage("That move isn't legal. Choose another piece.");
+      }
     }
   };
 
-  const reset = () => {
-    gameToken.current++;
+  const startNewGame = (minutes = timeControlMinutes) => {
+    gameToken.current += 1;
     const next = newUniverseGame();
+    const nextClocks = initialClocks(minutes);
     setGame(next);
+    setMoves([]);
     setSelected(null);
     setThinking(false);
+    setPaused(false);
+    setTimedOutColor(null);
+    setClocks(nextClocks);
+    clocksRef.current = nextClocks;
     setMessage("Black to move");
-    setEngineStatus("Stockfish has not moved yet");
+    setEngineStatus("Stockfish ready");
+  };
+
+  const changeMode = (nextMode: PracticeMode) => {
+    if (nextMode === mode) return;
+    setMode(nextMode);
+    startNewGame();
+  };
+
+  const changeTimeControl = (minutes: number) => {
+    setTimeControlMinutes(minutes);
+    startNewGame(minutes);
+  };
+
+  const togglePause = () => {
+    if (resultText) return;
+
+    if (paused) {
+      setPaused(false);
+      setMessage(statusTextFor(game));
+      if (mode === "ai" && game.turn() === "w") {
+        void applyComputerMove(game, moves);
+      }
+      return;
+    }
+
+    gameToken.current += 1;
+    setThinking(false);
+    setSelected(null);
+    setPaused(true);
+    setMessage("Practice paused. Your board is saved on this device.");
+  };
+
+  const undo = () => {
+    const count = practiceUndoPlies(mode, thinking, game.turn() as PracticeColor, moves.length);
+    if (!count) return;
+
+    gameToken.current += 1;
+    setThinking(false);
+    const targetLength = Math.max(0, moves.length - count);
+    const firstRemoved = moves[targetLength];
+    const nextMoves = moves.slice(0, targetLength);
+    const next = rebuildGame(nextMoves);
+    const restoredClocks = firstRemoved?.clocksBefore ?? initialClocks(timeControlMinutes);
+
+    setMoves(nextMoves);
+    setGame(next);
+    setClocks({ ...restoredClocks });
+    clocksRef.current = { ...restoredClocks };
+    setTimedOutColor(null);
+    setSelected(null);
+    setMessage(statusTextFor(next));
+    setEngineStatus("Move undone");
+  };
+
+  const retryComputer = () => {
+    if (
+      mode === "ai" &&
+      game.turn() === "w" &&
+      !thinking &&
+      !paused &&
+      !timedOutColor &&
+      !game.isGameOver()
+    ) {
+      void applyComputerMove(game, moves);
+    }
   };
 
   return (
-    <section className="play-layout">
-      <div className="board-shell">
-        <ChessBoard
-          pieces={pieces}
-          selected={selected}
-          legalTargets={legalTargets}
-          onSquareClick={onSquareClick}
-          disabled={thinking}
-          orientation="b"
-        />
-      </div>
-      <aside className="game-panel">
-        <div className="eyebrow">PLAY</div>
-        <h2>{mode === "ai" ? "You play Black" : "Local Board"}</h2>
-        <p className="muted">Chess Universe rule: Black moves first.</p>
-        <p className="status">{thinking ? "Computer is thinking…" : message || statusText()}</p>
-        <div className="segmented">
-          <button className={mode === "ai" ? "active" : ""} onClick={() => { setMode("ai"); reset(); }}>Vs AI</button>
-          <button className={mode === "local" ? "active" : ""} onClick={() => { setMode("local"); reset(); }}>2 Player</button>
+    <section className="play-layout practice-layout">
+      <div className="board-column">
+        <div className={paused ? "board-shell practice-board paused" : "board-shell practice-board"}>
+          <ChessBoard
+            pieces={pieces}
+            selected={selected}
+            legalTargets={learningHelp ? legalTargets : []}
+            lastMove={lastMove}
+            onSquareClick={onSquareClick}
+            disabled={thinking || paused || Boolean(timedOutColor)}
+            orientation="b"
+          />
+          {paused ? <div className="board-pause-overlay">PAUSED</div> : null}
         </div>
-        {mode === "ai" ? (
-          <div className="game-settings">
-            <label htmlFor="ai-difficulty">AI difficulty</label>
-            <select id="ai-difficulty" value={difficulty} disabled={thinking} onChange={(event) => setDifficulty(event.target.value as Difficulty)}>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-            <p className="muted" role="status">{engineStatus}</p>
+
+        {timeControlMinutes > 0 ? (
+          <div className="clock-row practice-clocks">
+            <div className={game.turn() === "b" && !paused && !resultText ? "clock active" : "clock"}>
+              <span>{mode === "ai" ? "You · Black" : "Black"}</span>
+              <strong>{formatClock(clocks.b)}</strong>
+            </div>
+            <div className={game.turn() === "w" && !paused && !resultText ? "clock active" : "clock"}>
+              <span>{mode === "ai" ? "Stockfish · White" : "White"}</span>
+              <strong>{formatClock(clocks.w)}</strong>
+            </div>
+          </div>
+        ) : (
+          <div className="practice-no-clock">
+            <strong>No timer</strong>
+            <span>Take your time. Practice is saved on this device.</span>
+          </div>
+        )}
+      </div>
+
+      <aside className="game-panel practice-panel">
+        <div className="eyebrow">PRACTICE</div>
+        <h2>{mode === "ai" ? "You play Black" : "Local 2 Player"}</h2>
+        <p className="muted">Chess Universe rule: Black moves first.</p>
+
+        <p className={resultText ? "status practice-status finished" : "status practice-status"}>
+          {thinking ? "Computer is thinking…" : message}
+        </p>
+
+        {resultText ? (
+          <div className="practice-result">
+            <strong>{resultText}</strong>
+            <span>{mode === "ai" ? "Run it back with the same settings or undo the last round." : "Start another local game or undo the last move."}</span>
           </div>
         ) : null}
-        <button className="primary-action" onClick={reset}>New game</button>
+
+        <div className="segmented">
+          <button className={mode === "ai" ? "active" : ""} onClick={() => changeMode("ai")}>Vs AI</button>
+          <button className={mode === "local" ? "active" : ""} onClick={() => changeMode("local")}>2 Player</button>
+        </div>
+
+        <div className="practice-settings">
+          {mode === "ai" ? (
+            <div className="setting-field">
+              <label htmlFor="ai-difficulty">AI difficulty</label>
+              <select
+                id="ai-difficulty"
+                value={difficulty}
+                disabled={thinking}
+                onChange={(event) => {
+                  const next = event.target.value as Difficulty;
+                  setDifficulty(next);
+                  setEngineStatus(`Stockfish set to ${next}`);
+                }}
+              >
+                <option value="beginner">Beginner</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+              <small>{DIFFICULTY_COPY[difficulty]}</small>
+            </div>
+          ) : null}
+
+          <div className="setting-field">
+            <label htmlFor="practice-clock">Clock</label>
+            <select
+              id="practice-clock"
+              value={timeControlMinutes}
+              onChange={(event) => changeTimeControl(Number(event.target.value))}
+            >
+              {PRACTICE_TIME_OPTIONS.map((option) => (
+                <option key={option.minutes} value={option.minutes}>{option.label}</option>
+              ))}
+            </select>
+            <small>Changing the clock starts a fresh game. Practice defaults to no timer.</small>
+          </div>
+
+          <button
+            type="button"
+            className={learningHelp ? "learning-toggle active" : "learning-toggle"}
+            onClick={() => setLearningHelp((current) => !current)}
+          >
+            <span>
+              <strong>Learning Help</strong>
+              <small>Legal move dots and beginner feedback.</small>
+            </span>
+            <b>{learningHelp ? "ON" : "OFF"}</b>
+          </button>
+        </div>
+
+        {learningHelp ? (
+          <div className="practice-help">
+            <strong>{game.inCheck() ? "Your king is in check." : selected ? `${legalTargets.length} legal target${legalTargets.length === 1 ? "" : "s"} highlighted.` : "Tap a piece to see where it can move."}</strong>
+            <span>Undo is available in Practice. Against AI, Undo rewinds the full round after Stockfish replies.</span>
+          </div>
+        ) : null}
+
+        <div className="move-history practice-history">
+          <div className="move-history-heading">
+            <strong>Moves</strong>
+            <span>{moves.length ? `${moves.length} played` : "Black opens"}</span>
+          </div>
+          <div className="move-history-list">
+            {moves.length === 0 ? (
+              <p className="muted">Your moves will appear here.</p>
+            ) : (
+              moves.map((move, index) => (
+                <div className="move-entry" key={`${index}-${move.from}-${move.to}`}>
+                  <span>{practiceMoveLabel(index, move.color)}</span>
+                  <strong>{move.san}</strong>
+                  <small>{move.from}→{move.to}</small>
+                </div>
+              ))
+            )}
+            <div ref={historyEndRef} />
+          </div>
+        </div>
+
+        {mode === "ai" ? <p className="muted engine-line" role="status">{engineStatus}</p> : null}
+
+        <div className="practice-actions">
+          <button className="secondary-action" onClick={togglePause} disabled={Boolean(resultText)}>
+            {paused ? "Resume" : "Pause"}
+          </button>
+          <button className="secondary-action" onClick={undo} disabled={moves.length === 0}>
+            Undo
+          </button>
+        </div>
+
+        {mode === "ai" && game.turn() === "w" && !thinking && !paused && !resultText ? (
+          <button className="secondary-action retry-ai" onClick={retryComputer}>Retry AI move</button>
+        ) : null}
+
+        <button className="primary-action" onClick={() => startNewGame()}>
+          {resultText ? "Rematch" : "New game"}
+        </button>
       </aside>
     </section>
   );
