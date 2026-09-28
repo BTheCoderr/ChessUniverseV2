@@ -662,3 +662,104 @@ code {
     margin: 20px 0;
   }
 }
+
+
+/* Practice / AI settings */
+.board-column { min-width: 0; }
+.practice-board { position: relative; }
+.practice-board.paused .board { filter: blur(2px) brightness(.48); }
+.board-pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(28px, 7vw, 64px);
+  font-weight: 950;
+  letter-spacing: .18em;
+  color: white;
+  background: rgba(7, 10, 10, .18);
+  pointer-events: none;
+}
+
+.practice-clocks { margin: 12px 0 0; }
+.practice-no-clock {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0f1314;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+.practice-no-clock strong { color: var(--accent); }
+.practice-no-clock span { color: var(--muted); font-size: 12px; text-align: right; }
+
+.practice-status {
+  border-left: 3px solid #465153;
+  padding-left: 12px;
+  margin: 16px 0;
+}
+.practice-status.finished { border-left-color: var(--accent); color: white; }
+
+.practice-result {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #4c5c16;
+  background: #1d250e;
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin-bottom: 14px;
+}
+.practice-result strong { color: var(--accent); }
+.practice-result span { color: #cbd4b8; font-size: 12px; line-height: 1.45; }
+
+.practice-settings { display: grid; gap: 12px; margin: 14px 0; }
+.setting-field { display: grid; gap: 6px; }
+.setting-field label { font-size: 14px; font-weight: 800; }
+.setting-field select {
+  width: 100%;
+  background: #0d1112;
+  color: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+}
+.setting-field small { color: var(--muted); line-height: 1.4; }
+
+.practice-help {
+  display: grid;
+  gap: 4px;
+  margin: 14px 0;
+  border: 1px solid #344047;
+  background: #101619;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.practice-help strong { font-size: 13px; }
+.practice-help span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+.practice-history { margin: 14px 0; }
+.engine-line { margin: 0 0 12px; }
+.practice-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.practice-actions .secondary-action { width: 100%; }
+.practice-actions button:disabled,
+.retry-ai:disabled { opacity: .45; cursor: not-allowed; }
+.retry-ai { width: 100%; margin-bottom: 8px; }
+
+@media (max-width: 680px) {
+  .practice-no-clock {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .practice-no-clock span { text-align: left; }
+  .practice-panel { padding-top: 18px; }
+}
