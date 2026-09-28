@@ -128,7 +128,7 @@ function loadSavedPractice(): SavedPractice & { game: Chess } {
 
     // If the browser was closed while Stockfish was due to move, restore as paused
     // so the user chooses when to resume the engine.
-    const paused = Boolean(parsed.paused) || (mode === "ai" && game.turn() === "w" && !game.isGameOver());
+    const paused = Boolean(parsed.paused) || (moves.length > 0 && !game.isGameOver() && !timedOutColor);
 
     return {
       game,
@@ -241,7 +241,7 @@ export function LocalGame() {
   }, [clocks, game, timeControlMinutes, timedOutColor]);
 
   const applyComputerMove = async (next: Chess, movesBeforeAi: RecordedMove[]) => {
-    if (mode !== "ai" || next.isGameOver() || next.turn() !== "w" || paused || timedOutColor) return;
+    if (mode !== "ai" || next.isGameOver() || next.turn() !== "w" || timedOutColor) return;
 
     const token = ++gameToken.current;
     setThinking(true);
