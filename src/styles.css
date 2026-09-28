@@ -539,3 +539,126 @@ code {
   .move-entry { grid-template-columns: 40px 1fr; }
   .move-entry > small { grid-column: 2; }
 }
+
+
+/* Profile + mobile navigation polish */
+.profile-card { max-width: 760px; }
+.profile-identity {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 10px;
+}
+.profile-identity h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.profile-identity p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.rating-pill {
+  flex: none;
+  border: 1px solid #4c5c16;
+  background: #1d250e;
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 24px 0;
+}
+.profile-stats div {
+  border: 1px solid var(--line);
+  background: #0f1314;
+  border-radius: 12px;
+  padding: 14px;
+}
+.profile-stats strong,
+.profile-stats span { display: block; }
+.profile-stats strong { font-size: 24px; }
+.profile-stats span {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 3px;
+}
+.profile-signout { margin-top: 4px; }
+
+@media (max-width: 680px) {
+  .topbar {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 6px;
+    min-height: 64px;
+    padding: 10px 8px;
+  }
+
+  .brand {
+    width: 42px;
+    justify-content: center;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .topbar nav {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .topbar nav button {
+    min-width: 0;
+    padding: 9px 3px;
+    font-size: 13px;
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  .page {
+    width: min(100% - 16px, 720px);
+    padding-top: 18px;
+  }
+
+  .play-layout,
+  .horse-layout {
+    gap: 8px;
+  }
+
+  .game-panel {
+    padding: 20px;
+  }
+
+  .back-link {
+    margin-bottom: 12px;
+  }
+
+  .profile-card {
+    padding: 22px 18px;
+  }
+
+  .profile-identity {
+    gap: 10px;
+  }
+
+  .profile-identity h2 {
+    font-size: 30px;
+    line-height: 1.05;
+  }
+
+  .profile-stats {
+    margin: 20px 0;
+  }
+}
