@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type Props = { session: Session | null };
+
+type Profile = {
+  username: string;
+  rating: number;
+  wins: number;
+  losses: number;
+  draws: number;
+};
 
 const PRODUCTION_SITE_URL = "https://chessuniverse.netlify.app";
 
@@ -12,8 +20,36 @@ export function AuthPanel({ session }: Props) {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const client = supabase;
+
+  useEffect(() => {
+    if (!client || !session) {
+      setProfile(null);
+      return;
+    }
+
+    let cancelled = false;
+    setProfileLoading(true);
+
+    void client
+      .from("profiles")
+      .select("username,rating,wins,losses,draws")
+      .eq("id", session.user.id)
+      .single()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) setProfile(data as Profile);
+        else setProfile(null);
+        setProfileLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [client, session?.user.id]);
 
   if (!isSupabaseConfigured || !client) {
     return (
@@ -26,12 +62,36 @@ export function AuthPanel({ session }: Props) {
   }
 
   if (session) {
+    const displayName =
+      profile?.username ||
+      session.user.user_metadata.username ||
+      session.user.email?.split("@")[0] ||
+      "Player";
+
     return (
-      <div className="card">
-        <div className="eyebrow">ACCOUNT</div>
-        <h2>{session.user.user_metadata.username || session.user.email}</h2>
-        <p>Signed in and ready for online play.</p>
-        <button className="secondary-action" onClick={() => void client.auth.signOut()}>Sign out</button>
+      <div className="card profile-card">
+        <div className="eyebrow">PROFILE</div>
+        <div className="profile-identity">
+          <div>
+            <h2>{profileLoading ? "Loading profile…" : displayName}</h2>
+            <p>{session.user.email}</p>
+          </div>
+          {profile ? <span className="rating-pill">{profile.rating}</span> : null}
+        </div>
+
+        {profile ? (
+          <div className="profile-stats" aria-label="Player stats">
+            <div><strong>{profile.wins}</strong><span>Wins</span></div>
+            <div><strong>{profile.losses}</strong><span>Losses</span></div>
+            <div><strong>{profile.draws}</strong><span>Draws</span></div>
+          </div>
+        ) : (
+          <p className="muted">Signed in and ready for online play.</p>
+        )}
+
+        <button className="secondary-action profile-signout" onClick={() => void client.auth.signOut()}>
+          Sign out
+        </button>
       </div>
     );
   }
