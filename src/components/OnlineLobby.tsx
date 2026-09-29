@@ -152,23 +152,29 @@ export function OnlineLobby({
 
   const createGame = async () => {
     setMessage("");
-    const { data, error } = await client.rpc("create_waiting_game", {
-      game_variant: "traditional",
-      game_minutes: selectedMinutes,
+    const { data, error } = await client.functions.invoke("online-game", {
+      body: {
+        action: "create_game",
+        variant: "traditional",
+        minutes: selectedMinutes,
+      },
     });
 
     if (error) setMessage(error.message);
-    else if (data) onOpenGame(String(data));
+    else if (data?.gameId) onOpenGame(String(data.gameId));
   };
 
   const joinGame = async (gameId: string) => {
     setMessage("");
-    const { data, error } = await client.rpc("join_waiting_game", {
-      target_game_id: gameId,
+    const { data, error } = await client.functions.invoke("online-game", {
+      body: {
+        action: "join_game",
+        gameId,
+      },
     });
 
     if (error) setMessage(error.message);
-    else if (data) onOpenGame(String(data));
+    else if (data?.gameId) onOpenGame(String(data.gameId));
   };
 
   return (
