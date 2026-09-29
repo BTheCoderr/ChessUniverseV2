@@ -25,6 +25,21 @@ export default function App() {
   const [onlineGameId, setOnlineGameId] = useState<string | null>(() => savedOnlineGame());
   const [view, setView] = useState<View>(() => (savedOnlineGame() ? "online" : "home"));
   const [session, setSession] = useState<Session | null>(null);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine
+  );
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     if (!supabase) return;
@@ -83,7 +98,11 @@ export default function App() {
         </nav>
       </header>
 
-      {!isSupabaseConfigured ? (
+      {!isOnline ? (
+        <div className="offline-banner" role="status">
+          Offline mode — Learn, Practice, Legends, Queens, Horse, and Stockfish are available.
+        </div>
+      ) : !isSupabaseConfigured ? (
         <div className="config-banner">
           Local and AI chess are ready. Connect Supabase to unlock accounts and multiplayer.
         </div>
@@ -169,13 +188,39 @@ export default function App() {
         ) : null}
         {view === "queens" ? <EvolvingQueensGame /> : null}
         {view === "horse" ? <MagicHorseGame /> : null}
-        {view === "online" && session && onlineGameId ? (
+        {view === "online" && !isOnline ? (
+          <section className="card offline-card">
+            <div className="eyebrow">OFFLINE</div>
+            <h2>Online play needs a connection.</h2>
+            <p>
+              Your offline modes are still ready. Practice against Stockfish, learn the basics,
+              play Legends moments, or use either chess variant while you wait to reconnect.
+            </p>
+            <div className="offline-actions">
+              <button className="primary-action" onClick={() => setView("play")}>Practice</button>
+              <button className="secondary-action" onClick={() => setView("history")}>Legends</button>
+              <button className="secondary-action" onClick={() => setView("learn")}>Learn</button>
+            </div>
+          </section>
+        ) : null}
+        {view === "online" && isOnline && session && onlineGameId ? (
           <OnlineGame gameId={onlineGameId} session={session} onBack={leaveOnlineTable} />
         ) : null}
-        {view === "online" && (!session || !onlineGameId) ? (
+        {view === "online" && isOnline && (!session || !onlineGameId) ? (
           <OnlineLobby session={session} onOpenGame={openOnlineGame} />
         ) : null}
-        {view === "account" ? <AuthPanel session={session} /> : null}
+        {view === "account" && !isOnline ? (
+          <section className="card offline-card">
+            <div className="eyebrow">OFFLINE</div>
+            <h2>Your account will be back when you reconnect.</h2>
+            <p>
+              Local practice progress and Legends medals stay on this device. Signing in,
+              syncing profile data, and multiplayer need internet access.
+            </p>
+            <button className="primary-action" onClick={() => setView("play")}>Keep playing offline</button>
+          </section>
+        ) : null}
+        {view === "account" && isOnline ? <AuthPanel session={session} /> : null}
       </main>
     </div>
   );
