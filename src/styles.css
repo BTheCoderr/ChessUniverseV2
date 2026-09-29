@@ -1417,3 +1417,298 @@ code {
     width: 100%;
   }
 }
+
+
+/* Offline game library + Stockfish review */
+.review-saved-game {
+  width: 100%;
+  margin: -2px 0 12px;
+}
+
+.library-page {
+  width: 100%;
+}
+
+.library-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.library-heading h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(38px, 7vw, 74px);
+  line-height: .95;
+  letter-spacing: -.05em;
+}
+
+.library-heading p {
+  color: var(--muted);
+  max-width: 760px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.library-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.library-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.library-game {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 34px;
+  gap: 4px;
+  border: 1px solid var(--line);
+  background: #0f1314;
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.library-game.active {
+  border-color: var(--accent);
+  background: #18200d;
+}
+
+.library-game-main {
+  border: 0;
+  background: transparent;
+  color: white;
+  padding: 13px 12px;
+  text-align: left;
+  min-width: 0;
+}
+
+.library-game-main span,
+.library-game-main strong,
+.library-game-main small {
+  display: block;
+}
+
+.library-game-main span {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.library-game-main strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.library-game-main small {
+  color: #849091;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.library-delete {
+  align-self: stretch;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: rgba(255,255,255,.02);
+  color: #758081;
+  font-size: 20px;
+}
+
+.library-delete:hover {
+  color: white;
+  background: #242b2c;
+}
+
+.library-review-layout {
+  margin-top: 2px;
+}
+
+.library-review-panel {
+  position: sticky;
+  top: 106px;
+}
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.review-actions .primary-action,
+.review-actions .secondary-action {
+  flex: 1;
+}
+
+.review-progress {
+  margin: 8px 0 0;
+}
+
+.library-moves {
+  margin-top: 14px;
+}
+
+.review-move {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: white;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: left;
+}
+
+.review-move:nth-child(even) {
+  background: rgba(255,255,255,.025);
+}
+
+.review-move.active {
+  background: #1b220d;
+}
+
+.review-move > span,
+.review-move > small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.review-move > strong {
+  font-size: 14px;
+}
+
+.grade-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  background: #182021;
+  color: #dce3e4;
+}
+
+.grade-pill.best {
+  color: var(--accent);
+  border-color: #63781f;
+  background: #1d260d;
+}
+
+.grade-pill.good {
+  color: #d8f4d4;
+  border-color: #42604a;
+  background: #172119;
+}
+
+.grade-pill.inaccuracy {
+  color: #ffe5a0;
+  border-color: #756331;
+  background: #28220f;
+}
+
+.grade-pill.mistake {
+  color: #ffc58c;
+  border-color: #79502d;
+  background: #28190d;
+}
+
+.grade-pill.blunder {
+  color: #ffaaa4;
+  border-color: #78423e;
+  background: #2a1110;
+}
+
+.grade-pill.large {
+  font-size: 12px;
+  padding: 6px 9px;
+}
+
+.review-card {
+  border: 1px solid var(--line);
+  background: #0f1314;
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin-top: 12px;
+}
+
+.review-card p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.review-card .secondary-action {
+  width: 100%;
+}
+
+.review-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.review-card-heading > div span,
+.review-card-heading > div strong {
+  display: block;
+}
+
+.review-card-heading > div span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.review-card-heading > div strong {
+  margin-top: 2px;
+  font-size: 22px;
+}
+
+.game-library-empty {
+  display: grid;
+  gap: 12px;
+}
+
+.game-library-empty p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .library-list {
+    grid-template-columns: 1fr;
+  }
+
+  .library-review-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 680px) {
+  .library-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .library-heading > button {
+    width: 100%;
+  }
+
+  .review-move {
+    grid-template-columns: 28px 1fr auto;
+  }
+
+  .review-move > small {
+    display: none;
+  }
+
+  .practice-explore-bar > div {
+    flex-wrap: wrap;
+  }
+}
