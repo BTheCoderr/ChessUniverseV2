@@ -123,7 +123,7 @@ export default function App() {
                 </article>
                 <article>
                   <span>02</span>
-                  <strong>Replay history</strong>
+                  <strong>Legends & moments</strong>
                   <p>Walk through legendary games, jump to the turning point, then take over against the AI.</p>
                 </article>
                 <article>
@@ -147,7 +147,7 @@ export default function App() {
               </span>
               <div>
                 <button className="secondary-action compact" onClick={() => setView("learn")}>Learn</button>
-                <button className="secondary-action compact" onClick={() => setView("history")}>History</button>
+                <button className="secondary-action compact" onClick={() => setView("history")}>Legends</button>
               </div>
             </div>
             <LocalGame />
