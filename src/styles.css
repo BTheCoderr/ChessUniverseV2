@@ -1371,3 +1371,49 @@ code {
   .campaign-complete { align-items: flex-start; flex-direction: column; }
   .achievement-toast { left: 12px; right: 12px; bottom: 12px; }
 }
+
+
+/* Offline PWA states */
+.offline-banner {
+  text-align: center;
+  padding: 9px 16px;
+  background: #162019;
+  color: #dfffd7;
+  border-bottom: 1px solid #35543d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.offline-card {
+  max-width: 680px;
+  display: grid;
+  gap: 12px;
+}
+
+.offline-card h2 {
+  margin: 4px 0 0;
+  font-size: clamp(28px, 5vw, 44px);
+}
+
+.offline-card p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 4px;
+}
+
+.offline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .offline-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .offline-actions button {
+    width: 100%;
+  }
+}
