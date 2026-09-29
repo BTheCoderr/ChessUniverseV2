@@ -144,10 +144,6 @@ export function replaceGameLibraryTombstones(ids: string[]) {
   return next;
 }
 
-function announceLibraryChange() {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("chess-universe-local-sync-needed"));
-}
 
 export function saveGameToLibrary(game: StoredGame): StoredGame[] {
   const current = loadGameLibrary();
@@ -161,7 +157,6 @@ export function saveGameToLibrary(game: StoredGame): StoredGame[] {
   } catch {
     // The finished game still exists in memory when storage is unavailable.
   }
-  announceLibraryChange();
   return next;
 }
 
@@ -173,7 +168,6 @@ export function deleteGameFromLibrary(gameId: string): StoredGame[] {
   } catch {
     // Ignore storage failures.
   }
-  announceLibraryChange();
   return next;
 }
 
