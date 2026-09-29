@@ -1,8 +1,20 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import { FAMOUS_GAMES, famousGameHistory, famousPosition, type FamousGame } from "../lib/famousGames";
 import { getComputerMove } from "../lib/stockfish";
+import {
+  HISTORY_PROGRESS_KEY,
+  awardHistoryMedal,
+  emptyHistoryProgress,
+  gameMedalCount,
+  medalCount,
+  normalizeHistoryProgress,
+  recordHistoryAttempt,
+  rewriteChallengeComplete,
+  type HistoryMedal,
+  type HistoryProgress,
+} from "../lib/historyProgress";
 
 type Props = {
   onBack: () => void;
@@ -34,8 +46,34 @@ function sameMove(actual: string, historical: string) {
   return normalize(actual) === normalize(historical);
 }
 
+function loadProgress() {
+  if (typeof window === "undefined") return emptyHistoryProgress();
+  try {
+    const raw = window.localStorage.getItem(HISTORY_PROGRESS_KEY);
+    return raw ? normalizeHistoryProgress(JSON.parse(raw)) : emptyHistoryProgress();
+  } catch {
+    return emptyHistoryProgress();
+  }
+}
+
+const MEDAL_COPY: Record<HistoryMedal, { title: string; description: string }> = {
+  replay: {
+    title: "Replay",
+    description: "Reach the end of the original score.",
+  },
+  historical: {
+    title: "Find the Move",
+    description: "Play the move made in the real game.",
+  },
+  rewrite: {
+    title: "Rewrite",
+    description: "Choose another move and establish a new timeline.",
+  },
+};
+
 export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
   const [gameId, setGameId] = useState<FamousGame["id"]>("opera");
+  const [campaignOpen, setCampaignOpen] = useState(true);
   const [ply, setPly] = useState(0);
   const [scenarioActive, setScenarioActive] = useState(false);
   const [scenarioFen, setScenarioFen] = useState("");
@@ -43,6 +81,9 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
   const [scenarioThinking, setScenarioThinking] = useState(false);
   const [scenarioMessage, setScenarioMessage] = useState("");
   const [branchMoves, setBranchMoves] = useState<string[]>([]);
+  const [firstScenarioMoveHistorical, setFirstScenarioMoveHistorical] = useState<boolean | null>(null);
+  const [progress, setProgress] = useState<HistoryProgress>(loadProgress);
+  const [toast, setToast] = useState("");
   const scenarioToken = useRef(0);
 
   const famous = FAMOUS_GAMES.find((item) => item.id === gameId) ?? FAMOUS_GAMES[0];
@@ -68,6 +109,45 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
     return scenario.moves({ square: scenarioSelected, verbose: true }).map((move) => move.to as Square);
   }, [scenario, scenarioSelected, scenarioThinking, heroColor]);
 
+  const totalMedals = medalCount(progress);
+  const completedLegends = FAMOUS_GAMES.filter((item) => gameMedalCount(progress, item.id) === 3).length;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(HISTORY_PROGRESS_KEY, JSON.stringify(progress));
+    } catch {
+      // Campaign still works if browser storage is unavailable.
+    }
+  }, [progress]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(""), 2600);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    if (
+      campaignOpen ||
+      scenarioActive ||
+      history.length === 0 ||
+      ply !== history.length ||
+      progress[gameId].replay
+    ) {
+      return;
+    }
+
+    setProgress((current) => awardHistoryMedal(current, gameId, "replay"));
+    setToast("Replay medal earned · Original game completed");
+  }, [campaignOpen, scenarioActive, history.length, ply, progress, gameId]);
+
+  const award = (medal: HistoryMedal, message: string) => {
+    if (progress[gameId][medal]) return;
+    setProgress((current) => awardHistoryMedal(current, gameId, medal));
+    setToast(message);
+  };
+
   const selectGame = (next: FamousGame["id"]) => {
     scenarioToken.current += 1;
     setGameId(next);
@@ -78,6 +158,12 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
     setScenarioThinking(false);
     setScenarioMessage("");
     setBranchMoves([]);
+    setFirstScenarioMoveHistorical(null);
+  };
+
+  const openChapter = (next: FamousGame["id"]) => {
+    selectGame(next);
+    setCampaignOpen(false);
   };
 
   const startScenario = () => {
@@ -88,6 +174,8 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
     setScenarioSelected(null);
     setScenarioThinking(false);
     setBranchMoves([]);
+    setFirstScenarioMoveHistorical(null);
+    setProgress((current) => recordHistoryAttempt(current, gameId));
     setScenarioMessage(
       `You are ${famous.heroName} playing ${position.turn() === "w" ? "White" : "Black"}. Can you find the historical move?`
     );
@@ -98,7 +186,11 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
     startScenario();
   };
 
-  const applyAiReply = async (gameAfterUser: Chess, movesAfterUser: string[]) => {
+  const applyAiReply = async (
+    gameAfterUser: Chess,
+    movesAfterUser: string[],
+    firstMoveWasHistorical: boolean
+  ) => {
     if (gameAfterUser.isGameOver()) return;
 
     const token = ++scenarioToken.current;
@@ -113,9 +205,15 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
         to: uci.slice(2, 4),
         promotion: uci[4] ?? "q",
       });
+      const nextBranch = [...movesAfterUser, made.san];
 
       setScenarioFen(reply.fen());
-      setBranchMoves([...movesAfterUser, made.san]);
+      setBranchMoves(nextBranch);
+
+      if (rewriteChallengeComplete(nextBranch.length, firstMoveWasHistorical, reply.isGameOver())) {
+        award("rewrite", "Rewrite medal earned · New timeline established");
+      }
+
       setScenarioMessage(
         reply.isCheckmate()
           ? `Checkmate — ${reply.turn() === "w" ? "Black" : "White"} wins this timeline.`
@@ -159,11 +257,25 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
       });
       const isFirstChoice = branchMoves.length === 0;
       const foundHistory = isFirstChoice && sameMove(made.san, famous.historicalMove);
+      const historicalFlag = isFirstChoice
+        ? foundHistory
+        : firstScenarioMoveHistorical === true;
       const nextBranch = [...branchMoves, made.san];
+
+      if (isFirstChoice) {
+        setFirstScenarioMoveHistorical(foundHistory);
+        if (foundHistory) {
+          award("historical", "Find the Move medal earned · You matched history");
+        }
+      }
 
       setScenarioSelected(null);
       setScenarioFen(next.fen());
       setBranchMoves(nextBranch);
+
+      if (rewriteChallengeComplete(nextBranch.length, historicalFlag, next.isGameOver())) {
+        award("rewrite", "Rewrite medal earned · New timeline established");
+      }
 
       if (next.isCheckmate()) {
         setScenarioMessage(`Checkmate — you rewrote history with ${made.san}.`);
@@ -182,15 +294,124 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
             : `${made.san} played. Stockfish is responding…`
       );
 
-      void applyAiReply(next, nextBranch);
+      void applyAiReply(next, nextBranch, historicalFlag);
     } catch {
       if (piece?.color === heroColor) setScenarioSelected(square);
       else setScenarioSelected(null);
     }
   };
 
+  if (campaignOpen && !scenarioActive) {
+    const campaignGames = [...FAMOUS_GAMES].sort((a, b) => a.year - b.year);
+
+    return (
+      <section className="legends-page">
+        <button className="text-button back-link" onClick={onBack}>← Home</button>
+
+        {toast ? <div className="achievement-toast" role="status">{toast}</div> : null}
+
+        <div className="legends-hero">
+          <div>
+            <div className="eyebrow">LEGENDS · CAMPAIGN 01</div>
+            <h1>Relive it. Beat it. Rewrite it.</h1>
+            <p>
+              Step into legendary positions like a historical sports challenge. Study what happened,
+              find the move that made the game famous, then create your own timeline against Stockfish.
+            </p>
+          </div>
+          <div className="campaign-score">
+            <strong>{totalMedals}<span>/9</span></strong>
+            <small>campaign medals</small>
+            <b>{completedLegends}/3 legends mastered</b>
+          </div>
+        </div>
+
+        <div className="campaign-progress-track" aria-label={`${totalMedals} of 9 medals earned`}>
+          <span style={{ width: `${(totalMedals / 9) * 100}%` }} />
+        </div>
+
+        <div className="campaign-how">
+          <div>
+            <strong>① Replay</strong>
+            <span>Watch the original game through the final move.</span>
+          </div>
+          <div>
+            <strong>② Find the Move</strong>
+            <span>Take over at the turning point and match history.</span>
+          </div>
+          <div>
+            <strong>③ Rewrite</strong>
+            <span>Choose another move and build a real alternate line.</span>
+          </div>
+        </div>
+
+        <div className="legend-campaign-list">
+          {campaignGames.map((item, index) => {
+            const chapter = progress[item.id];
+            const earned = gameMedalCount(progress, item.id);
+            return (
+              <article className={earned === 3 ? "legend-chapter mastered" : "legend-chapter"} key={item.id}>
+                <div className="legend-chapter-number">0{index + 1}</div>
+                <div className="legend-chapter-copy">
+                  <div className="legend-chapter-meta">
+                    <span>{item.year}</span>
+                    <span>{item.event}</span>
+                    {earned === 3 ? <b>MASTERED</b> : null}
+                  </div>
+                  <h2>{item.title}</h2>
+                  <p className="legend-matchup">{item.white} vs. {item.black}</p>
+                  <p>{item.summary}</p>
+
+                  <div className="legend-objectives">
+                    {(Object.keys(MEDAL_COPY) as HistoryMedal[]).map((medal) => (
+                      <div className={chapter[medal] ? "legend-objective complete" : "legend-objective"} key={medal}>
+                        <span>{chapter[medal] ? "✓" : "○"}</span>
+                        <div>
+                          <strong>{MEDAL_COPY[medal].title}</strong>
+                          <small>{MEDAL_COPY[medal].description}</small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="legend-chapter-action">
+                  <div className="legend-medal-count">
+                    <strong>{earned}/3</strong>
+                    <span>medals</span>
+                  </div>
+                  <button className="primary-action" onClick={() => openChapter(item.id)}>
+                    {earned === 3 ? "Replay Legend" : earned > 0 ? "Continue" : "Enter Moment"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        {totalMedals === 9 ? (
+          <div className="campaign-complete">
+            <div>
+              <div className="eyebrow">CAMPAIGN COMPLETE</div>
+              <h2>Legend status earned.</h2>
+              <p>You completed all nine objectives in the first Chess Universe history campaign.</p>
+            </div>
+            <button className="secondary-action" onClick={onPractice}>Take it to Practice</button>
+          </div>
+        ) : null}
+
+        <div className="history-footer-actions campaign-footer">
+          <button className="secondary-action" onClick={onLearn}>Learn the basics</button>
+          <button className="secondary-action" onClick={onPractice}>Practice</button>
+        </div>
+      </section>
+    );
+  }
+
   if (scenarioActive) {
     const lastBranchMove = branchMoves.length > 0 ? branchMoves[branchMoves.length - 1] : null;
+    const chapter = progress[gameId];
+
     return (
       <section className="history-page">
         <button
@@ -205,15 +426,28 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
           ← Original replay
         </button>
 
+        {toast ? <div className="achievement-toast" role="status">{toast}</div> : null}
+
         <div className="history-scenario-heading">
           <div>
-            <div className="eyebrow">REWRITE HISTORY</div>
+            <div className="eyebrow">PLAY THE MOMENT · REWRITE HISTORY</div>
             <h1>{famous.title}</h1>
             <p>
               Take over as <strong>{famous.heroName}</strong> from the famous moment and play the position against Stockfish.
             </p>
           </div>
           <span className="history-year">{famous.year}</span>
+        </div>
+
+        <div className="scenario-objectives">
+          <div className={chapter.historical ? "scenario-objective complete" : "scenario-objective"}>
+            <span>{chapter.historical ? "✓" : "1"}</span>
+            <div><strong>Find the Move</strong><small>Match {famous.heroName}'s historical move.</small></div>
+          </div>
+          <div className={chapter.rewrite ? "scenario-objective complete" : "scenario-objective"}>
+            <span>{chapter.rewrite ? "✓" : "2"}</span>
+            <div><strong>Rewrite</strong><small>Choose another first move and make three decisions in the new line.</small></div>
+          </div>
         </div>
 
         <div className="play-layout">
@@ -279,14 +513,24 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
 
   return (
     <section className="history-page">
-      <button className="text-button back-link" onClick={onBack}>← Home</button>
+      <button
+        className="text-button back-link"
+        onClick={() => {
+          setCampaignOpen(true);
+          setPly(0);
+        }}
+      >
+        ← Legends
+      </button>
+
+      {toast ? <div className="achievement-toast" role="status">{toast}</div> : null}
 
       <div className="history-heading">
         <div>
-          <div className="eyebrow">CHESS HISTORY</div>
-          <h1>Step into the games that became legend.</h1>
+          <div className="eyebrow">LEGEND REPLAY · {gameMedalCount(progress, gameId)}/3 MEDALS</div>
+          <h1>{famous.title}</h1>
           <p>
-            Replay the original moves, jump to the turning point, then take over and see whether you can reproduce—or rewrite—the finish.
+            Replay the original score, earn the study medal, then jump into the famous moment and take control.
           </p>
         </div>
       </div>
@@ -294,21 +538,6 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
       <div className="history-rule-note">
         <strong>Historical mode uses the original rules.</strong>
         <span>These classic games begin with White, exactly as they were played. Chess Universe modes still begin with Black.</span>
-      </div>
-
-      <div className="history-library">
-        {FAMOUS_GAMES.map((item) => (
-          <button
-            key={item.id}
-            className={item.id === famous.id ? "history-card active" : "history-card"}
-            onClick={() => selectGame(item.id)}
-          >
-            <span>{item.year}</span>
-            <strong>{item.title}</strong>
-            <small>{item.white} vs. {item.black}</small>
-            <p>{item.summary}</p>
-          </button>
-        ))}
       </div>
 
       <div className="history-replay-layout">
@@ -343,6 +572,21 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
           </p>
           <p className="muted">{famous.lesson}</p>
 
+          <div className="chapter-medals">
+            <div className={progress[gameId].replay ? "chapter-medal earned" : "chapter-medal"}>
+              <span>{progress[gameId].replay ? "✓" : "○"}</span>
+              <div><strong>Replay</strong><small>Reach the final move.</small></div>
+            </div>
+            <div className={progress[gameId].historical ? "chapter-medal earned" : "chapter-medal"}>
+              <span>{progress[gameId].historical ? "✓" : "○"}</span>
+              <div><strong>Find the Move</strong><small>Match the historical choice.</small></div>
+            </div>
+            <div className={progress[gameId].rewrite ? "chapter-medal earned" : "chapter-medal"}>
+              <span>{progress[gameId].rewrite ? "✓" : "○"}</span>
+              <div><strong>Rewrite</strong><small>Build an alternate timeline.</small></div>
+            </div>
+          </div>
+
           <div className="history-moment-card">
             <strong>{famous.criticalLabel}</strong>
             <span>Jump to the position immediately before {famous.heroName}'s famous move.</span>
@@ -350,7 +594,7 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
               Jump to moment
             </button>
             <button className="primary-action" onClick={startScenario}>
-              Rewrite History
+              Play the Moment
             </button>
           </div>
 
@@ -374,7 +618,7 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
           </div>
 
           <div className="history-footer-actions">
-            <button className="secondary-action" onClick={onLearn}>Learn the basics</button>
+            <button className="secondary-action" onClick={onLearn}>Learn</button>
             <button className="secondary-action" onClick={onPractice}>Practice</button>
           </div>
         </aside>
