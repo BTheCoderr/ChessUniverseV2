@@ -14,7 +14,7 @@ import { MagicHorseGame } from "./components/MagicHorseGame";
 import { OnlineGame } from "./components/OnlineGame";
 import { OnlineLobby } from "./components/OnlineLobby";
 import { PuzzleMode } from "./components/PuzzleMode";
-import { prepareLocalDataForUser } from "./lib/localPlayerData";
+import { clearLocalPlayerData, prepareLocalDataForUser } from "./lib/localPlayerData";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 type View =
@@ -94,8 +94,10 @@ export default function App() {
         setRecoveryMode(true);
         setView("account");
       } else if (event === "SIGNED_OUT") {
+        clearLocalPlayerData();
         setRecoveryMode(false);
         setOnlineGameId(null);
+        setView("home");
       }
     });
 
