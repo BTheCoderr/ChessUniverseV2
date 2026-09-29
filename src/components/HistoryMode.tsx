@@ -116,6 +116,7 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
     if (typeof window === "undefined") return;
     try {
       window.localStorage.setItem(HISTORY_PROGRESS_KEY, JSON.stringify(progress));
+      window.dispatchEvent(new CustomEvent("chess-universe-local-sync-needed"));
     } catch {
       // Campaign still works if browser storage is unavailable.
     }
