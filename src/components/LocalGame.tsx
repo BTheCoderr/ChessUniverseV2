@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import { getComputerMove, type Difficulty } from "../lib/stockfish";
+import { makeLocalGameId, saveGameToLibrary } from "../lib/gameLibrary";
 import {
   PRACTICE_TIME_OPTIONS,
   formatClock,
@@ -24,6 +25,7 @@ type RecordedMove = {
 };
 
 type SavedPractice = {
+  gameId: string;
   mode: PracticeMode;
   difficulty: Difficulty;
   timeControlMinutes: number;
@@ -93,6 +95,7 @@ function validTimeControl(value: unknown): value is number {
 function freshPractice(): SavedPractice & { game: Chess } {
   return {
     game: newUniverseGame(),
+    gameId: makeLocalGameId(),
     mode: "ai",
     difficulty: "beginner",
     timeControlMinutes: 0,
@@ -132,6 +135,7 @@ function loadSavedPractice(): SavedPractice & { game: Chess } {
 
     return {
       game,
+      gameId: typeof parsed.gameId === "string" && parsed.gameId ? parsed.gameId : makeLocalGameId(),
       mode,
       difficulty,
       timeControlMinutes,
@@ -146,9 +150,12 @@ function loadSavedPractice(): SavedPractice & { game: Chess } {
   }
 }
 
-export function LocalGame() {
+type LocalGameProps = { onOpenLibrary?: () => void };
+
+export function LocalGame({ onOpenLibrary }: LocalGameProps) {
   const initial = useRef(loadSavedPractice()).current;
   const [game, setGame] = useState(initial.game);
+  const [gameId, setGameId] = useState(initial.gameId);
   const [mode, setMode] = useState<PracticeMode>(initial.mode);
   const [selected, setSelected] = useState<Square | null>(null);
   const [thinking, setThinking] = useState(false);
@@ -188,6 +195,7 @@ export function LocalGame() {
     if (typeof window === "undefined") return;
     try {
       const payload: SavedPractice = {
+        gameId,
         mode,
         difficulty,
         timeControlMinutes,
@@ -201,7 +209,20 @@ export function LocalGame() {
     } catch {
       // Practice still works when browser storage is unavailable.
     }
-  }, [mode, difficulty, timeControlMinutes, learningHelp, moves, clocks, paused, timedOutColor]);
+  }, [gameId, mode, difficulty, timeControlMinutes, learningHelp, moves, clocks, paused, timedOutColor]);
+
+  useEffect(() => {
+    if (!resultText || moves.length === 0) return;
+    saveGameToLibrary({
+      id: gameId,
+      completedAt: new Date().toISOString(),
+      mode,
+      difficulty,
+      timeControlMinutes,
+      result: resultText,
+      moves: moves.map(({ from, to, promotion, san, color }) => ({ from, to, promotion, san, color })),
+    });
+  }, [gameId, resultText, moves, mode, difficulty, timeControlMinutes]);
 
   useEffect(() => {
     historyEndRef.current?.scrollIntoView({ block: "nearest" });
@@ -328,6 +349,7 @@ export function LocalGame() {
     gameToken.current += 1;
     const next = newUniverseGame();
     const nextClocks = initialClocks(minutes);
+    setGameId(makeLocalGameId());
     setGame(next);
     setMoves([]);
     setSelected(null);
@@ -450,10 +472,17 @@ export function LocalGame() {
         </p>
 
         {resultText ? (
-          <div className="practice-result">
-            <strong>{resultText}</strong>
-            <span>{mode === "ai" ? "Run it back with the same settings or undo the last round." : "Start another local game or undo the last move."}</span>
-          </div>
+          <>
+            <div className="practice-result">
+              <strong>{resultText}</strong>
+              <span>{mode === "ai" ? "This game was saved locally. Review it with Stockfish or run it back." : "This game was saved locally. Replay or review it anytime."}</span>
+            </div>
+            {onOpenLibrary ? (
+              <button className="secondary-action review-saved-game" onClick={onOpenLibrary}>
+                Review saved game
+              </button>
+            ) : null}
+          </>
         ) : null}
 
         <div className="segmented">
