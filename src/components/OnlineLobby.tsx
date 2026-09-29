@@ -4,7 +4,7 @@ import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type GameRow = {
   id: string;
-  white_id: string;
+  white_id: string | null;
   black_id: string | null;
   status: "waiting" | "active" | "completed" | "cancelled";
   result: "white" | "black" | "draw" | null;
