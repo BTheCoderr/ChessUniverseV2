@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
-import { analyzePosition } from "./stockfish";
-import { buildUniversePosition, type StoredGame } from "./gameLibrary";
+import { analyzePosition } from "./stockfish.ts";
+import { buildUniversePosition, type StoredGame } from "./gameLibrary.ts";
 
 export type MoveGrade = "Best" | "Good" | "Inaccuracy" | "Mistake" | "Blunder";
 
