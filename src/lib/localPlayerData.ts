@@ -17,18 +17,23 @@ const PLAYER_SCOPED_KEYS = [
 ];
 
 export function prepareLocalDataForUser(userId: string) {
-  if (typeof window === "undefined" || !userId) return;
+  if (typeof window === "undefined" || !userId) return false;
 
   try {
     const owner = window.localStorage.getItem(LOCAL_PLAYER_OWNER_KEY);
-    if (owner && owner !== userId) {
+    const switched = Boolean(owner && owner !== userId);
+
+    if (switched) {
       for (const key of PLAYER_SCOPED_KEYS) {
         window.localStorage.removeItem(key);
       }
     }
+
     window.localStorage.setItem(LOCAL_PLAYER_OWNER_KEY, userId);
+    return switched;
   } catch {
     // Private browsing may block localStorage; account data still remains protected by RLS.
+    return false;
   }
 }
 
