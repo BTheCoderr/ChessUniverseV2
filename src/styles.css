@@ -1086,3 +1086,288 @@ code {
   }
   .history-scenario-note span { text-align: left; }
 }
+
+
+/* Legends / Moments campaign */
+.legends-page { width: 100%; }
+.legends-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+.legends-hero h1 {
+  margin: 8px 0 12px;
+  font-size: clamp(42px, 7vw, 82px);
+  line-height: .94;
+  letter-spacing: -.055em;
+  max-width: 900px;
+}
+.legends-hero p {
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 760px;
+}
+.campaign-score {
+  min-width: 170px;
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  border: 1px solid #4c5c16;
+  background: #1a210d;
+  border-radius: 16px;
+  padding: 16px;
+}
+.campaign-score strong {
+  color: var(--accent);
+  font-size: 34px;
+  line-height: 1;
+}
+.campaign-score strong span { color: #829345; font-size: 18px; }
+.campaign-score small { color: #cbd4b8; }
+.campaign-score b { color: white; font-size: 12px; }
+
+.campaign-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #141a1b;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.campaign-progress-track span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width .25s ease;
+}
+
+.campaign-how {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.campaign-how > div {
+  border: 1px solid var(--line);
+  background: #101516;
+  border-radius: 13px;
+  padding: 13px 14px;
+}
+.campaign-how strong,
+.campaign-how span { display: block; }
+.campaign-how strong { margin-bottom: 5px; }
+.campaign-how span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+.legend-campaign-list { display: grid; gap: 12px; }
+.legend-chapter {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 150px;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: rgba(20,25,26,.94);
+  border-radius: 18px;
+  padding: 18px;
+}
+.legend-chapter.mastered {
+  border-color: #4c5c16;
+  background: linear-gradient(135deg, #18200d, #111617 58%);
+}
+.legend-chapter-number {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #0c1011;
+  border: 1px solid var(--line);
+  color: #657172;
+  font-size: 20px;
+  font-weight: 950;
+}
+.legend-chapter.mastered .legend-chapter-number {
+  color: var(--accent);
+  border-color: #4c5c16;
+}
+.legend-chapter-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.legend-chapter-meta b {
+  color: var(--accent);
+  border: 1px solid #4c5c16;
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+.legend-chapter h2 { margin: 6px 0 4px; font-size: 26px; }
+.legend-chapter-copy > p { color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
+.legend-matchup { color: #dbe2e3 !important; font-size: 13px; margin-top: 0 !important; }
+
+.legend-objectives {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 14px;
+}
+.legend-objective {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 7px;
+  align-items: start;
+  border: 1px solid #2a3334;
+  background: #0f1314;
+  border-radius: 10px;
+  padding: 9px;
+}
+.legend-objective > span { color: #748081; font-weight: 900; }
+.legend-objective strong,
+.legend-objective small { display: block; }
+.legend-objective strong { font-size: 12px; }
+.legend-objective small { color: var(--muted); font-size: 10px; line-height: 1.35; margin-top: 2px; }
+.legend-objective.complete {
+  border-color: #4c5c16;
+  background: #19200d;
+}
+.legend-objective.complete > span,
+.legend-objective.complete strong { color: var(--accent); }
+
+.legend-chapter-action { display: grid; gap: 10px; }
+.legend-chapter-action .primary-action { width: 100%; padding-inline: 12px; }
+.legend-medal-count {
+  display: grid;
+  justify-items: center;
+  border: 1px solid var(--line);
+  background: #0e1213;
+  border-radius: 12px;
+  padding: 10px;
+}
+.legend-medal-count strong { font-size: 24px; color: var(--accent); }
+.legend-medal-count span { color: var(--muted); font-size: 11px; }
+
+.campaign-complete {
+  margin-top: 18px;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #4c5c16;
+  background: #1a210d;
+  border-radius: 18px;
+  padding: 20px;
+}
+.campaign-complete h2 { margin: 5px 0; }
+.campaign-complete p { margin: 0; color: #cbd4b8; }
+.campaign-footer { margin-top: 16px; }
+
+.achievement-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 60;
+  max-width: min(420px, calc(100% - 36px));
+  border: 1px solid #63781f;
+  background: #1c260b;
+  color: #efffc2;
+  box-shadow: 0 18px 50px rgba(0,0,0,.35);
+  border-radius: 14px;
+  padding: 13px 15px;
+  font-weight: 800;
+}
+
+.scenario-objectives {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+.scenario-objective {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 9px;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: #0f1314;
+  border-radius: 12px;
+  padding: 11px 12px;
+}
+.scenario-objective > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #1b2122;
+  color: #8e999a;
+  font-weight: 950;
+}
+.scenario-objective strong,
+.scenario-objective small { display: block; }
+.scenario-objective small { color: var(--muted); margin-top: 2px; }
+.scenario-objective.complete {
+  border-color: #4c5c16;
+  background: #19200d;
+}
+.scenario-objective.complete > span {
+  color: var(--accent);
+  background: #27320d;
+}
+.scenario-objective.complete strong { color: var(--accent); }
+
+.chapter-medals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin: 14px 0;
+}
+.chapter-medal {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 6px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px;
+  background: #0f1314;
+}
+.chapter-medal > span { color: #707b7c; font-weight: 900; }
+.chapter-medal strong,
+.chapter-medal small { display: block; }
+.chapter-medal strong { font-size: 11px; }
+.chapter-medal small { color: var(--muted); font-size: 9px; margin-top: 2px; }
+.chapter-medal.earned {
+  border-color: #4c5c16;
+  background: #19200d;
+}
+.chapter-medal.earned > span,
+.chapter-medal.earned strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .legends-hero { grid-template-columns: 1fr; }
+  .campaign-score { justify-items: start; width: 100%; }
+  .campaign-how { grid-template-columns: 1fr; }
+  .legend-chapter { grid-template-columns: 52px minmax(0,1fr); }
+  .legend-chapter-action { grid-column: 2; grid-template-columns: 110px 1fr; align-items: stretch; }
+  .legend-objectives { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 680px) {
+  .legend-chapter {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 15px;
+  }
+  .legend-chapter-number { width: 46px; height: 46px; }
+  .legend-chapter-action { grid-column: auto; grid-template-columns: 1fr; }
+  .scenario-objectives,
+  .chapter-medals { grid-template-columns: 1fr; }
+  .campaign-complete { align-items: flex-start; flex-direction: column; }
+  .achievement-toast { left: 12px; right: 12px; bottom: 12px; }
+}
