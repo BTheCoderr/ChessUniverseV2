@@ -2,8 +2,8 @@ import {
   emptyHistoryProgress,
   normalizeHistoryProgress,
   type HistoryProgress,
-} from "./historyProgress";
-import { normalizePuzzleProgress } from "./puzzles";
+} from "./historyProgress.ts";
+import { normalizePuzzleProgress } from "./puzzles.ts";
 
 export function mergeHistoryProgress(local: unknown, remote: unknown): HistoryProgress {
   const left = normalizeHistoryProgress(local);
