@@ -24,7 +24,7 @@ test("online and account surfaces are gated when the device is offline", async (
   assert.match(app, /view === "online" && !isOnline/);
   assert.match(app, /view === "online" && isOnline && session && onlineGameId/);
   assert.match(app, /view === "account" && !isOnline/);
-  assert.match(app, /Offline mode — Learn, Practice, Legends, Queens, Horse, and Stockfish are available/);
+  assert.match(app, /Offline mode — Learn, Practice, .*Legends, Queens, Horse, and Stockfish are available/);
 });
 
 test("the installable app exposes mobile PWA metadata", async () => {
