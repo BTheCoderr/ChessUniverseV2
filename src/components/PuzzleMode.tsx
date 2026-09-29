@@ -64,7 +64,6 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
   useEffect(() => {
     try {
       window.localStorage.setItem(PUZZLE_PROGRESS_KEY, JSON.stringify(progress));
-      window.dispatchEvent(new CustomEvent("chess-universe-local-sync-needed"));
     } catch {
       // Puzzle progress remains usable for this session.
     }
