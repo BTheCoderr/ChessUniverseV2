@@ -34,7 +34,6 @@ export function loadFeedbackSettings() {
 export function saveFeedbackSettings(settings: FeedbackSettings) {
   try {
     window.localStorage.setItem(FEEDBACK_SETTINGS_KEY, JSON.stringify(settings));
-    window.dispatchEvent(new CustomEvent("chess-universe-local-sync-needed"));
   } catch {
     // Feedback settings are optional.
   }
