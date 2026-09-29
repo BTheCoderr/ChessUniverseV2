@@ -10,10 +10,14 @@ import {
   puzzlePosition,
 } from "../lib/puzzles";
 import { loadFeedbackSettings, playChessFeedback } from "../lib/feedback";
+import { mergePuzzleProgress } from "../lib/progressMerge";
+import { supabase } from "../lib/supabase";
+import type { Json } from "../lib/database.types";
 
 type Props = {
   onBack: () => void;
   onPractice: () => void;
+  userId?: string | null;
 };
 
 function boardPieces(game: Chess) {
@@ -40,7 +44,7 @@ function loadProgress() {
   }
 }
 
-export function PuzzleMode({ onBack, onPractice }: Props) {
+export function PuzzleMode({ onBack, onPractice, userId }: Props) {
   const [index, setIndex] = useState(0);
   const puzzle = OFFLINE_PUZZLES[index];
   const [game, setGame] = useState(() => puzzlePosition(puzzle));
@@ -49,6 +53,7 @@ export function PuzzleMode({ onBack, onPractice }: Props) {
   const [complete, setComplete] = useState(false);
   const [hintShown, setHintShown] = useState(false);
   const [progress, setProgress] = useState(loadProgress);
+  const [cloudReady, setCloudReady] = useState(false);
 
   const pieces = useMemo(() => boardPieces(game), [game]);
   const legalTargets = useMemo(() => {
@@ -63,6 +68,48 @@ export function PuzzleMode({ onBack, onPractice }: Props) {
       // Puzzle progress remains usable for this session.
     }
   }, [progress]);
+
+  useEffect(() => {
+    if (!userId || !supabase) {
+      setCloudReady(false);
+      return;
+    }
+
+    let cancelled = false;
+    setCloudReady(false);
+
+    void supabase
+      .from("player_progress")
+      .select("puzzle_progress")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) {
+          setProgress((current) => mergePuzzleProgress(current, data.puzzle_progress));
+        }
+        setCloudReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!cloudReady || !userId || !supabase) return;
+
+    void supabase
+      .from("player_progress")
+      .upsert(
+        {
+          user_id: userId,
+          puzzle_progress: progress as unknown as Json,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+  }, [cloudReady, progress, userId]);
 
   const resetPuzzle = (nextIndex = index) => {
     const nextPuzzle = OFFLINE_PUZZLES[nextIndex];

@@ -1,10 +1,14 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Color, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import {
   buildUniversePosition,
   deleteGameFromLibrary,
   loadGameLibrary,
+  loadGameLibraryTombstones,
+  normalizeGameLibrary,
+  replaceGameLibrary,
+  replaceGameLibraryTombstones,
   type StoredGame,
 } from "../lib/gameLibrary";
 import {
@@ -13,10 +17,13 @@ import {
   type ReviewedMove,
 } from "../lib/gameReview";
 import { getComputerMove } from "../lib/stockfish";
+import { supabase } from "../lib/supabase";
+import type { Json } from "../lib/database.types";
 
 type Props = {
   onBack: () => void;
   onPractice: () => void;
+  userId?: string | null;
 };
 
 function boardPieces(game: Chess) {
@@ -57,7 +64,7 @@ function gradeClass(grade: ReviewedMove["grade"]) {
   return grade.toLowerCase().replaceAll(" ", "-");
 }
 
-export function GameLibrary({ onBack, onPractice }: Props) {
+export function GameLibrary({ onBack, onPractice, userId }: Props) {
   const initialGames = useMemo(() => loadGameLibrary(), []);
   const [games, setGames] = useState(initialGames);
   const [selectedId, setSelectedId] = useState<string | null>(initialGames[0]?.id ?? null);
@@ -75,6 +82,86 @@ export function GameLibrary({ onBack, onPractice }: Props) {
   const [tryMessage, setTryMessage] = useState("");
   const [tryMoves, setTryMoves] = useState<string[]>([]);
   const tryToken = useRef(0);
+
+  useEffect(() => {
+    if (!userId || !supabase) return;
+
+    const client = supabase;
+    let cancelled = false;
+
+    const syncLibrary = async () => {
+      const tombstones = loadGameLibraryTombstones();
+      if (tombstones.length > 0) {
+        const { error: deleteError } = await client
+          .from("saved_practice_games")
+          .delete()
+          .eq("user_id", userId)
+          .in("local_id", tombstones);
+
+        if (!deleteError) replaceGameLibraryTombstones([]);
+      }
+
+      const { data, error } = await client
+        .from("saved_practice_games")
+        .select("local_id,completed_at,mode,difficulty,time_control_minutes,result,moves")
+        .eq("user_id", userId)
+        .order("completed_at", { ascending: false })
+        .limit(50);
+
+      if (cancelled || error) return;
+
+      const remoteGames = normalizeGameLibrary(
+        (data ?? []).map((row) => ({
+          id: row.local_id,
+          completedAt: row.completed_at,
+          mode: row.mode,
+          difficulty: row.difficulty,
+          timeControlMinutes: row.time_control_minutes,
+          result: row.result,
+          moves: row.moves,
+        }))
+      );
+
+      const localGames = loadGameLibrary();
+      const merged = normalizeGameLibrary([
+        ...localGames,
+        ...remoteGames.filter(
+          (remote) => !localGames.some((local) => local.id === remote.id)
+        ),
+      ]);
+
+      replaceGameLibrary(merged);
+      setGames(merged);
+      setSelectedId((current) =>
+        current && merged.some((game) => game.id === current)
+          ? current
+          : merged[0]?.id ?? null
+      );
+
+      if (merged.length > 0) {
+        await client.from("saved_practice_games").upsert(
+          merged.map((game) => ({
+            user_id: userId,
+            local_id: game.id,
+            completed_at: game.completedAt,
+            mode: game.mode,
+            difficulty: game.difficulty,
+            time_control_minutes: game.timeControlMinutes,
+            result: game.result,
+            moves: game.moves as unknown as Json,
+            updated_at: new Date().toISOString(),
+          })),
+          { onConflict: "user_id,local_id" }
+        );
+      }
+    };
+
+    void syncLibrary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const selected = games.find((game) => game.id === selectedId) ?? games[0] ?? null;
 
@@ -124,6 +211,22 @@ export function GameLibrary({ onBack, onPractice }: Props) {
     tryToken.current += 1;
     const next = deleteGameFromLibrary(gameId);
     setGames(next);
+
+    if (userId && supabase) {
+      void supabase
+        .from("saved_practice_games")
+        .delete()
+        .eq("user_id", userId)
+        .eq("local_id", gameId)
+        .then(({ error }) => {
+          if (!error) {
+            replaceGameLibraryTombstones(
+              loadGameLibraryTombstones().filter((id) => id !== gameId)
+            );
+          }
+        });
+    }
+
     if (selectedId === gameId) {
       setSelectedId(next[0]?.id ?? null);
       setPly(next[0]?.moves.length ?? 0);
