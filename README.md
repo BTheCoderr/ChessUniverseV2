@@ -1,24 +1,26 @@
 # Chess Universe
 
-Chess Universe is a Netlify-first React/Vite/TypeScript app with Supabase for authentication, Postgres persistence, realtime multiplayer, and trusted online game actions.
+Chess Universe is an offline-first React/Vite/TypeScript chess app with Supabase for authentication, Postgres persistence, realtime multiplayer, cross-device progress sync, and trusted online game actions.
 
-## Current rebuild scope
+## Beta feature set
 
-- Responsive React/Vite/TypeScript shell
-- Traditional local chess with Black moving first
-- Stockfish AI with Easy / Medium / Hard controls and visible engine status
-- Magic Horse as a separate playable challenge mode
-- Evolving Queens as a separate playable variant with a rules-aware AI
-- Supabase email/password authentication and profiles
-- Online lobby with guarded create/join RPCs
-- Realtime online chess with Black moving first
-- Trusted Edge Function validation for online moves, results, resignations and timeouts
-- Server-timestamp game clocks and reconnect restoration
-- Postgres schema, RLS and atomic move persistence
-- Netlify production deployment
-- CI tests, typecheck and build validation
-
-The legacy Express/Mongo/Socket.IO code remains temporarily as migration reference. The current React app does not import or execute it.
+- Traditional Chess Universe play with **Black moving first**
+- Local two-player and Stockfish Practice with multiple difficulty levels
+- Untimed and timed Practice, pause/resume, undo, move history, drag controls, sound and haptics
+- Learn mode for piece movement, checkmate, and the Chess Universe Black-first rule
+- Offline tactical Puzzles with local + signed-in progress sync
+- Legends mode with famous historical games, pivotal moments, and Rewrite History challenges
+- My Games with offline replay and Stockfish review
+- Magic Horse and Evolving Queens as separate playable variants
+- Installable offline PWA
+- Supabase email/password accounts and profiles
+- Realtime online chess with server-authoritative moves, clocks, results, resignations and draws
+- Opponent presence/reconnect state and resumable online games
+- Recent online match history and W/L/D tracking
+- Signed-in sync for Puzzles, Legends, preferences, and saved Practice games
+- In-app beta feedback, Privacy and Beta Terms
+- Password recovery and self-service account deletion
+- CI tests, TypeScript validation and production/PWA build checks
 
 ## Local setup
 
@@ -28,38 +30,50 @@ cp .env.example .env
 npm run dev
 ```
 
-Supabase is optional for local/AI play. To enable accounts and online play:
+Supabase is optional for offline/local play. To enable accounts, sync and online multiplayer:
 
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
-Apply the SQL files in `supabase/migrations/` in order and deploy `supabase/functions/online-game/index.ts` before testing online multiplayer.
+Apply the SQL files in `supabase/migrations/` in order and deploy these Edge Functions:
+
+- `supabase/functions/online-game/index.ts`
+- `supabase/functions/delete-account/index.ts`
 
 ## Online trust model
 
-The browser may preview legal moves for UI feedback, but it is not authoritative. The `online-game` Edge Function reloads the current game, validates the authenticated participant, applies the move with `chess.js`, calculates the server clock, determines game-over state, and commits through a service-role-only atomic RPC.
+The browser may preview legal moves for UI feedback, but it is not authoritative. The `online-game` Edge Function reloads the current game, validates the authenticated participant, applies moves with `chess.js`, calculates the server clock, determines game-over state, and commits through service-role-only database functions.
 
-The legacy browser move RPC is kept only long enough to deploy the new client safely and is disabled by the final migration.
+Browser roles do not directly mutate online game state.
+
+## Privacy and account data
+
+Player-specific synced progress is protected by Row Level Security. A signed-in player can only read or write their own progress and saved Practice games.
+
+Deleting an account removes the account and synced personal progress. Unfinished games are removed. Completed match records can remain de-identified so the opponent does not lose their game history.
 
 ## Netlify
 
-Build command: `npm run build`
+Build command:
+
+```bash
+npm run build
+```
 
 Publish directory: `dist`
 
-Set the two `VITE_SUPABASE_*` environment variables in Netlify. Production deploys from `main`.
+Production deploys from `main`.
 
-## Roadmap
+## Beta testing priorities
 
-1. Finish two-account / two-device online multiplayer verification
-2. Persistent game history and ratings
-3. Matchmaking and private invite codes
-4. Battle Chess and custom setups
-5. Free tournaments and leaderboards
-6. Friends, notifications and spectator mode
-7. Play-money contests with a non-cash ledger
-8. Real-money contests only after jurisdiction, identity, geolocation and provider requirements are resolved
+1. Two-device online create/join and realtime move sync
+2. Disconnect/reconnect and Resume behavior
+3. Draw offer/decline/accept flows
+4. Mobile responsiveness and PWA install/offline behavior
+5. Cross-device Puzzle, Legends and My Games sync
+6. Feedback collection and account recovery/deletion
+7. Ratings, rematches and private challenge links after the beta lifecycle is proven
 
-Real-money wagering is not enabled.
+Chess Universe does **not** provide real-money wagering.
