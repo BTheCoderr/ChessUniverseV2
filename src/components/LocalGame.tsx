@@ -3,6 +3,7 @@ import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import { getComputerMove, type Difficulty } from "../lib/stockfish";
 import { makeLocalGameId, saveGameToLibrary } from "../lib/gameLibrary";
+import { loadFeedbackSettings, playChessFeedback, saveFeedbackSettings } from "../lib/feedback";
 import {
   PRACTICE_TIME_OPTIONS,
   formatClock,
@@ -164,6 +165,7 @@ export function LocalGame({ onOpenLibrary }: LocalGameProps) {
   const [engineStatus, setEngineStatus] = useState("Stockfish ready");
   const [timeControlMinutes, setTimeControlMinutes] = useState(initial.timeControlMinutes);
   const [learningHelp, setLearningHelp] = useState(initial.learningHelp);
+  const [feedbackSettings, setFeedbackSettings] = useState(loadFeedbackSettings);
   const [moves, setMoves] = useState<RecordedMove[]>(initial.moves);
   const [clocks, setClocks] = useState<ClockState>(initial.clocks);
   const [paused, setPaused] = useState(initial.paused);
@@ -287,6 +289,8 @@ export function LocalGame({ onOpenLibrary }: LocalGameProps) {
         clocksBefore: { ...clocksRef.current },
       };
 
+      const feedbackKind = aiGame.isCheckmate() ? "mate" : aiGame.inCheck() ? "check" : made.captured ? "capture" : "move";
+      playChessFeedback(feedbackKind, feedbackSettings);
       setGame(aiGame);
       setMoves([...movesBeforeAi, aiMove]);
       setEngineStatus(`Stockfish active · ${difficulty}`);
@@ -297,6 +301,37 @@ export function LocalGame({ onOpenLibrary }: LocalGameProps) {
       setMessage(error instanceof Error ? error.message : "Stockfish could not make a move.");
     } finally {
       if (token === gameToken.current) setThinking(false);
+    }
+  };
+
+  const attemptMove = (from: Square, to: Square) => {
+    if (paused || thinking || timedOutColor || game.isGameOver()) return false;
+    if (mode === "ai" && game.turn() === "w") return false;
+
+    const next = new Chess(game.fen());
+    try {
+      const made = next.move({ from, to, promotion: "q" });
+      const recorded: RecordedMove = {
+        from: made.from as Square,
+        to: made.to as Square,
+        promotion: made.promotion,
+        san: made.san,
+        color: made.color as PracticeColor,
+        clocksBefore: { ...clocksRef.current },
+      };
+      const nextMoves = [...moves, recorded];
+      const feedbackKind = next.isCheckmate() ? "mate" : next.inCheck() ? "check" : made.captured ? "capture" : "move";
+
+      playChessFeedback(feedbackKind, feedbackSettings);
+      setSelected(null);
+      setGame(next);
+      setMoves(nextMoves);
+      setMessage(statusTextFor(next));
+      void applyComputerMove(next, nextMoves);
+      return true;
+    } catch {
+      if (learningHelp) setMessage("That move isn't legal. Choose another square.");
+      return false;
     }
   };
 
@@ -316,32 +351,17 @@ export function LocalGame({ onOpenLibrary }: LocalGameProps) {
       return;
     }
 
-    const next = new Chess(game.fen());
-    try {
-      const made = next.move({ from: selected, to: square, promotion: "q" });
-      const recorded: RecordedMove = {
-        from: made.from as Square,
-        to: made.to as Square,
-        promotion: made.promotion,
-        san: made.san,
-        color: made.color as PracticeColor,
-        clocksBefore: { ...clocksRef.current },
-      };
-      const nextMoves = [...moves, recorded];
-
-      setSelected(null);
-      setGame(next);
-      setMoves(nextMoves);
-      setMessage(statusTextFor(next));
-      void applyComputerMove(next, nextMoves);
-    } catch {
-      if (piece && piece.color === game.turn()) {
-        setSelected(square);
-        if (learningHelp) setMessage(`That move isn't legal. Selected ${square} instead.`);
-      } else {
-        setSelected(null);
-        if (learningHelp) setMessage("That move isn't legal. Choose another piece.");
+    if (piece && piece.color === game.turn()) {
+      setSelected(square);
+      if (learningHelp) {
+        const count = game.moves({ square, verbose: true }).length;
+        setMessage(`${count} legal move${count === 1 ? "" : "s"} available from ${square}.`);
       }
+      return;
+    }
+
+    if (!attemptMove(selected, square)) {
+      setSelected(null);
     }
   };
 
@@ -437,6 +457,7 @@ export function LocalGame({ onOpenLibrary }: LocalGameProps) {
             legalTargets={learningHelp ? legalTargets : []}
             lastMove={lastMove}
             onSquareClick={onSquareClick}
+            onMoveAttempt={attemptMove}
             disabled={thinking || paused || Boolean(timedOutColor)}
             orientation="b"
           />
@@ -537,6 +558,24 @@ export function LocalGame({ onOpenLibrary }: LocalGameProps) {
               <small>Legal move dots and beginner feedback.</small>
             </span>
             <b>{learningHelp ? "ON" : "OFF"}</b>
+          </button>
+
+          <button
+            type="button"
+            className={feedbackSettings.sound || feedbackSettings.haptics ? "learning-toggle active" : "learning-toggle"}
+            onClick={() => {
+              const enabled = !(feedbackSettings.sound || feedbackSettings.haptics);
+              const next = { sound: enabled, haptics: enabled };
+              setFeedbackSettings(next);
+              saveFeedbackSettings(next);
+              if (enabled) playChessFeedback("move", next);
+            }}
+          >
+            <span>
+              <strong>Sound & Haptics</strong>
+              <small>Local move sounds and vibration when supported.</small>
+            </span>
+            <b>{feedbackSettings.sound || feedbackSettings.haptics ? "ON" : "OFF"}</b>
           </button>
         </div>
 
