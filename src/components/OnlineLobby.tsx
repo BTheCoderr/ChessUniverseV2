@@ -7,9 +7,19 @@ type GameRow = {
   white_id: string;
   black_id: string | null;
   status: "waiting" | "active" | "completed" | "cancelled";
+  result: "white" | "black" | "draw" | null;
+  result_reason: string | null;
   variant: string;
   time_control_minutes: number;
   created_at: string;
+  ended_at: string | null;
+};
+
+type ProfileStats = {
+  rating: number;
+  wins: number;
+  losses: number;
+  draws: number;
 };
 
 const timeOptions = [
@@ -23,6 +33,20 @@ function timeLabel(minutes: number) {
   return minutes === 0 ? "Untimed" : `${minutes} min`;
 }
 
+function resultForPlayer(game: GameRow, userId: string) {
+  if (game.result === "draw") return "Draw";
+  if (game.result === "white") return game.white_id === userId ? "Win" : "Loss";
+  if (game.result === "black") return game.black_id === userId ? "Win" : "Loss";
+  return "Completed";
+}
+
+function endedLabel(game: GameRow) {
+  const value = game.ended_at ?? game.created_at;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 export function OnlineLobby({
   session,
   onOpenGame,
@@ -33,17 +57,20 @@ export function OnlineLobby({
   const client = supabase;
   const [games, setGames] = useState<GameRow[]>([]);
   const [activeGames, setActiveGames] = useState<GameRow[]>([]);
+  const [recentGames, setRecentGames] = useState<GameRow[]>([]);
+  const [profile, setProfile] = useState<ProfileStats | null>(null);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
   const [message, setMessage] = useState("");
 
   const load = async () => {
     if (!client || !session) return;
+
     const { data, error } = await client
       .from("games")
-      .select("id,white_id,black_id,status,variant,time_control_minutes,created_at")
-      .in("status", ["waiting", "active"])
+      .select("id,white_id,black_id,status,result,result_reason,variant,time_control_minutes,created_at,ended_at")
+      .in("status", ["waiting", "active", "completed"])
       .order("created_at", { ascending: false })
-      .limit(40);
+      .limit(80);
 
     if (error) {
       setMessage(error.message);
@@ -59,6 +86,26 @@ export function OnlineLobby({
           (game.white_id === session.user.id || game.black_id === session.user.id)
       )
     );
+    setRecentGames(
+      rows
+        .filter(
+          (game) =>
+            game.status === "completed" &&
+            (game.white_id === session.user.id || game.black_id === session.user.id)
+        )
+        .sort((a, b) => Date.parse(b.ended_at ?? b.created_at) - Date.parse(a.ended_at ?? a.created_at))
+        .slice(0, 8)
+    );
+
+    const { data: profileData, error: profileError } = await client
+      .from("profiles")
+      .select("rating,wins,losses,draws")
+      .eq("id", session.user.id)
+      .single();
+
+    if (!profileError && profileData) {
+      setProfile(profileData as ProfileStats);
+    }
   };
 
   useEffect(() => {
@@ -70,10 +117,22 @@ export function OnlineLobby({
       .on("postgres_changes", { event: "*", schema: "public", table: "games" }, () => {
         void load();
       })
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${session.user.id}`,
+        },
+        () => {
+          void load();
+        }
+      )
       .subscribe();
 
     return () => {
-      void client?.removeChannel(channel);
+      void client.removeChannel(channel);
     };
   }, [session?.user.id]);
 
@@ -120,6 +179,19 @@ export function OnlineLobby({
           <h2>Find your table</h2>
           <p className="muted">Black moves first in every Chess Universe match.</p>
         </div>
+
+        {profile ? (
+          <div className="online-record">
+            <div>
+              <strong>{profile.rating}</strong>
+              <span>rating</span>
+            </div>
+            <div>
+              <strong>{profile.wins}-{profile.losses}-{profile.draws}</strong>
+              <span>W-L-D</span>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {message ? <p className="form-message">{message}</p> : null}
@@ -219,6 +291,45 @@ export function OnlineLobby({
           )}
         </div>
       </section>
+
+      {recentGames.length > 0 ? (
+        <section className="lobby-section">
+          <div className="section-heading">
+            <div>
+              <strong>Recent online games</strong>
+              <span>Finished games stay available for replay.</span>
+            </div>
+          </div>
+
+          <div className="game-list recent-online-games">
+            {recentGames.map((game) => (
+              <div className="game-row" key={game.id}>
+                <div>
+                  <strong>
+                    <span className={`online-result ${resultForPlayer(game, session.user.id).toLowerCase()}`}>
+                      {resultForPlayer(game, session.user.id)}
+                    </span>
+                    {" · "}
+                    {timeLabel(game.time_control_minutes)}
+                  </strong>
+                  <span>
+                    {endedLabel(game)}
+                    {game.result_reason ? ` · ${game.result_reason.replaceAll("_", " ")}` : ""}
+                    {" · "}
+                    {game.id.slice(0, 8)}
+                  </span>
+                </div>
+                <button
+                  className="secondary-action compact"
+                  onClick={() => onOpenGame(game.id)}
+                >
+                  Review
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
