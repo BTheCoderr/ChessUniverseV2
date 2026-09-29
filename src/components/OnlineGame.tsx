@@ -19,6 +19,7 @@ type GameRow = {
   black_time_ms: number | null;
   started_at: string | null;
   last_move_at: string | null;
+  draw_offer_by: string | null;
 };
 
 type GameMove = {
@@ -87,6 +88,8 @@ export function OnlineGame({
   const [message, setMessage] = useState("Loading game…");
   const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [opponentOnline, setOpponentOnline] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<"connecting" | "connected" | "reconnecting">("connecting");
   const [learningHelp, setLearningHelp] = useState(() => {
     try {
       return window.localStorage.getItem("chess-universe-learning-help") !== "off";
@@ -100,7 +103,7 @@ export function OnlineGame({
     if (!client) return;
     const { data, error } = await client
       .from("games")
-      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at")
+      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by")
       .eq("id", gameId)
       .single();
 
@@ -132,10 +135,22 @@ export function OnlineGame({
   useEffect(() => {
     void load();
     void loadMoves();
-    if (!client) return;
+  }, [load, loadMoves]);
+
+  const myColor =
+    gameRow?.white_id === session.user.id
+      ? "w"
+      : gameRow?.black_id === session.user.id
+        ? "b"
+        : null;
+
+  useEffect(() => {
+    if (!client || !myColor) return;
 
     const channel = client
-      .channel(`game:${gameId}`)
+      .channel(`game:${gameId}`, {
+        config: { presence: { key: myColor } },
+      })
       .on(
         "postgres_changes",
         {
@@ -167,25 +182,38 @@ export function OnlineGame({
           );
         }
       )
-      .subscribe();
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState() as Record<string, unknown[]>;
+        const opponentColor = myColor === "w" ? "b" : "w";
+        setOpponentOnline(Boolean(state[opponentColor]?.length));
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("connected");
+          void channel.track({ side: myColor, online_at: new Date().toISOString() });
+          void load();
+          void loadMoves();
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          setRealtimeStatus("reconnecting");
+          setOpponentOnline(false);
+        }
+      });
 
     return () => {
+      setOpponentOnline(false);
       void client.removeChannel(channel);
     };
-  }, [client, gameId, load, loadMoves]);
+  }, [client, gameId, load, loadMoves, myColor]);
 
   useEffect(() => {
     if (gameRow?.status !== "active" || gameRow.time_control_minutes === 0) return;
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
   }, [gameRow?.status, gameRow?.time_control_minutes]);
-
-  const myColor =
-    gameRow?.white_id === session.user.id
-      ? "w"
-      : gameRow?.black_id === session.user.id
-        ? "b"
-        : null;
 
   const whiteRemaining = gameRow ? remainingTime(gameRow, "w", now) : 0;
   const blackRemaining = gameRow ? remainingTime(gameRow, "b", now) : 0;
@@ -206,13 +234,15 @@ export function OnlineGame({
     timeoutClaimed.current = true;
     void client.functions
       .invoke("online-game", { body: { action: "timeout", gameId } })
-      .then(({ error }) => {
+      .then(async ({ error }) => {
         if (error) {
           timeoutClaimed.current = false;
           setMessage(error.message);
         }
+        await load();
+        await loadMoves();
       });
-  }, [blackRemaining, client, gameId, gameRow, myColor, whiteRemaining]);
+  }, [blackRemaining, client, gameId, gameRow, load, loadMoves, myColor, whiteRemaining]);
 
   const chess = useMemo(() => {
     try {
@@ -247,6 +277,15 @@ export function OnlineGame({
     myColor !== null &&
     gameRow.current_turn === myColor;
 
+  const drawOfferedByMe = gameRow.draw_offer_by === session.user.id;
+  const drawOfferedByOpponent = Boolean(gameRow.draw_offer_by && !drawOfferedByMe);
+  const canOfferDraw =
+    gameRow.status === "active" &&
+    Boolean(myColor) &&
+    !gameRow.draw_offer_by &&
+    moves.length > 0 &&
+    !isMyTurn;
+
   const resultText =
     gameRow.result === "white"
       ? "White wins"
@@ -276,12 +315,35 @@ export function OnlineGame({
     setSaving(true);
     setMessage("");
     const { error } = await client.functions.invoke("online-game", { body });
-    if (error) {
-      setMessage(error.message);
-      await load();
-      await loadMoves();
-    }
+    if (error) setMessage(error.message);
+    await load();
+    await loadMoves();
     setSaving(false);
+  };
+
+  const attemptMove = async (from: Square, to: Square) => {
+    if (!isMyTurn || saving || !myColor) return;
+
+    try {
+      const preview = new Chess(chess.fen());
+      const move = preview.move({ from, to, promotion: "q" });
+      if (!move) {
+        if (learningHelp) setMessage("That move isn't legal. Pick a highlighted square.");
+        return;
+      }
+
+      setSelected(null);
+      setMessage("");
+      await invokeGameAction({
+        action: "move",
+        gameId,
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion ?? null,
+      });
+    } catch {
+      if (learningHelp) setMessage("That move isn't legal. Pick a highlighted square.");
+    }
   };
 
   const onSquareClick = async (square: Square) => {
@@ -299,32 +361,13 @@ export function OnlineGame({
       return;
     }
 
-    try {
-      const preview = new Chess(chess.fen());
-      const move = preview.move({ from: selected, to: square, promotion: "q" });
-      if (!move) {
-        if (learningHelp) setMessage("That move isn't legal. Pick a highlighted square.");
-        return;
-      }
-
-      setSelected(null);
+    if (piece?.color === myColor) {
+      setSelected(square);
       setMessage("");
-      await invokeGameAction({
-        action: "move",
-        gameId,
-        from: move.from,
-        to: move.to,
-        promotion: move.promotion ?? null,
-      });
-    } catch {
-      if (piece?.color === myColor) {
-        setSelected(square);
-        if (learningHelp) setMessage("");
-      } else {
-        if (learningHelp) setMessage("That move isn't legal. Pick a highlighted square.");
-        setSelected(null);
-      }
+      return;
     }
+
+    await attemptMove(selected, square);
   };
 
   const toggleLearningHelp = () => {
@@ -339,6 +382,13 @@ export function OnlineGame({
     });
   };
 
+  const presenceCopy =
+    realtimeStatus !== "connected"
+      ? "Reconnecting to table…"
+      : opponentOnline
+        ? "Opponent online"
+        : "Opponent away / reconnecting";
+
   return (
     <section className="play-layout">
       <div className="board-shell">
@@ -348,6 +398,7 @@ export function OnlineGame({
           legalTargets={legalTargets}
           lastMove={lastMove}
           onSquareClick={(square) => void onSquareClick(square)}
+          onMoveAttempt={(from, to) => void attemptMove(from, to)}
           disabled={!isMyTurn || saving}
           orientation={myColor === "b" ? "b" : "w"}
         />
@@ -357,6 +408,20 @@ export function OnlineGame({
         <button className="text-button back-link" onClick={onBack}>← Lobby</button>
         <div className="eyebrow">ONLINE TABLE</div>
         <h2>{myColor === "w" ? "You are White" : myColor === "b" ? "You are Black" : "Spectating"}</h2>
+
+        {gameRow.status === "active" && myColor ? (
+          <div className="online-presence">
+            <span className={opponentOnline && realtimeStatus === "connected" ? "presence-dot online" : "presence-dot"} />
+            <div>
+              <strong>{presenceCopy}</strong>
+              <small>
+                {gameRow.time_control_minutes === 0
+                  ? "Untimed games can safely be resumed after a disconnect."
+                  : "The server clock keeps running during disconnects."}
+              </small>
+            </div>
+          </div>
+        ) : null}
 
         {gameRow.time_control_minutes === 0 ? (
           <div className="untimed-banner">
@@ -378,6 +443,50 @@ export function OnlineGame({
 
         <p className="status">{saving ? "Updating game…" : status}</p>
         {message ? <p className="form-message">{message}</p> : null}
+
+        {gameRow.status === "active" && myColor ? (
+          <div className="draw-controls">
+            {drawOfferedByOpponent ? (
+              <div className="draw-offer-card">
+                <div>
+                  <strong>Draw offered</strong>
+                  <span>Your opponent is offering to end the game as a draw.</span>
+                </div>
+                <div>
+                  <button
+                    className="primary-action compact"
+                    disabled={saving}
+                    onClick={() => void invokeGameAction({ action: "accept_draw", gameId })}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    className="secondary-action compact"
+                    disabled={saving}
+                    onClick={() => void invokeGameAction({ action: "decline_draw", gameId })}
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ) : drawOfferedByMe ? (
+              <div className="draw-offer-card sent">
+                <div>
+                  <strong>Draw offer sent</strong>
+                  <span>Your opponent can accept, decline, or make a move.</span>
+                </div>
+              </div>
+            ) : canOfferDraw ? (
+              <button
+                className="secondary-action draw-action"
+                disabled={saving}
+                onClick={() => void invokeGameAction({ action: "offer_draw", gameId })}
+              >
+                Offer draw
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <button
           type="button"
@@ -432,7 +541,7 @@ export function OnlineGame({
         ) : null}
 
         <p className="muted">
-          Moves are validated by the trusted game function before the database accepts them.
+          Moves, results, and draw agreements are validated by the trusted game service before the database accepts them.
           {gameRow.time_control_minutes === 0
             ? " Untimed games do not expire from a chess clock."
             : " Timed games keep running after they begin, so reconnect instead of expecting a pause."}
