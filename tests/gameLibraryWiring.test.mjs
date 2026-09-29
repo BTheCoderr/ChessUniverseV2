@@ -19,5 +19,5 @@ test("My Games is an offline route rather than a database-backed surface", async
   assert.match(app, /type View = .*"library"/);
   assert.match(app, /<GameLibrary/);
   assert.match(app, />My Games</);
-  assert.match(app, /Offline mode — Learn, Practice, My Games/);
+  assert.match(app, /Offline mode — Learn, Practice, .*My Games/);
 });

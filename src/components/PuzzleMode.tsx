@@ -1,0 +1,204 @@
+import { useEffect, useMemo, useState } from "react";
+import { Chess, type Square } from "chess.js";
+import { ChessBoard } from "./ChessBoard";
+import {
+  OFFLINE_PUZZLES,
+  PUZZLE_PROGRESS_KEY,
+  normalizePuzzleProgress,
+  puzzleMoveUci,
+  puzzleOrientation,
+  puzzlePosition,
+} from "../lib/puzzles";
+import { loadFeedbackSettings, playChessFeedback } from "../lib/feedback";
+
+type Props = {
+  onBack: () => void;
+  onPractice: () => void;
+};
+
+function boardPieces(game: Chess) {
+  return game.board().flatMap((rank, rankIndex) =>
+    rank.flatMap((piece, fileIndex) => {
+      if (!piece) return [];
+      const file = String.fromCharCode(97 + fileIndex);
+      return [{
+        square: `${file}${8 - rankIndex}` as Square,
+        type: piece.type,
+        color: piece.color,
+      }];
+    })
+  );
+}
+
+function loadProgress() {
+  if (typeof window === "undefined") return [] as string[];
+  try {
+    const raw = window.localStorage.getItem(PUZZLE_PROGRESS_KEY);
+    return raw ? normalizePuzzleProgress(JSON.parse(raw)) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function PuzzleMode({ onBack, onPractice }: Props) {
+  const [index, setIndex] = useState(0);
+  const puzzle = OFFLINE_PUZZLES[index];
+  const [game, setGame] = useState(() => puzzlePosition(puzzle));
+  const [selected, setSelected] = useState<Square | null>(null);
+  const [message, setMessage] = useState(puzzle.goal);
+  const [complete, setComplete] = useState(false);
+  const [hintShown, setHintShown] = useState(false);
+  const [progress, setProgress] = useState(loadProgress);
+
+  const pieces = useMemo(() => boardPieces(game), [game]);
+  const legalTargets = useMemo(() => {
+    if (!selected || complete) return [];
+    return game.moves({ square: selected, verbose: true }).map((move) => move.to as Square);
+  }, [game, selected, complete]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PUZZLE_PROGRESS_KEY, JSON.stringify(progress));
+    } catch {
+      // Puzzle progress remains usable for this session.
+    }
+  }, [progress]);
+
+  const resetPuzzle = (nextIndex = index) => {
+    const nextPuzzle = OFFLINE_PUZZLES[nextIndex];
+    setIndex(nextIndex);
+    setGame(puzzlePosition(nextPuzzle));
+    setSelected(null);
+    setMessage(nextPuzzle.goal);
+    setComplete(false);
+    setHintShown(false);
+  };
+
+  const attemptMove = (from: Square, to: Square) => {
+    if (complete) return;
+    const next = new Chess(game.fen());
+
+    try {
+      const made = next.move({ from, to, promotion: "q" });
+      const uci = puzzleMoveUci(made.from as Square, made.to as Square, made.promotion);
+      const correct = uci === puzzle.solution;
+
+      if (!correct) {
+        setSelected(null);
+        setMessage(`${made.san} is legal, but it is not the puzzle move. Try again.`);
+        return;
+      }
+
+      setGame(next);
+      setSelected(null);
+      setComplete(true);
+      setProgress((current) => current.includes(puzzle.id) ? current : [...current, puzzle.id]);
+
+      const kind = next.isCheckmate() ? "mate" : next.inCheck() ? "check" : made.captured ? "capture" : "move";
+      playChessFeedback(kind, loadFeedbackSettings());
+      setMessage(puzzle.explanation);
+    } catch {
+      setSelected(null);
+      setMessage("That move is not legal in this position.");
+    }
+  };
+
+  const onSquareClick = (square: Square) => {
+    if (complete) return;
+    const piece = game.get(square);
+
+    if (!selected) {
+      if (piece?.color === game.turn()) setSelected(square);
+      return;
+    }
+
+    if (piece?.color === game.turn()) {
+      setSelected(square);
+      return;
+    }
+
+    attemptMove(selected, square);
+  };
+
+  const nextPuzzle = () => {
+    resetPuzzle((index + 1) % OFFLINE_PUZZLES.length);
+  };
+
+  return (
+    <section className="puzzle-page">
+      <button className="text-button back-link" onClick={onBack}>← Back</button>
+
+      <div className="puzzle-heading">
+        <div>
+          <div className="eyebrow">OFFLINE PUZZLES</div>
+          <h1>See it. Solve it.</h1>
+          <p>Short tactical positions for learning checks, captures, defense, and promotion. No account or connection needed.</p>
+        </div>
+        <div className="puzzle-score">
+          <strong>{progress.length}<span>/{OFFLINE_PUZZLES.length}</span></strong>
+          <small>solved</small>
+        </div>
+      </div>
+
+      <div className="puzzle-picker">
+        {OFFLINE_PUZZLES.map((item, puzzleIndex) => (
+          <button
+            key={item.id}
+            className={puzzleIndex === index ? "active" : ""}
+            onClick={() => resetPuzzle(puzzleIndex)}
+          >
+            <span>{progress.includes(item.id) ? "✓" : puzzleIndex + 1}</span>
+            <strong>{item.title}</strong>
+          </button>
+        ))}
+      </div>
+
+      <div className="play-layout">
+        <div className="board-column">
+          <div className="board-shell">
+            <ChessBoard
+              pieces={pieces}
+              selected={selected}
+              legalTargets={legalTargets}
+              onSquareClick={onSquareClick}
+              onMoveAttempt={attemptMove}
+              disabled={complete}
+              orientation={puzzleOrientation(puzzle)}
+            />
+          </div>
+        </div>
+
+        <aside className="game-panel puzzle-panel">
+          <div className="eyebrow">{puzzle.level} · PUZZLE {index + 1}</div>
+          <h2>{puzzle.title}</h2>
+          <p className={complete ? "puzzle-message success" : "puzzle-message"}>{message}</p>
+
+          <div className="puzzle-objective">
+            <strong>Objective</strong>
+            <span>{puzzle.goal}</span>
+          </div>
+
+          {!complete ? (
+            <>
+              {hintShown ? <div className="puzzle-hint">{puzzle.hint}</div> : null}
+              <button className="secondary-action" onClick={() => setHintShown(true)} disabled={hintShown}>
+                {hintShown ? "Hint shown" : "Show hint"}
+              </button>
+              <button className="secondary-action" onClick={() => resetPuzzle()}>Reset puzzle</button>
+            </>
+          ) : (
+            <>
+              <div className="puzzle-complete">
+                <strong>✓ Solved</strong>
+                <span>{puzzle.explanation}</span>
+              </div>
+              <button className="primary-action" onClick={nextPuzzle}>Next puzzle</button>
+            </>
+          )}
+
+          <button className="text-button puzzle-practice-link" onClick={onPractice}>Go to Practice</button>
+        </aside>
+      </div>
+    </section>
+  );
+}

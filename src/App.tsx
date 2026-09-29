@@ -9,9 +9,12 @@ import { OnlineLobby } from "./components/OnlineLobby";
 import { LearnChess } from "./components/LearnChess";
 import { HistoryMode } from "./components/HistoryMode";
 import { GameLibrary } from "./components/GameLibrary";
+import { PuzzleMode } from "./components/PuzzleMode";
+import { InstallApp } from "./components/InstallApp";
+import { FirstRunOnboarding } from "./components/FirstRunOnboarding";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
-type View = "home" | "play" | "library" | "learn" | "history" | "queens" | "horse" | "online" | "account";
+type View = "home" | "play" | "library" | "puzzles" | "learn" | "history" | "queens" | "horse" | "online" | "account";
 const ONLINE_GAME_KEY = "chess-universe-online-game";
 
 function savedOnlineGame() {
@@ -101,7 +104,7 @@ export default function App() {
 
       {!isOnline ? (
         <div className="offline-banner" role="status">
-          Offline mode — Learn, Practice, My Games, Legends, Queens, Horse, and Stockfish are available.
+          Offline mode — Learn, Practice, Puzzles, My Games, Legends, Queens, Horse, and Stockfish are available.
         </div>
       ) : !isSupabaseConfigured ? (
         <div className="config-banner">
@@ -111,6 +114,7 @@ export default function App() {
 
       <main className="page">
         {view === "home" ? (
+          <>
           <section className="hero">
             <div className="hero-copy">
               <div className="eyebrow">CHESS, EVOLVED</div>
@@ -127,8 +131,11 @@ export default function App() {
                 <button className="secondary-action" onClick={() => setView("learn")}>
                   Learn chess
                 </button>
+                <button className="secondary-action" onClick={() => setView("puzzles")}>
+                  Puzzles
+                </button>
                 <button className="secondary-action" onClick={() => setView("history")}>
-                  History mode
+                  Legends
                 </button>
                 <button className="secondary-action" onClick={() => setView("online")}>
                   Find a game
@@ -156,6 +163,9 @@ export default function App() {
 
             <div className="hero-piece">♛</div>
           </section>
+          <InstallApp />
+          <FirstRunOnboarding onChoose={(destination) => setView(destination)} />
+          </>
         ) : null}
 
         {view === "play" ? (
@@ -168,6 +178,7 @@ export default function App() {
               <div>
                 <button className="secondary-action compact" onClick={() => setView("learn")}>Learn</button>
                 <button className="secondary-action compact" onClick={() => setView("history")}>Legends</button>
+                <button className="secondary-action compact" onClick={() => setView("puzzles")}>Puzzles</button>
                 <button className="secondary-action compact" onClick={() => setView("library")}>My Games</button>
               </div>
             </div>
@@ -176,6 +187,9 @@ export default function App() {
         ) : null}
         {view === "library" ? (
           <GameLibrary onBack={() => setView("play")} onPractice={() => setView("play")} />
+        ) : null}
+        {view === "puzzles" ? (
+          <PuzzleMode onBack={() => setView("play")} onPractice={() => setView("play")} />
         ) : null}
         {view === "learn" ? (
           <LearnChess
@@ -198,13 +212,14 @@ export default function App() {
             <div className="eyebrow">OFFLINE</div>
             <h2>Online play needs a connection.</h2>
             <p>
-              Your offline modes are still ready. Practice against Stockfish, review saved games, learn the basics,
+              Your offline modes are still ready. Practice against Stockfish, solve puzzles, review saved games, learn the basics,
               play Legends moments, or use either chess variant while you wait to reconnect.
             </p>
             <div className="offline-actions">
               <button className="primary-action" onClick={() => setView("play")}>Practice</button>
               <button className="secondary-action" onClick={() => setView("history")}>Legends</button>
               <button className="secondary-action" onClick={() => setView("learn")}>Learn</button>
+              <button className="secondary-action" onClick={() => setView("puzzles")}>Puzzles</button>
             </div>
           </section>
         ) : null}
