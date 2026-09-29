@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      beta_feedback: {
+        Row: {
+          app_view: string | null
+          category: string
+          created_at: string
+          id: number
+          message: string
+          status: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          app_view?: string | null
+          category: string
+          created_at?: string
+          id?: number
+          message: string
+          status?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          app_view?: string | null
+          category?: string
+          created_at?: string
+          id?: number
+          message?: string
+          status?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_moves: {
         Row: {
           created_at: string
@@ -21,7 +62,7 @@ export type Database = {
           from_square: string
           game_id: string
           id: number
-          player_id: string
+          player_id: string | null
           ply: number
           promotion: string | null
           san: string
@@ -33,7 +74,7 @@ export type Database = {
           from_square: string
           game_id: string
           id?: number
-          player_id: string
+          player_id?: string | null
           ply: number
           promotion?: string | null
           san: string
@@ -45,7 +86,7 @@ export type Database = {
           from_square?: string
           game_id?: string
           id?: number
-          player_id?: string
+          player_id?: string | null
           ply?: number
           promotion?: string | null
           san?: string
@@ -88,7 +129,7 @@ export type Database = {
           time_control_minutes: number
           updated_at: string
           variant: string
-          white_id: string
+          white_id: string | null
           white_time_ms: number | null
         }
         Insert: {
@@ -110,7 +151,7 @@ export type Database = {
           time_control_minutes?: number
           updated_at?: string
           variant?: string
-          white_id: string
+          white_id?: string | null
           white_time_ms?: number | null
         }
         Update: {
@@ -132,7 +173,7 @@ export type Database = {
           time_control_minutes?: number
           updated_at?: string
           variant?: string
-          white_id?: string
+          white_id?: string | null
           white_time_ms?: number | null
         }
         Relationships: [
