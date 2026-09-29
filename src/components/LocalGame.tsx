@@ -5,7 +5,7 @@ import { getComputerMove, type Difficulty } from "../lib/stockfish";
 import { makeLocalGameId, saveGameToLibrary } from "../lib/gameLibrary";
 import { supabase } from "../lib/supabase";
 import type { Json } from "../lib/database.types";
-import { loadFeedbackSettings, playChessFeedback, saveFeedbackSettings } from "../lib/feedback";
+import { loadFeedbackSettings, normalizeFeedbackSettings, playChessFeedback, saveFeedbackSettings } from "../lib/feedback";
 import {
   PRACTICE_TIME_OPTIONS,
   formatClock,
@@ -194,6 +194,33 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
   useEffect(() => {
     clocksRef.current = clocks;
   }, [clocks]);
+
+  useEffect(() => {
+    if (!userId || !supabase) return;
+
+    let cancelled = false;
+
+    void supabase
+      .from("player_progress")
+      .select("preferences")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled || error || !data?.preferences) return;
+        if (typeof data.preferences !== "object" || Array.isArray(data.preferences)) return;
+
+        const remoteFeedback = (data.preferences as Record<string, unknown>).feedback;
+        if (!remoteFeedback) return;
+
+        const next = normalizeFeedbackSettings(remoteFeedback);
+        setFeedbackSettings(next);
+        saveFeedbackSettings(next);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -599,6 +626,20 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
               const next = { sound: enabled, haptics: enabled };
               setFeedbackSettings(next);
               saveFeedbackSettings(next);
+
+              if (userId && supabase) {
+                void supabase
+                  .from("player_progress")
+                  .upsert(
+                    {
+                      user_id: userId,
+                      preferences: { feedback: next } as unknown as Json,
+                      updated_at: new Date().toISOString(),
+                    },
+                    { onConflict: "user_id" }
+                  );
+              }
+
               if (enabled) playChessFeedback("move", next);
             }}
           >
