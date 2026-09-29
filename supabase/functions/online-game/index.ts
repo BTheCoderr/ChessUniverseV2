@@ -72,7 +72,40 @@ Deno.serve(async (req: Request) => {
     return response({ error: "Invalid JSON body" }, 400);
   }
 
+  const userId = authData.user.id;
   const action = String(body.action ?? "");
+
+  if (action === "create_game") {
+    const variant = String(body.variant ?? "traditional");
+    const minutes = Number(body.minutes ?? 0);
+
+    if (!Number.isInteger(minutes)) {
+      return response({ error: "Invalid time control" }, 400);
+    }
+
+    const { data, error } = await admin.rpc("create_waiting_game_service", {
+      actor_id: userId,
+      game_variant: variant,
+      game_minutes: minutes,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: true, gameId: data });
+  }
+
+  if (action === "join_game") {
+    const gameId = String(body.gameId ?? "");
+    if (!gameId) return response({ error: "Game id is required" }, 400);
+
+    const { data, error } = await admin.rpc("join_waiting_game_service", {
+      target_game_id: gameId,
+      actor_id: userId,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: true, gameId: data });
+  }
+
   const gameId = String(body.gameId ?? "");
   if (!gameId) return response({ error: "Game id is required" }, 400);
 
@@ -84,7 +117,6 @@ Deno.serve(async (req: Request) => {
 
   if (gameError || !gameData) return response({ error: "Game not found" }, 404);
   const game = gameData as GameRow;
-  const userId = authData.user.id;
   const actorColor = participantColor(game, userId) as "w" | "b" | null;
 
   if (!actorColor) return response({ error: "Not a participant" }, 403);
