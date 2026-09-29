@@ -182,14 +182,14 @@ export default function App() {
                 <button className="secondary-action compact" onClick={() => setView("library")}>My Games</button>
               </div>
             </div>
-            <LocalGame onOpenLibrary={() => setView("library")} />
+            <LocalGame onOpenLibrary={() => setView("library")} userId={session?.user.id} />
           </>
         ) : null}
         {view === "library" ? (
-          <GameLibrary onBack={() => setView("play")} onPractice={() => setView("play")} />
+          <GameLibrary onBack={() => setView("play")} onPractice={() => setView("play")} userId={session?.user.id} />
         ) : null}
         {view === "puzzles" ? (
-          <PuzzleMode onBack={() => setView("play")} onPractice={() => setView("play")} />
+          <PuzzleMode onBack={() => setView("play")} onPractice={() => setView("play")} userId={session?.user.id} />
         ) : null}
         {view === "learn" ? (
           <LearnChess
@@ -203,6 +203,7 @@ export default function App() {
             onBack={() => setView("home")}
             onLearn={() => setView("learn")}
             onPractice={() => setView("play")}
+            userId={session?.user.id}
           />
         ) : null}
         {view === "queens" ? <EvolvingQueensGame /> : null}
