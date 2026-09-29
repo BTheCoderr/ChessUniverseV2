@@ -86,12 +86,13 @@ export function GameLibrary({ onBack, onPractice, userId }: Props) {
   useEffect(() => {
     if (!userId || !supabase) return;
 
+    const client = supabase;
     let cancelled = false;
 
     const syncLibrary = async () => {
       const tombstones = loadGameLibraryTombstones();
       if (tombstones.length > 0) {
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await client
           .from("saved_practice_games")
           .delete()
           .eq("user_id", userId)
@@ -100,7 +101,7 @@ export function GameLibrary({ onBack, onPractice, userId }: Props) {
         if (!deleteError) replaceGameLibraryTombstones([]);
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("saved_practice_games")
         .select("local_id,completed_at,mode,difficulty,time_control_minutes,result,moves")
         .eq("user_id", userId)
@@ -138,7 +139,7 @@ export function GameLibrary({ onBack, onPractice, userId }: Props) {
       );
 
       if (merged.length > 0) {
-        await supabase.from("saved_practice_games").upsert(
+        await client.from("saved_practice_games").upsert(
           merged.map((game) => ({
             user_id: userId,
             local_id: game.id,
