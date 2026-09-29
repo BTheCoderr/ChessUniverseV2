@@ -8,9 +8,10 @@ import { OnlineGame } from "./components/OnlineGame";
 import { OnlineLobby } from "./components/OnlineLobby";
 import { LearnChess } from "./components/LearnChess";
 import { HistoryMode } from "./components/HistoryMode";
+import { GameLibrary } from "./components/GameLibrary";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
-type View = "home" | "play" | "learn" | "history" | "queens" | "horse" | "online" | "account";
+type View = "home" | "play" | "library" | "learn" | "history" | "queens" | "horse" | "online" | "account";
 const ONLINE_GAME_KEY = "chess-universe-online-game";
 
 function savedOnlineGame() {
@@ -100,7 +101,7 @@ export default function App() {
 
       {!isOnline ? (
         <div className="offline-banner" role="status">
-          Offline mode — Learn, Practice, Legends, Queens, Horse, and Stockfish are available.
+          Offline mode — Learn, Practice, My Games, Legends, Queens, Horse, and Stockfish are available.
         </div>
       ) : !isSupabaseConfigured ? (
         <div className="config-banner">
@@ -167,10 +168,14 @@ export default function App() {
               <div>
                 <button className="secondary-action compact" onClick={() => setView("learn")}>Learn</button>
                 <button className="secondary-action compact" onClick={() => setView("history")}>Legends</button>
+                <button className="secondary-action compact" onClick={() => setView("library")}>My Games</button>
               </div>
             </div>
-            <LocalGame />
+            <LocalGame onOpenLibrary={() => setView("library")} />
           </>
+        ) : null}
+        {view === "library" ? (
+          <GameLibrary onBack={() => setView("play")} onPractice={() => setView("play")} />
         ) : null}
         {view === "learn" ? (
           <LearnChess
@@ -193,7 +198,7 @@ export default function App() {
             <div className="eyebrow">OFFLINE</div>
             <h2>Online play needs a connection.</h2>
             <p>
-              Your offline modes are still ready. Practice against Stockfish, learn the basics,
+              Your offline modes are still ready. Practice against Stockfish, review saved games, learn the basics,
               play Legends moments, or use either chess variant while you wait to reconnect.
             </p>
             <div className="offline-actions">
