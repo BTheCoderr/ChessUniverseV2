@@ -3,6 +3,8 @@ import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import { getComputerMove, type Difficulty } from "../lib/stockfish";
 import { makeLocalGameId, saveGameToLibrary } from "../lib/gameLibrary";
+import { supabase } from "../lib/supabase";
+import type { Json } from "../lib/database.types";
 import { loadFeedbackSettings, playChessFeedback, saveFeedbackSettings } from "../lib/feedback";
 import {
   PRACTICE_TIME_OPTIONS,
@@ -151,9 +153,9 @@ function loadSavedPractice(): SavedPractice & { game: Chess } {
   }
 }
 
-type LocalGameProps = { onOpenLibrary?: () => void };
+type LocalGameProps = { onOpenLibrary?: () => void; userId?: string | null };
 
-export function LocalGame({ onOpenLibrary }: LocalGameProps) {
+export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
   const initial = useRef(loadSavedPractice()).current;
   const [game, setGame] = useState(initial.game);
   const [gameId, setGameId] = useState(initial.gameId);
@@ -215,16 +217,45 @@ export function LocalGame({ onOpenLibrary }: LocalGameProps) {
 
   useEffect(() => {
     if (!resultText || moves.length === 0) return;
-    saveGameToLibrary({
+
+    const completedAt = new Date().toISOString();
+    const storedGame = {
       id: gameId,
-      completedAt: new Date().toISOString(),
+      completedAt,
       mode,
       difficulty,
       timeControlMinutes,
       result: resultText,
-      moves: moves.map(({ from, to, promotion, san, color }) => ({ from, to, promotion, san, color })),
-    });
-  }, [gameId, resultText, moves, mode, difficulty, timeControlMinutes]);
+      moves: moves.map(({ from, to, promotion, san, color }) => ({
+        from,
+        to,
+        promotion,
+        san,
+        color,
+      })),
+    };
+
+    saveGameToLibrary(storedGame);
+
+    if (userId && supabase) {
+      void supabase
+        .from("saved_practice_games")
+        .upsert(
+          {
+            user_id: userId,
+            local_id: storedGame.id,
+            completed_at: storedGame.completedAt,
+            mode: storedGame.mode,
+            difficulty: storedGame.difficulty,
+            time_control_minutes: storedGame.timeControlMinutes,
+            result: storedGame.result,
+            moves: storedGame.moves as unknown as Json,
+            updated_at: completedAt,
+          },
+          { onConflict: "user_id,local_id" }
+        );
+    }
+  }, [gameId, resultText, moves, mode, difficulty, timeControlMinutes, userId]);
 
   useEffect(() => {
     historyEndRef.current?.scrollIntoView({ block: "nearest" });
