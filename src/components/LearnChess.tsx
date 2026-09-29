@@ -306,7 +306,7 @@ export function LearnChess({ onPractice, onHistory, onBack }: Props) {
             {universeComplete ? (
               <div className="tutorial-finish-actions">
                 <button className="primary-action" onClick={onPractice}>Start Practice</button>
-                <button className="secondary-action" onClick={onHistory}>Play Through History</button>
+                <button className="secondary-action" onClick={onHistory}>Enter Legends</button>
               </div>
             ) : null}
           </aside>
