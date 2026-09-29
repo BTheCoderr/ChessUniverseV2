@@ -3,6 +3,7 @@ import type { Difficulty } from "./stockfish";
 import type { PracticeMode } from "./practice";
 
 export const GAME_LIBRARY_KEY = "chess-universe-game-library-v1";
+export const GAME_LIBRARY_TOMBSTONES_KEY = "chess-universe-game-library-tombstones-v1";
 export const MAX_LOCAL_GAMES = 50;
 
 export type LibraryMove = {
@@ -110,6 +111,44 @@ export function loadGameLibrary(): StoredGame[] {
   }
 }
 
+export function replaceGameLibrary(games: StoredGame[]): StoredGame[] {
+  const next = normalizeGameLibrary(games);
+  try {
+    window.localStorage.setItem(GAME_LIBRARY_KEY, JSON.stringify(next));
+  } catch {
+    // Keep the merged library in memory when browser storage is unavailable.
+  }
+  return next;
+}
+
+export function loadGameLibraryTombstones(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(GAME_LIBRARY_TOMBSTONES_KEY);
+    if (!raw) return [];
+    const value = JSON.parse(raw);
+    if (!Array.isArray(value)) return [];
+    return [...new Set(value.filter((id): id is string => typeof id === "string" && id.length > 0))];
+  } catch {
+    return [];
+  }
+}
+
+export function replaceGameLibraryTombstones(ids: string[]) {
+  const next = [...new Set(ids.filter((id) => typeof id === "string" && id.length > 0))];
+  try {
+    window.localStorage.setItem(GAME_LIBRARY_TOMBSTONES_KEY, JSON.stringify(next));
+  } catch {
+    // Tombstones are best effort when browser storage is unavailable.
+  }
+  return next;
+}
+
+function announceLibraryChange() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("chess-universe-local-sync-needed"));
+}
+
 export function saveGameToLibrary(game: StoredGame): StoredGame[] {
   const current = loadGameLibrary();
   const next = normalizeGameLibrary([
@@ -118,9 +157,11 @@ export function saveGameToLibrary(game: StoredGame): StoredGame[] {
   ]);
   try {
     window.localStorage.setItem(GAME_LIBRARY_KEY, JSON.stringify(next));
+    replaceGameLibraryTombstones(loadGameLibraryTombstones().filter((id) => id !== game.id));
   } catch {
     // The finished game still exists in memory when storage is unavailable.
   }
+  announceLibraryChange();
   return next;
 }
 
@@ -128,9 +169,11 @@ export function deleteGameFromLibrary(gameId: string): StoredGame[] {
   const next = loadGameLibrary().filter((game) => game.id !== gameId);
   try {
     window.localStorage.setItem(GAME_LIBRARY_KEY, JSON.stringify(next));
+    replaceGameLibraryTombstones([...loadGameLibraryTombstones(), gameId]);
   } catch {
     // Ignore storage failures.
   }
+  announceLibraryChange();
   return next;
 }
 
