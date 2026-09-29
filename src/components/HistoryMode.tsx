@@ -3,6 +3,9 @@ import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import { FAMOUS_GAMES, famousGameHistory, famousPosition, type FamousGame } from "../lib/famousGames";
 import { getComputerMove } from "../lib/stockfish";
+import { mergeHistoryProgress } from "../lib/progressMerge";
+import { supabase } from "../lib/supabase";
+import type { Json } from "../lib/database.types";
 import {
   HISTORY_PROGRESS_KEY,
   awardHistoryMedal,
@@ -20,6 +23,7 @@ type Props = {
   onBack: () => void;
   onLearn: () => void;
   onPractice: () => void;
+  userId?: string | null;
 };
 
 function boardPieces(game: Chess) {
@@ -71,7 +75,7 @@ const MEDAL_COPY: Record<HistoryMedal, { title: string; description: string }> =
   },
 };
 
-export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
+export function HistoryMode({ onBack, onLearn, onPractice, userId }: Props) {
   const [gameId, setGameId] = useState<FamousGame["id"]>("opera");
   const [campaignOpen, setCampaignOpen] = useState(true);
   const [ply, setPly] = useState(0);
@@ -83,6 +87,7 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
   const [branchMoves, setBranchMoves] = useState<string[]>([]);
   const [firstScenarioMoveHistorical, setFirstScenarioMoveHistorical] = useState<boolean | null>(null);
   const [progress, setProgress] = useState<HistoryProgress>(loadProgress);
+  const [cloudReady, setCloudReady] = useState(false);
   const [toast, setToast] = useState("");
   const scenarioToken = useRef(0);
 
@@ -121,6 +126,48 @@ export function HistoryMode({ onBack, onLearn, onPractice }: Props) {
       // Campaign still works if browser storage is unavailable.
     }
   }, [progress]);
+
+  useEffect(() => {
+    if (!userId || !supabase) {
+      setCloudReady(false);
+      return;
+    }
+
+    let cancelled = false;
+    setCloudReady(false);
+
+    void supabase
+      .from("player_progress")
+      .select("legends_progress")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) {
+          setProgress((current) => mergeHistoryProgress(current, data.legends_progress));
+        }
+        setCloudReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!cloudReady || !userId || !supabase) return;
+
+    void supabase
+      .from("player_progress")
+      .upsert(
+        {
+          user_id: userId,
+          legends_progress: progress as unknown as Json,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+  }, [cloudReady, progress, userId]);
 
   useEffect(() => {
     if (!toast) return;
