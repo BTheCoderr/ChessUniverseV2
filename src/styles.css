@@ -2061,3 +2061,157 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Online lifecycle v3 */
+.online-presence {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: #0f1314;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 12px 0;
+}
+
+.online-presence > div {
+  display: grid;
+  gap: 2px;
+}
+
+.online-presence strong {
+  font-size: 13px;
+}
+
+.online-presence small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.presence-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #5d6667;
+  box-shadow: 0 0 0 4px rgba(93, 102, 103, .12);
+}
+
+.presence-dot.online {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(215, 255, 74, .12);
+}
+
+.draw-controls {
+  margin: 12px 0;
+}
+
+.draw-action {
+  width: 100%;
+}
+
+.draw-offer-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #6c5a2e;
+  background: #211b0e;
+  border-radius: 12px;
+  padding: 12px 13px;
+}
+
+.draw-offer-card.sent {
+  border-color: #4c5c16;
+  background: #18200d;
+}
+
+.draw-offer-card > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.draw-offer-card > div:first-child span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.draw-offer-card > div:last-child {
+  display: flex;
+  gap: 8px;
+}
+
+.draw-offer-card > div:last-child button {
+  flex: 1;
+}
+
+.online-record {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-width: 190px;
+}
+
+.online-record > div {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  border: 1px solid var(--line);
+  background: #0f1314;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.online-record strong {
+  color: var(--accent);
+  font-size: 19px;
+}
+
+.online-record span {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.online-result {
+  display: inline-block;
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 3px 7px;
+  vertical-align: 1px;
+}
+
+.online-result.win {
+  color: var(--accent);
+  background: #1d260d;
+  border: 1px solid #5e731f;
+}
+
+.online-result.loss {
+  color: #ffb0aa;
+  background: #291312;
+  border: 1px solid #6c3a36;
+}
+
+.online-result.draw {
+  color: #d5dfe0;
+  background: #1b2223;
+  border: 1px solid #455051;
+}
+
+.recent-online-games .game-row {
+  align-items: center;
+}
+
+@media (max-width: 680px) {
+  .online-record {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .draw-offer-card > div:last-child {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
