@@ -28,6 +28,8 @@ export function FeedbackPanel({ userId, appView, onBack, onSignIn }: Props) {
     );
   }
 
+  const client = supabase;
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     const clean = message.trim();
@@ -39,7 +41,7 @@ export function FeedbackPanel({ userId, appView, onBack, onSignIn }: Props) {
     setSending(true);
     setStatus("");
 
-    const { error } = await supabase.from("beta_feedback").insert({
+    const { error } = await client.from("beta_feedback").insert({
       user_id: userId,
       category,
       message: clean,
