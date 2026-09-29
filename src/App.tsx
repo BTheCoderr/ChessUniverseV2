@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AuthPanel } from "./components/AuthPanel";
-import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FeedbackPanel } from "./components/FeedbackPanel";
 import { FirstRunOnboarding } from "./components/FirstRunOnboarding";
 import { GameLibrary } from "./components/GameLibrary";
@@ -127,8 +126,7 @@ export default function App() {
   };
 
   return (
-    <ErrorBoundary>
-      <div className="site-shell">
+    <div className="site-shell">
         <header className="topbar">
           <button className="brand" onClick={() => navigate("home")}>
             <span className="brand-mark">♞</span>
@@ -331,7 +329,6 @@ export default function App() {
             <button onClick={() => navigate("terms")}>Beta Terms</button>
           </div>
         </footer>
-      </div>
-    </ErrorBoundary>
+    </div>
   );
 }
