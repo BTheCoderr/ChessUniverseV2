@@ -6,9 +6,11 @@ import { EvolvingQueensGame } from "./components/EvolvingQueensGame";
 import { MagicHorseGame } from "./components/MagicHorseGame";
 import { OnlineGame } from "./components/OnlineGame";
 import { OnlineLobby } from "./components/OnlineLobby";
+import { LearnChess } from "./components/LearnChess";
+import { HistoryMode } from "./components/HistoryMode";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
-type View = "home" | "play" | "queens" | "horse" | "online" | "account";
+type View = "home" | "play" | "learn" | "history" | "queens" | "horse" | "online" | "account";
 const ONLINE_GAME_KEY = "chess-universe-online-game";
 
 function savedOnlineGame() {
@@ -102,6 +104,12 @@ export default function App() {
                 <button className="primary-action" onClick={() => setView("play")}>
                   Play now
                 </button>
+                <button className="secondary-action" onClick={() => setView("learn")}>
+                  Learn chess
+                </button>
+                <button className="secondary-action" onClick={() => setView("history")}>
+                  History mode
+                </button>
                 <button className="secondary-action" onClick={() => setView("online")}>
                   Find a game
                 </button>
@@ -110,13 +118,13 @@ export default function App() {
               <div className="feature-grid">
                 <article>
                   <span>01</span>
-                  <strong>Black first + AI</strong>
-                  <p>Play locally or challenge Stockfish with Black making the opening move.</p>
+                  <strong>Learn → Practice</strong>
+                  <p>Interactive beginner lessons lead straight into no-pressure practice against Stockfish.</p>
                 </article>
                 <article>
                   <span>02</span>
-                  <strong>Universe modes</strong>
-                  <p>Evolving queens and Magic Horse are playable. Battle Chess and custom setups are next.</p>
+                  <strong>Replay history</strong>
+                  <p>Walk through legendary games, jump to the turning point, then take over against the AI.</p>
                 </article>
                 <article>
                   <span>03</span>
@@ -130,7 +138,35 @@ export default function App() {
           </section>
         ) : null}
 
-        {view === "play" ? <LocalGame /> : null}
+        {view === "play" ? (
+          <>
+            <div className="practice-explore-bar">
+              <span>
+                <strong>New to chess?</strong>
+                <small>Learn the basics or step into a famous position.</small>
+              </span>
+              <div>
+                <button className="secondary-action compact" onClick={() => setView("learn")}>Learn</button>
+                <button className="secondary-action compact" onClick={() => setView("history")}>History</button>
+              </div>
+            </div>
+            <LocalGame />
+          </>
+        ) : null}
+        {view === "learn" ? (
+          <LearnChess
+            onBack={() => setView("home")}
+            onPractice={() => setView("play")}
+            onHistory={() => setView("history")}
+          />
+        ) : null}
+        {view === "history" ? (
+          <HistoryMode
+            onBack={() => setView("home")}
+            onLearn={() => setView("learn")}
+            onPractice={() => setView("play")}
+          />
+        ) : null}
         {view === "queens" ? <EvolvingQueensGame /> : null}
         {view === "horse" ? <MagicHorseGame /> : null}
         {view === "online" && session && onlineGameId ? (
