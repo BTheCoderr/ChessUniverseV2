@@ -14,9 +14,9 @@ test("finished Practice games are archived and expose Review saved game", async 
   assert.match(local, /gameId/);
 });
 
-test("My Games is an offline route rather than a database-backed surface", async () => {
+test("My Games remains an offline-capable route", async () => {
   const app = await source("src/App.tsx");
-  assert.match(app, /type View = .*"library"/);
+  assert.match(app, /\| "library"/);
   assert.match(app, /<GameLibrary/);
   assert.match(app, />My Games</);
   assert.match(app, /Offline mode — Learn, Practice, .*My Games/);
