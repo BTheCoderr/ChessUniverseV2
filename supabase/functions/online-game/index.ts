@@ -21,6 +21,7 @@ type GameRow = {
   white_time_ms: number | null;
   black_time_ms: number | null;
   last_move_at: string | null;
+  draw_offer_by: string | null;
 };
 
 const response = (body: unknown, status = 200) =>
@@ -77,7 +78,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: gameData, error: gameError } = await admin
     .from("games")
-    .select("id,white_id,black_id,status,result,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,last_move_at")
+    .select("id,white_id,black_id,status,result,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,last_move_at,draw_offer_by")
     .eq("id", gameId)
     .single();
 
@@ -111,7 +112,7 @@ Deno.serve(async (req: Request) => {
   try {
     if (action === "resign") {
       await finish(actorColor === "w" ? "black" : "white", "resignation");
-      return response({ ok: true });
+      return response({ ok: true, status: "completed" });
     }
 
     if (action === "timeout") {
@@ -119,7 +120,32 @@ Deno.serve(async (req: Request) => {
       const remaining = game.current_turn === "w" ? clocks.white : clocks.black;
       if (remaining > 0) return response({ error: "Clock has not expired" }, 409);
       await finish(game.current_turn === "w" ? "black" : "white", "timeout");
-      return response({ ok: true });
+      return response({ ok: true, status: "completed" });
+    }
+
+    if (action === "offer_draw" || action === "accept_draw" || action === "decline_draw") {
+      const drawAction =
+        action === "offer_draw"
+          ? "offer"
+          : action === "accept_draw"
+            ? "accept"
+            : "decline";
+
+      const { data, error } = await admin.rpc("handle_online_draw_offer", {
+        target_game_id: gameId,
+        actor_id: userId,
+        expected_fen: game.fen,
+        draw_action: drawAction,
+        event_time: now.toISOString(),
+      });
+
+      if (error) return response({ error: error.message }, 409);
+      return response({
+        ok: true,
+        draw: data,
+        status: action === "accept_draw" ? "completed" : "active",
+        result: action === "accept_draw" ? "draw" : null,
+      });
     }
 
     if (action !== "move") return response({ error: "Unsupported action" }, 400);
