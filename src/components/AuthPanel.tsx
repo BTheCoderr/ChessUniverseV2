@@ -124,7 +124,7 @@ export function AuthPanel({ session, recoveryMode = false, onRecoveryComplete }:
       }
 
       clearLocalPlayerData();
-      await client.auth.signOut();
+      await client.auth.signOut({ scope: "local" });
       setDeleting(false);
     };
 
