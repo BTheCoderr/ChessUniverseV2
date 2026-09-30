@@ -9,7 +9,8 @@ async function source(path) {
 test("lobby creates and joins games through the authenticated Edge Function", async () => {
   const lobby = await source("src/components/OnlineLobby.tsx");
   assert.match(lobby, /functions\.invoke\("online-game"/);
-  assert.match(lobby, /createTraditionalGame/);\n  assert.match(lobby, /isPrivate \? "create_private_challenge" : "create_game"/);
+  assert.match(lobby, /createTraditionalGame/);
+  assert.ok(lobby.includes('action: isPrivate ? "create_private_challenge" : "create_game"'));
   assert.match(lobby, /action: "join_game"/);
   assert.doesNotMatch(lobby, /rpc\("create_waiting_game"/);
   assert.doesNotMatch(lobby, /rpc\("join_waiting_game"/);
