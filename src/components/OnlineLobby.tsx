@@ -182,19 +182,56 @@ export function OnlineLobby({
   const load = async () => {
     if (!client || !session) return;
 
-    const { data, error } = await client
-      .from("games")
-      .select("id,white_id,black_id,status,result,result_reason,variant,battle_formation_key,time_control_minutes,created_at,ended_at,is_private,invited_user_id,rematch_of,white_rating_before,white_rating_after,black_rating_before,black_rating_after,battle_white_rating_before,battle_white_rating_after,battle_black_rating_before,battle_black_rating_after")
-      .in("status", ["waiting", "active", "completed"])
-      .order("created_at", { ascending: false })
-      .limit(120);
+    const gameSelect = "id,white_id,black_id,status,result,result_reason,variant,battle_formation_key,time_control_minutes,created_at,ended_at,is_private,invited_user_id,rematch_of,white_rating_before,white_rating_after,black_rating_before,black_rating_after,battle_white_rating_before,battle_white_rating_after,battle_black_rating_before,battle_black_rating_after";
+    const participantFilter =
+      `white_id.eq.${session.user.id},black_id.eq.${session.user.id},invited_user_id.eq.${session.user.id}`;
+    const completedFilter =
+      `white_id.eq.${session.user.id},black_id.eq.${session.user.id}`;
 
-    if (error) {
-      setMessage(error.message);
+    const [
+      publicWaitingResult,
+      myLiveResult,
+      myCompletedResult,
+    ] = await Promise.all([
+      client
+        .from("games")
+        .select(gameSelect)
+        .eq("status", "waiting")
+        .eq("is_private", false)
+        .order("created_at", { ascending: false })
+        .limit(80),
+      client
+        .from("games")
+        .select(gameSelect)
+        .in("status", ["waiting", "active"])
+        .or(participantFilter)
+        .order("created_at", { ascending: false }),
+      client
+        .from("games")
+        .select(gameSelect)
+        .eq("status", "completed")
+        .or(completedFilter)
+        .order("created_at", { ascending: false })
+        .limit(24),
+    ]);
+
+    const gameError =
+      publicWaitingResult.error ?? myLiveResult.error ?? myCompletedResult.error;
+
+    if (gameError) {
+      setMessage(gameError.message);
       return;
     }
 
-    const rows = (data ?? []) as GameRow[];
+    const rows = Array.from(
+      new Map(
+        [
+          ...((myLiveResult.data ?? []) as GameRow[]),
+          ...((myCompletedResult.data ?? []) as GameRow[]),
+          ...((publicWaitingResult.data ?? []) as GameRow[]),
+        ].map((game) => [game.id, game] as const)
+      ).values()
+    );
     setGames(rows.filter((game) => game.status === "waiting" && !game.is_private && game.variant !== "battle"));
     setBattleGames(rows.filter((game) => game.status === "waiting" && !game.is_private && game.variant === "battle"));
     setIncomingChallenges(
