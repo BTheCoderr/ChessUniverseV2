@@ -109,6 +109,18 @@ function winRate(wins: number, games: number) {
   return games > 0 ? Math.round((wins / games) * 100) : 0;
 }
 
+function identityPiece(username: string) {
+  const pieces = ["♛", "♜", "♞", "♝", "♟"];
+  const hash = [...username].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return pieces[hash % pieces.length];
+}
+
+function identityInitials(username: string) {
+  const parts = username.trim().split(/[\s_-]+/).filter(Boolean);
+  if (parts.length === 0) return "CU";
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("");
+}
+
 export function ProfileTrophyCase({
   userId,
   compact = false,
@@ -267,6 +279,22 @@ export function ProfileTrophyCase({
             ♛ {showcase.championshipWins} Championship{showcase.championshipWins === 1 ? "" : "s"}
           </span>
         ) : null}
+      </div>
+
+      <div className="player-identity-card">
+        <div className="player-avatar" aria-hidden="true">
+          <span>{identityPiece(showcase.profile.username)}</span>
+          <small>{identityInitials(showcase.profile.username)}</small>
+        </div>
+        <div className="player-identity-copy">
+          <span className="eyebrow">PLAYER IDENTITY</span>
+          <strong>{showcase.profile.username}</strong>
+          <small>{showcase.equippedTitle?.name ?? "Chess Universe Player"}</small>
+        </div>
+        <div className="player-identity-stats">
+          <div><strong>{showcase.profile.rating}</strong><span>Classic Elo</span></div>
+          <div><strong>{showcase.profile.wins}-{showcase.profile.losses}-{showcase.profile.draws}</strong><span>Classic W-L-D</span></div>
+        </div>
       </div>
 
       <div className={showcase.equippedTitle ? "equipped-title-banner active" : "equipped-title-banner"}>
