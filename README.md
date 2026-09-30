@@ -1,5 +1,11 @@
 # Chess Universe
 
+<!-- repo-intro:start -->
+**Project snapshot:** Chess Universe is an offline-first chess PWA with a custom Black-moves-first ruleset, trusted real-time multiplayer, Seasons, Battle Chess progression, historical play, and player identity.
+
+**What it demonstrates:** React/TypeScript · Vite · Supabase/Postgres · Edge Functions · server-authoritative multiplayer.
+<!-- repo-intro:end -->
+
 [![CI](https://github.com/BTheCoderr/ChessUniverseV2/actions/workflows/ci.yml/badge.svg)](https://github.com/BTheCoderr/ChessUniverseV2/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-React%20%2B%20Vite-blue)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/backend-Supabase-3FCF8E)](https://supabase.com/)
