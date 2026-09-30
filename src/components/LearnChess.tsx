@@ -9,7 +9,7 @@ import { AcademyDashboard } from "./AcademyDashboard";
 import { AcademyPlacement } from "./AcademyPlacement";
 import { recordReviewAttempt } from "../lib/academyReview";
 import { ACADEMY_POSITIONS, academyMoveParts } from "../lib/academyLessons";
-import { OPENING_LESSONS, openingMoveParts } from "../lib/openingLessons";
+import { OPENING_BRANCHES, OPENING_LESSONS, openingMoveParts } from "../lib/openingLessons";
 import {
   markOpeningComplete,
   markPieceBasicsComplete,
@@ -486,6 +486,34 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
               </button>
             ))}
           </div>
+
+          {(OPENING_BRANCHES[currentOpening.id] ?? []).length > 0 ? (
+            <div className="opening-branches">
+              <div className="section-heading">
+                <div>
+                  <strong>Common branches</strong>
+                  <span>When the opponent changes the move order, keep the idea instead of memorizing one script.</span>
+                </div>
+              </div>
+              <div className="opening-branch-grid">
+                {(OPENING_BRANCHES[currentOpening.id] ?? []).map((branch) => (
+                  <article key={branch.name}>
+                    <span>BRANCH</span>
+                    <strong>{branch.name}</strong>
+                    <p>{branch.trigger}</p>
+                    <div>
+                      <b>Idea</b>
+                      <small>{branch.idea}</small>
+                    </div>
+                    <div>
+                      <b>Response plan</b>
+                      <small>{branch.responsePlan}</small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="learn-layout">
             <div className="board-shell tutorial-board">
