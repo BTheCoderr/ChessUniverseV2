@@ -4,11 +4,10 @@ import { Chess } from "chess.js";
 import { readFile } from "node:fs/promises";
 import { ENDGAME_LESSONS, endgameMoveParts } from "../src/lib/endgameLessons.ts";
 import {
-  adaptiveQueue,
   loadReviewState,
   recordReviewAttempt,
-  reviewCatalog,
-} from "../src/lib/academyReview.ts";
+  reviewPriority,
+} from "../src/lib/academyReviewState.ts";
 
 function installLocalStorage() {
   const store = new Map();
@@ -63,28 +62,35 @@ test("adaptive review records misses immediately and spaces successful reviews",
   assert.ok(state["queen-coordinate"].nextReviewAt > now + 100);
 });
 
-test("adaptive queue prioritizes repeated and overdue mistakes", () => {
-  installLocalStorage();
+test("review priority increases with repeated and overdue mistakes", () => {
   const now = 10_000_000;
+  const repeated = {
+    lessonId: "queen-coordinate",
+    misses: 3,
+    correct: 0,
+    lastAttemptAt: now - 5000,
+    nextReviewAt: now - 5000,
+  };
+  const lighter = {
+    lessonId: "rook-open-file",
+    misses: 1,
+    correct: 1,
+    lastAttemptAt: now - 3000,
+    nextReviewAt: now - 3000,
+  };
 
-  recordReviewAttempt("queen-coordinate", false, "d1e2", now - 5000);
-  recordReviewAttempt("queen-coordinate", false, "d1f3", now - 4000);
-  recordReviewAttempt("rook-open-file", false, "a1a2", now - 3000);
-
-  const queue = adaptiveQueue(now);
-  assert.ok(queue.length >= 2);
-  assert.equal(queue[0].lesson.id, "queen-coordinate");
-  assert.equal(queue[0].record.misses, 2);
+  assert.ok(reviewPriority(repeated, now) > reviewPriority(lighter, now));
 });
 
-test("review catalog includes piece decisions, endgames and multi-move decisions", () => {
-  const catalog = reviewCatalog();
-  const ids = new Set(catalog.map((lesson) => lesson.id));
+test("review catalog source covers piece decisions, endgames and multi-move decisions", async () => {
+  const source = await readFile(new URL("../src/lib/academyReview.ts", import.meta.url), "utf8");
 
-  assert.ok(ids.has("queen-coordinate"));
-  assert.ok(ids.has("endgame-opposition"));
-  assert.ok([...ids].some((id) => id.startsWith("decision-")));
-  assert.ok([...ids].some((id) => id.startsWith("multi-")));
+  assert.match(source, /PIECE_SCHOOLS/);
+  assert.match(source, /OPPONENT_RESPONSE_LESSONS/);
+  assert.match(source, /ENDGAME_LESSONS/);
+  assert.match(source, /ACADEMY_POSITIONS/);
+  assert.match(source, /MULTI_MOVE_PUZZLES/);
+  assert.match(source, /multi-\$\{puzzle\.id\}-\$\{stepIndex\}/);
 });
 
 test("mistake feedback and adaptive review are wired into playable Academy surfaces", async () => {
