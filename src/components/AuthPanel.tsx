@@ -3,6 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { clearLocalPlayerData } from "../lib/localPlayerData";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { rankForRating } from "../lib/progression";
+import { ProfileTrophyCase } from "./ProfileTrophyCase";
 
 type Props = {
   session: Session | null;
@@ -173,6 +174,8 @@ export function AuthPanel({ session, recoveryMode = false, onRecoveryComplete }:
         ) : (
           <p className="muted">Signed in and ready for online play.</p>
         )}
+
+        <ProfileTrophyCase userId={session.user.id} />
 
         <button className="secondary-action profile-signout" onClick={() => void client.auth.signOut()}>
           Sign out

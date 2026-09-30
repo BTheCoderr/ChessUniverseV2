@@ -4,6 +4,7 @@ import { BATTLE_FORMATIONS } from "../lib/battleChess";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { SeasonProgression } from "./SeasonProgression";
 import { SeasonChampionship } from "./SeasonChampionship";
+import { ProfileTrophyCase } from "./ProfileTrophyCase";
 
 type GameRow = {
   id: string;
@@ -850,6 +851,7 @@ export function OnlineLobby({
               <span><b>{spotlightProfile.draws}</b> draws</span>
               <span><b>{winRate(spotlightProfile)}%</b> win rate</span>
             </div>
+            <ProfileTrophyCase userId={spotlightProfile.id} compact />
             <button className="text-button" onClick={() => setSpotlightProfile(null)}>Close</button>
           </div>
         ) : null}
