@@ -224,6 +224,9 @@ Deno.serve(async (req: Request) => {
       { data: battleStats },
       { data: formationStats },
       { data: unlockRows },
+      { data: achievementRows },
+      { data: titleRows },
+      { data: equipment },
       { count: championshipWins },
     ] = await Promise.all([
       admin
@@ -241,13 +244,27 @@ Deno.serve(async (req: Request) => {
         .select("formation_key,wins,losses,draws,games_played")
         .eq("user_id", targetUserId)
         .order("games_played", { ascending: false })
-        .order("wins", { ascending: false })
-        .limit(1),
+        .order("wins", { ascending: false }),
       admin
         .from("player_unlocks")
         .select("reward_key,unlocked_at")
         .eq("user_id", targetUserId)
         .order("unlocked_at", { ascending: true }),
+      admin
+        .from("player_achievements")
+        .select("achievement_key,earned_at")
+        .eq("user_id", targetUserId)
+        .order("earned_at", { ascending: true }),
+      admin
+        .from("player_titles")
+        .select("title_key,earned_at")
+        .eq("user_id", targetUserId)
+        .order("earned_at", { ascending: true }),
+      admin
+        .from("profile_equipment")
+        .select("equipped_title_key")
+        .eq("user_id", targetUserId)
+        .maybeSingle(),
       admin
         .from("tournament_entries")
         .select("user_id", { count: "exact", head: true })
@@ -258,30 +275,77 @@ Deno.serve(async (req: Request) => {
     if (profileError || !profile) return response({ error: "Player profile not found" }, 404);
 
     const rewardKeys = (unlockRows ?? []).map((row) => row.reward_key);
-    let rewards: Array<Record<string, unknown>> = [];
+    const achievementKeys = (achievementRows ?? []).map((row) => row.achievement_key);
+    const titleKeys = (titleRows ?? []).map((row) => row.title_key);
 
-    if (rewardKeys.length > 0) {
-      const { data: rewardRows, error: rewardError } = await admin
-        .from("universe_rewards")
-        .select("reward_key,name,category,description,requirement_copy,sort_order")
-        .in("reward_key", rewardKeys)
-        .order("sort_order", { ascending: true });
+    const [
+      { data: rewardRows, error: rewardError },
+      { data: achievementDefinitions, error: achievementError },
+      { data: titleDefinitions, error: titleError },
+    ] = await Promise.all([
+      rewardKeys.length > 0
+        ? admin
+            .from("universe_rewards")
+            .select("reward_key,name,category,description,requirement_copy,sort_order")
+            .in("reward_key", rewardKeys)
+            .order("sort_order", { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+      achievementKeys.length > 0
+        ? admin
+            .from("achievement_definitions")
+            .select("achievement_key,name,description,icon,sort_order")
+            .in("achievement_key", achievementKeys)
+            .order("sort_order", { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+      titleKeys.length > 0
+        ? admin
+            .from("title_definitions")
+            .select("title_key,name,description,sort_order")
+            .in("title_key", titleKeys)
+            .order("sort_order", { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-      if (rewardError) return response({ error: "Unable to load trophy data" }, 409);
-
-      const unlockedAtByKey = new Map(
-        (unlockRows ?? []).map((row) => [row.reward_key, row.unlocked_at])
-      );
-
-      rewards = (rewardRows ?? []).map((reward) => ({
-        rewardKey: reward.reward_key,
-        name: reward.name,
-        category: reward.category,
-        description: reward.description,
-        requirementCopy: reward.requirement_copy,
-        unlockedAt: unlockedAtByKey.get(reward.reward_key) ?? null,
-      }));
+    if (rewardError || achievementError || titleError) {
+      return response({ error: "Unable to load profile progression" }, 409);
     }
+
+    const unlockedAtByReward = new Map(
+      (unlockRows ?? []).map((row) => [row.reward_key, row.unlocked_at])
+    );
+    const earnedAtByAchievement = new Map(
+      (achievementRows ?? []).map((row) => [row.achievement_key, row.earned_at])
+    );
+    const earnedAtByTitle = new Map(
+      (titleRows ?? []).map((row) => [row.title_key, row.earned_at])
+    );
+
+    const rewards = (rewardRows ?? []).map((reward) => ({
+      rewardKey: reward.reward_key,
+      name: reward.name,
+      category: reward.category,
+      description: reward.description,
+      requirementCopy: reward.requirement_copy,
+      unlockedAt: unlockedAtByReward.get(reward.reward_key) ?? null,
+    }));
+
+    const achievements = (achievementDefinitions ?? []).map((achievement) => ({
+      achievementKey: achievement.achievement_key,
+      name: achievement.name,
+      description: achievement.description,
+      icon: achievement.icon,
+      earnedAt: earnedAtByAchievement.get(achievement.achievement_key) ?? null,
+    }));
+
+    const titles = (titleDefinitions ?? []).map((title) => ({
+      titleKey: title.title_key,
+      name: title.name,
+      description: title.description,
+      earnedAt: earnedAtByTitle.get(title.title_key) ?? null,
+    }));
+
+    const equippedTitle =
+      titles.find((title) => title.titleKey === equipment?.equipped_title_key) ?? null;
 
     return response({
       ok: true,
@@ -295,11 +359,30 @@ Deno.serve(async (req: Request) => {
           draws: 0,
           games_played: 0,
         },
+        formationStats: formationStats ?? [],
         favoriteFormation: (formationStats ?? [])[0] ?? null,
         rewards,
+        achievements,
+        titles,
+        equippedTitle,
         championshipWins: championshipWins ?? 0,
       },
     });
+  }
+
+  if (action === "equip_title") {
+    const titleKey =
+      body.titleKey === null || body.titleKey === undefined || body.titleKey === ""
+        ? null
+        : String(body.titleKey);
+
+    const { data, error } = await admin.rpc("equip_player_title_service", {
+      actor_id: userId,
+      requested_title_key: titleKey,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: true, equipped: Boolean(data), titleKey });
   }
 
   if (action === "accept_rematch") {

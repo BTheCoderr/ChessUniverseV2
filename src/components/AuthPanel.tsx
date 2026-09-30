@@ -175,7 +175,7 @@ export function AuthPanel({ session, recoveryMode = false, onRecoveryComplete }:
           <p className="muted">Signed in and ready for online play.</p>
         )}
 
-        <ProfileTrophyCase userId={session.user.id} />
+        <ProfileTrophyCase userId={session.user.id} editable />
 
         <button className="secondary-action profile-signout" onClick={() => void client.auth.signOut()}>
           Sign out
