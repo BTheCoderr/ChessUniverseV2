@@ -5,12 +5,23 @@ import { PieceSchools } from "./PieceSchools";
 import { OpponentResponseTrainer } from "./OpponentResponseTrainer";
 import { EndgameSchool } from "./EndgameSchool";
 import { AdaptiveReview } from "./AdaptiveReview";
+import { AcademyDashboard } from "./AcademyDashboard";
+import { AcademyPlacement } from "./AcademyPlacement";
 import { recordReviewAttempt } from "../lib/academyReview";
 import { ACADEMY_POSITIONS, academyMoveParts } from "../lib/academyLessons";
 import { OPENING_LESSONS, openingMoveParts } from "../lib/openingLessons";
+import {
+  markOpeningComplete,
+  markPieceBasicsComplete,
+  markPieceDecisionComplete,
+  markStrategyVisited,
+  markUniverseIntroComplete,
+} from "../lib/academyProgress";
 
 type PieceType = "p" | "n" | "b" | "r" | "q" | "k";
 type BoardPiece = { square: Square; type: string; color: "w" | "b" };
+
+type AcademyLesson = "dashboard" | "placement" | "pieces" | "decisions" | "schools" | "responses" | "endgames" | "review" | "openings" | "strategy" | "universe";
 
 type Props = {
   onPractice: () => void;
@@ -139,7 +150,7 @@ function standardPieces() {
 }
 
 export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) {
-  const [lesson, setLesson] = useState<"pieces" | "decisions" | "schools" | "responses" | "endgames" | "review" | "openings" | "strategy" | "universe">("pieces");
+  const [lesson, setLesson] = useState<AcademyLesson>("dashboard");
 
   const [pieceIndex, setPieceIndex] = useState(0);
   const [pieceComplete, setPieceComplete] = useState(false);
@@ -239,6 +250,7 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
       }
 
       recordReviewAttempt(`decision-${currentDecision.id}`, true, uci);
+      markPieceDecisionComplete(currentDecision.id);
       setDecisionGame(next);
       setDecisionSelected(null);
       setDecisionComplete(true);
@@ -294,6 +306,9 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
 
       setOpeningSelected(null);
       setOpeningStepComplete(true);
+      if (openingStepIndex === currentOpening.steps.length - 1) {
+        markOpeningComplete(currentOpening.id);
+      }
       setOpeningMessage(currentOpeningStep.purpose);
     } catch {
       setOpeningSelected(null);
@@ -333,6 +348,11 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
     setOpeningMessage("Now play the next move and explain to yourself what problem it solves.");
   };
 
+  const goToLesson = (next: AcademyLesson) => {
+    if (next === "strategy") markStrategyVisited();
+    setLesson(next);
+  };
+
   const universeClick = (square: Square) => {
     if (universeComplete) return;
     if (!universeSelected) {
@@ -340,6 +360,7 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
       return;
     }
     if (universeSelected === "e7" && square === "e5") {
+      markUniverseIntroComplete();
       setUniverseSelected(null);
       setUniverseComplete(true);
     } else {
@@ -363,16 +384,33 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
       </div>
 
       <div className="academy-tabs academy-tabs-expanded" aria-label="Chess Academy sections">
-        <button className={lesson === "pieces" ? "active" : ""} onClick={() => setLesson("pieces")}>1 · Piece basics</button>
-        <button className={lesson === "decisions" ? "active" : ""} onClick={() => setLesson("decisions")}>2 · Piece decisions</button>
-        <button className={lesson === "schools" ? "active" : ""} onClick={() => setLesson("schools")}>3 · Piece Schools</button>
-        <button className={lesson === "responses" ? "active" : ""} onClick={() => setLesson("responses")}>4 · Opponent response</button>
-        <button className={lesson === "endgames" ? "active" : ""} onClick={() => setLesson("endgames")}>5 · Endgame School</button>
-        <button className={lesson === "review" ? "active" : ""} onClick={() => setLesson("review")}>6 · Adaptive Review</button>
-        <button className={lesson === "openings" ? "active" : ""} onClick={() => setLesson("openings")}>7 · Opening Lab</button>
-        <button className={lesson === "strategy" ? "active" : ""} onClick={() => setLesson("strategy")}>8 · Strategy & tactics</button>
-        <button className={lesson === "universe" ? "active" : ""} onClick={() => setLesson("universe")}>9 · Universe</button>
+        <button className={lesson === "dashboard" ? "active" : ""} onClick={() => goToLesson("dashboard")}>Dashboard</button>
+        <button className={lesson === "placement" ? "active" : ""} onClick={() => goToLesson("placement")}>Placement</button>
+        <button className={lesson === "pieces" ? "active" : ""} onClick={() => goToLesson("pieces")}>1 · Piece basics</button>
+        <button className={lesson === "decisions" ? "active" : ""} onClick={() => goToLesson("decisions")}>2 · Piece decisions</button>
+        <button className={lesson === "schools" ? "active" : ""} onClick={() => goToLesson("schools")}>3 · Piece Schools</button>
+        <button className={lesson === "responses" ? "active" : ""} onClick={() => goToLesson("responses")}>4 · Opponent response</button>
+        <button className={lesson === "endgames" ? "active" : ""} onClick={() => goToLesson("endgames")}>5 · Endgame School</button>
+        <button className={lesson === "review" ? "active" : ""} onClick={() => goToLesson("review")}>6 · Adaptive Review</button>
+        <button className={lesson === "openings" ? "active" : ""} onClick={() => goToLesson("openings")}>7 · Opening Lab</button>
+        <button className={lesson === "strategy" ? "active" : ""} onClick={() => goToLesson("strategy")}>8 · Strategy & tactics</button>
+        <button className={lesson === "universe" ? "active" : ""} onClick={() => goToLesson("universe")}>9 · Universe</button>
       </div>
+
+      {lesson === "dashboard" ? (
+        <AcademyDashboard
+          onNavigate={(section) => goToLesson(section)}
+          onPuzzles={onPuzzles}
+          onPlacement={() => goToLesson("placement")}
+        />
+      ) : null}
+
+      {lesson === "placement" ? (
+        <AcademyPlacement
+          onNavigate={(section) => goToLesson(section)}
+          onPlacementChange={() => undefined}
+        />
+      ) : null}
 
       {lesson === "pieces" ? (
         <div className="learn-layout">
@@ -418,7 +456,8 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
               className="primary-action"
               onClick={() => {
                 if (pieceIndex === PIECE_LESSONS.length - 1) {
-                  setLesson("decisions");
+                  markPieceBasicsComplete();
+                  goToLesson("decisions");
                 } else {
                   setPieceIndex((index) => index + 1);
                   setPieceComplete(false);
