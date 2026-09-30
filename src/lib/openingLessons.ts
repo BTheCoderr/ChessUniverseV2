@@ -121,6 +121,7 @@ export const OPENING_LESSONS: OpeningLesson[] = [
       { uci: "e2e4", sanLabel: "4. e4", side: "White", purpose: "Claim maximum central space.", opponentIdea: "Black stays compact and prepares a later pawn break." },
       { uci: "d7d6", sanLabel: "... d6", side: "Black", purpose: "Support ...e5 and keep the center flexible before castling.", opponentIdea: "The next phase is about whether White closes the center and which wing each side attacks." },
     ],
+  },
 ];
 
 export type OpeningBranch = {
