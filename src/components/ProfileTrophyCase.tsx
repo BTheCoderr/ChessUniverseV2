@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BATTLE_FORMATIONS } from "../lib/battleChess";
+import { formationMastery } from "../lib/formationMastery";
 import { supabase } from "../lib/supabase";
 
 type ShowcaseReward = {
@@ -9,6 +10,29 @@ type ShowcaseReward = {
   description: string;
   requirementCopy: string;
   unlockedAt: string | null;
+};
+
+type ShowcaseAchievement = {
+  achievementKey: string;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: string | null;
+};
+
+type ShowcaseTitle = {
+  titleKey: string;
+  name: string;
+  description: string;
+  earnedAt: string | null;
+};
+
+type FormationStat = {
+  formation_key: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  games_played: number;
 };
 
 type Showcase = {
@@ -28,14 +52,12 @@ type Showcase = {
     draws: number;
     games_played: number;
   };
-  favoriteFormation: {
-    formation_key: string;
-    wins: number;
-    losses: number;
-    draws: number;
-    games_played: number;
-  } | null;
+  formationStats: FormationStat[];
+  favoriteFormation: FormationStat | null;
   rewards: ShowcaseReward[];
+  achievements: ShowcaseAchievement[];
+  titles: ShowcaseTitle[];
+  equippedTitle: ShowcaseTitle | null;
   championshipWins: number;
 };
 
@@ -62,44 +84,42 @@ function winRate(wins: number, games: number) {
 export function ProfileTrophyCase({
   userId,
   compact = false,
+  editable = false,
 }: {
   userId: string;
   compact?: boolean;
+  editable?: boolean;
 }) {
   const client = supabase;
   const [showcase, setShowcase] = useState<Showcase | null>(null);
   const [loading, setLoading] = useState(true);
+  const [titleBusy, setTitleBusy] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!client || !userId) return;
 
-    let cancelled = false;
     setLoading(true);
     setMessage("");
 
-    void client.functions
-      .invoke("online-game", {
-        body: { action: "profile_showcase", userId },
-      })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error || !data?.showcase) {
-          setShowcase(null);
-          setMessage(error?.message ?? "Unable to load Trophy Case.");
-          return;
-        }
+    const { data, error } = await client.functions.invoke("online-game", {
+      body: { action: "profile_showcase", userId },
+    });
 
-        setShowcase(data.showcase as Showcase);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    if (error || !data?.showcase) {
+      setShowcase(null);
+      setMessage(error?.message ?? "Unable to load Trophy Case.");
+      setLoading(false);
+      return;
+    }
 
-    return () => {
-      cancelled = true;
-    };
+    setShowcase(data.showcase as Showcase);
+    setLoading(false);
   }, [client, userId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const featuredRewards = useMemo(() => {
     if (!showcase) return [];
@@ -116,6 +136,36 @@ export function ProfileTrophyCase({
       (a, b) => priority.indexOf(a.rewardKey) - priority.indexOf(b.rewardKey)
     );
   }, [showcase]);
+
+  const displayedAchievements = useMemo(
+    () => (compact ? showcase?.achievements.slice(0, 6) ?? [] : showcase?.achievements ?? []),
+    [compact, showcase]
+  );
+
+  const displayedMastery = useMemo(
+    () => (compact ? showcase?.formationStats.slice(0, 3) ?? [] : showcase?.formationStats ?? []),
+    [compact, showcase]
+  );
+
+  const equipTitle = async (titleKey: string | null) => {
+    if (!client || !editable || titleBusy) return;
+
+    setTitleBusy(true);
+    setMessage("");
+
+    const { error } = await client.functions.invoke("online-game", {
+      body: { action: "equip_title", titleKey },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      setTitleBusy(false);
+      return;
+    }
+
+    await load();
+    setTitleBusy(false);
+  };
 
   if (loading) {
     return (
@@ -145,8 +195,16 @@ export function ProfileTrophyCase({
           <span>Permanent Chess Universe progression.</span>
         </div>
         {showcase.championshipWins > 0 ? (
-          <span className="champion-count">♛ {showcase.championshipWins} Championship{showcase.championshipWins === 1 ? "" : "s"}</span>
+          <span className="champion-count">
+            ♛ {showcase.championshipWins} Championship{showcase.championshipWins === 1 ? "" : "s"}
+          </span>
         ) : null}
+      </div>
+
+      <div className={showcase.equippedTitle ? "equipped-title-banner active" : "equipped-title-banner"}>
+        <span>Equipped title</span>
+        <strong>{showcase.equippedTitle?.name ?? "None"}</strong>
+        {showcase.equippedTitle ? <small>{showcase.equippedTitle.description}</small> : null}
       </div>
 
       <div className="trophy-battle-summary">
@@ -165,30 +223,136 @@ export function ProfileTrophyCase({
         </div>
       ) : null}
 
-      <div className="trophy-grid">
-        {featuredRewards.length === 0 ? (
-          <div className="empty-trophy-case">
-            <span>♙</span>
+      {showcase.titles.length > 0 ? (
+        <div className="title-rack">
+          <div className="section-heading">
             <div>
-              <strong>No trophies yet</strong>
-              <small>Rated wins, Season progress, Championships and rating milestones fill this case.</small>
+              <strong>Earned titles</strong>
+              <span>{editable ? "Choose one title to display on your profile." : "Titles earned through verified progression."}</span>
+            </div>
+          </div>
+          <div className="title-chip-grid">
+            {showcase.titles.map((title) => {
+              const equipped = showcase.equippedTitle?.titleKey === title.titleKey;
+              return (
+                <button
+                  type="button"
+                  className={equipped ? "title-chip equipped" : "title-chip"}
+                  key={title.titleKey}
+                  disabled={!editable || titleBusy}
+                  onClick={() => void equipTitle(equipped ? null : title.titleKey)}
+                >
+                  <span>{equipped ? "Equipped" : editable ? "Equip" : "Earned"}</span>
+                  <strong>{title.name}</strong>
+                  <small>{title.description}</small>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="achievement-section">
+        <div className="section-heading">
+          <div>
+            <strong>Achievements</strong>
+            <span>{showcase.achievements.length} earned across Classic, Battle, Seasons and Championships.</span>
+          </div>
+        </div>
+        {displayedAchievements.length === 0 ? (
+          <div className="empty-trophy-case">
+            <span>☆</span>
+            <div>
+              <strong>No achievements yet</strong>
+              <small>Rated wins and competitive milestones will start filling this section.</small>
             </div>
           </div>
         ) : (
-          featuredRewards.map((reward) => (
-            <article className={`trophy-item ${reward.category}`} key={reward.rewardKey}>
-              <span className="trophy-icon" aria-hidden="true">{rewardIcon(reward.rewardKey)}</span>
-              <div>
-                <div className="trophy-item-topline">
-                  <strong>{reward.name}</strong>
-                  <em>{reward.category}</em>
+          <div className="achievement-grid">
+            {displayedAchievements.map((achievement) => (
+              <article className="achievement-card" key={achievement.achievementKey}>
+                <span className="achievement-icon">{achievement.icon}</span>
+                <div>
+                  <strong>{achievement.name}</strong>
+                  <small>{achievement.description}</small>
                 </div>
-                <p>{reward.description}</p>
-              </div>
-            </article>
-          ))
+              </article>
+            ))}
+          </div>
         )}
       </div>
+
+      <div className="mastery-section">
+        <div className="section-heading">
+          <div>
+            <strong>Formation mastery</strong>
+            <span>Mastery grows only from completed rated Battle games with that formation.</span>
+          </div>
+        </div>
+        {displayedMastery.length === 0 ? (
+          <p className="muted">No rated Formation Clash games yet.</p>
+        ) : (
+          <div className="mastery-grid">
+            {displayedMastery.map((formation) => {
+              const mastery = formationMastery(formation.games_played);
+              return (
+                <article className="mastery-card" key={formation.formation_key}>
+                  <div className="mastery-card-topline">
+                    <div>
+                      <strong>{formationName(formation.formation_key)}</strong>
+                      <span>Level {mastery.level} · {mastery.name}</span>
+                    </div>
+                    <b>{formation.games_played} games</b>
+                  </div>
+                  <div className="rank-progress-track" aria-label={`${formationName(formation.formation_key)} mastery progress`}>
+                    <span style={{ width: `${mastery.progress}%` }} />
+                  </div>
+                  <small>
+                    {mastery.nextGames
+                      ? `${mastery.gamesToNext} games to next mastery level · ${formation.wins}-${formation.losses}-${formation.draws}`
+                      : `Mastered · ${formation.wins}-${formation.losses}-${formation.draws}`}
+                  </small>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="reward-section">
+        <div className="section-heading">
+          <div>
+            <strong>Universe rewards</strong>
+            <span>Permanent modes, badges and titles unlocked by progression.</span>
+          </div>
+        </div>
+        <div className="trophy-grid">
+          {featuredRewards.length === 0 ? (
+            <div className="empty-trophy-case">
+              <span>♙</span>
+              <div>
+                <strong>No Universe rewards yet</strong>
+                <small>Rated wins, Season progress, Championships and rating milestones fill this case.</small>
+              </div>
+            </div>
+          ) : (
+            featuredRewards.map((reward) => (
+              <article className={`trophy-item ${reward.category}`} key={reward.rewardKey}>
+                <span className="trophy-icon" aria-hidden="true">{rewardIcon(reward.rewardKey)}</span>
+                <div>
+                  <div className="trophy-item-topline">
+                    <strong>{reward.name}</strong>
+                    <em>{reward.category}</em>
+                  </div>
+                  <p>{reward.description}</p>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </div>
+
+      {message ? <p className="form-message">{message}</p> : null}
     </section>
   );
 }
