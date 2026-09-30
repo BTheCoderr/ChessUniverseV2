@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Offline-first Black-first chess PWA with trusted multiplayer, Battle Chess, Seasons, Championships, progression, and rivalries.",
+  "description": "Local-first Black-first chess PWA using browser JSON persistence for offline play and Supabase only for trusted online competition.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/verify-pwa.mjs",
@@ -34,6 +34,9 @@
     "pwa",
     "multiplayer",
     "stockfish",
-    "battle-chess"
+    "battle-chess",
+    "local-first",
+    "localstorage",
+    "offline-first"
   ]
 }
