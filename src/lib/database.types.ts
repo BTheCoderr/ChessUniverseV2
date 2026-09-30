@@ -1098,6 +1098,16 @@ export type Database = {
         Args: { actor_id: string; source_game_id: string }
         Returns: string
       }
+      create_targeted_challenge_service: {
+        Args: {
+          actor_id: string
+          formation_key?: string
+          game_minutes?: number
+          game_variant?: string
+          target_user_id: string
+        }
+        Returns: string
+      }
       create_waiting_game: {
         Args: { game_minutes?: number; game_variant?: string }
         Returns: string
@@ -1122,6 +1132,10 @@ export type Database = {
           target_game_id: string
         }
         Returns: undefined
+      }
+      get_head_to_head_service: {
+        Args: { actor_id: string; target_user_id: string }
+        Returns: Json
       }
       handle_online_draw_offer: {
         Args: {
