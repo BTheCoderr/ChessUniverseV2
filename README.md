@@ -15,6 +15,14 @@
 
 **Live app:** https://chessuniverse.netlify.app/
 
+<!-- portfolio-visuals:start -->
+<p align="center">
+  <img src="./public/pwa-icon.svg" alt="Chess Universe app icon" width="120" />
+</p>
+
+<p align="center"><strong>Offline-first chess, guided learning, trusted multiplayer, Seasons, Battle Chess, and progression.</strong></p>
+<!-- portfolio-visuals:end -->
+
 ## Product at a glance
 
 | Area | Current experience |
