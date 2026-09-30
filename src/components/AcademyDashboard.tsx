@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { ACADEMY_POSITIONS } from "../lib/academyLessons";
 import { loadAcademyCoreProgress } from "../lib/academyProgress";
-import { loadPlacement, recommendedStart, type AcademyLevel } from "../lib/academyPlacement";
+import { loadPlacement, recommendedStart } from "../lib/academyPlacement";
+import { ACADEMY_COURSE_PATHS } from "../lib/academyCourses";
 import { loadReviewState, reviewPriority } from "../lib/academyReviewState";
 import { ENDGAME_LESSONS, ENDGAME_PROGRESS_KEY, normalizeEndgameProgress } from "../lib/endgameLessons";
 import { MULTI_MOVE_PROGRESS_KEY, MULTI_MOVE_PUZZLES, normalizeMultiMoveProgress } from "../lib/multiMovePuzzles";
@@ -47,36 +48,6 @@ function readArray(key: string, normalize: (value: unknown) => string[]) {
     return [];
   }
 }
-
-const LEVEL_PATHS: Record<AcademyLevel, Array<{ label: string; section: AcademySection | "puzzles"; why: string }>> = {
-  Beginner: [
-    { label: "Piece Basics", section: "pieces", why: "Build reliable movement patterns first." },
-    { label: "Piece Decisions", section: "decisions", why: "Learn what each piece is trying to accomplish." },
-    { label: "Piece Schools", section: "schools", why: "Turn piece movement into piece strategy." },
-    { label: "Daily Puzzles", section: "puzzles", why: "Practice short tactical decisions." },
-    { label: "Opponent Response", section: "responses", why: "Read the opponent before making your own plan." },
-    { label: "Opening Lab", section: "openings", why: "Learn opening ideas after the pieces make sense." },
-    { label: "Endgame School", section: "endgames", why: "Learn how advantages become wins." },
-    { label: "Adaptive Review", section: "review", why: "Revisit concepts you actually miss." },
-  ],
-  Developing: [
-    { label: "Piece Schools", section: "schools", why: "Improve piece quality and positional decisions." },
-    { label: "Opponent Response", section: "responses", why: "Strengthen threat recognition." },
-    { label: "Opening Lab", section: "openings", why: "Connect development to real plans." },
-    { label: "Daily Puzzles", section: "puzzles", why: "Build tactical pattern recognition." },
-    { label: "Strategy & Tactics", section: "strategy", why: "Organize candidate moves and plans." },
-    { label: "Endgame School", section: "endgames", why: "Convert cleaner positions." },
-    { label: "Adaptive Review", section: "review", why: "Attack recurring weaknesses." },
-  ],
-  Intermediate: [
-    { label: "Opponent Response", section: "responses", why: "Make opponent-first calculation automatic." },
-    { label: "Daily + Multi-Move Puzzles", section: "puzzles", why: "Calculate beyond the first move." },
-    { label: "Opening Lab", section: "openings", why: "Review ideas, not memorized notation." },
-    { label: "Strategy & Tactics", section: "strategy", why: "Improve plans between tactical moments." },
-    { label: "Endgame School", section: "endgames", why: "Sharpen technical conversion." },
-    { label: "Adaptive Review", section: "review", why: "Use your own misses as the syllabus." },
-  ],
-};
 
 export function AcademyDashboard({ onNavigate, onPuzzles, onPlacement }: Props) {
   const snapshot = useMemo(() => {
@@ -143,7 +114,7 @@ export function AcademyDashboard({ onNavigate, onPuzzles, onPlacement }: Props) 
   }, []);
 
   const level = snapshot.placement?.level ?? null;
-  const path = LEVEL_PATHS[level ?? "Beginner"];
+  const path = ACADEMY_COURSE_PATHS[level ?? "Beginner"];
   const fallbackStart = level ? recommendedStart(level) : "pieces";
 
   const categoryCards = [
