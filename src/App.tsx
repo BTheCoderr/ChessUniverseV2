@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AuthPanel } from "./components/AuthPanel";
+import { BattleChessGame } from "./components/BattleChessGame";
 import { FeedbackPanel } from "./components/FeedbackPanel";
 import { FirstRunOnboarding } from "./components/FirstRunOnboarding";
 import { GameLibrary } from "./components/GameLibrary";
@@ -14,6 +15,7 @@ import { MagicHorseGame } from "./components/MagicHorseGame";
 import { OnlineGame } from "./components/OnlineGame";
 import { OnlineLobby } from "./components/OnlineLobby";
 import { PuzzleMode } from "./components/PuzzleMode";
+import { UniverseHub } from "./components/UniverseHub";
 import { clearLocalPlayerData, prepareLocalDataForUser } from "./lib/localPlayerData";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
@@ -24,6 +26,8 @@ type View =
   | "puzzles"
   | "learn"
   | "history"
+  | "universe"
+  | "battle"
   | "queens"
   | "horse"
   | "online"
@@ -56,6 +60,7 @@ export default function App() {
   const [view, setView] = useState<View>(() => (savedOnlineGame() || initialChallenge ? "online" : "home"));
   const [previousView, setPreviousView] = useState<View>("home");
   const [session, setSession] = useState<Session | null>(null);
+  const [battleUnlockKeys, setBattleUnlockKeys] = useState<string[]>([]);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -166,11 +171,11 @@ export default function App() {
             <button className={view === "play" ? "active" : ""} onClick={() => navigate("play")}>
               Play
             </button>
-            <button className={view === "queens" ? "active" : ""} onClick={() => navigate("queens")}>
-              Queens
-            </button>
-            <button className={view === "horse" ? "active" : ""} onClick={() => navigate("horse")} aria-label="Magic Horse">
-              Horse
+            <button
+              className={view === "universe" || view === "battle" || view === "queens" || view === "horse" ? "active" : ""}
+              onClick={() => navigate("universe")}
+            >
+              Universe
             </button>
             <button className={view === "online" ? "active" : ""} onClick={() => navigate("online")}>
               Online
@@ -208,6 +213,7 @@ export default function App() {
                     <button className="secondary-action" onClick={() => navigate("learn")}>Learn chess</button>
                     <button className="secondary-action" onClick={() => navigate("puzzles")}>Puzzles</button>
                     <button className="secondary-action" onClick={() => navigate("history")}>Legends</button>
+                    <button className="secondary-action" onClick={() => navigate("universe")}>Universe</button>
                     <button className="secondary-action" onClick={() => navigate("online")}>Find a game</button>
                   </div>
 
@@ -278,6 +284,35 @@ export default function App() {
               onPractice={() => navigate("play")}
               userId={session?.user.id}
             />
+          ) : null}
+
+          {view === "universe" ? (
+            <UniverseHub
+              session={session}
+              onOpenHorse={() => navigate("horse")}
+              onOpenQueens={() => navigate("queens")}
+              onOpenBattle={(unlockKeys) => {
+                setBattleUnlockKeys(unlockKeys);
+                navigate("battle");
+              }}
+              onSignIn={() => navigate("account")}
+            />
+          ) : null}
+
+          {view === "battle" ? (
+            battleUnlockKeys.includes("battle_chess") ? (
+              <BattleChessGame
+                unlockKeys={battleUnlockKeys}
+                onBack={() => navigate("universe")}
+              />
+            ) : (
+              <section className="card offline-card">
+                <div className="eyebrow">LOCKED WORLD</div>
+                <h2>Battle Chess is still locked.</h2>
+                <p>Win 3 rated online games to unlock Formation Clash and the Back Rank Lab.</p>
+                <button className="primary-action" onClick={() => navigate("universe")}>Back to Universe</button>
+              </section>
+            )
           ) : null}
 
           {view === "queens" ? <EvolvingQueensGame /> : null}
