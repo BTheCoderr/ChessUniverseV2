@@ -33,6 +33,13 @@ type View =
   | "terms";
 
 const ONLINE_GAME_KEY = "chess-universe-online-game";
+const CHALLENGE_PARAM = "challenge";
+
+function challengeFromUrl() {
+  if (typeof window === "undefined") return null;
+  const value = new URLSearchParams(window.location.search).get(CHALLENGE_PARAM);
+  return value && /^[0-9a-f-]{36}$/i.test(value) ? value : null;
+}
 
 function savedOnlineGame() {
   try {
@@ -43,8 +50,10 @@ function savedOnlineGame() {
 }
 
 export default function App() {
+  const initialChallenge = challengeFromUrl();
   const [onlineGameId, setOnlineGameId] = useState<string | null>(() => savedOnlineGame());
-  const [view, setView] = useState<View>(() => (savedOnlineGame() ? "online" : "home"));
+  const [pendingChallengeId, setPendingChallengeId] = useState<string | null>(initialChallenge);
+  const [view, setView] = useState<View>(() => (savedOnlineGame() || initialChallenge ? "online" : "home"));
   const [previousView, setPreviousView] = useState<View>("home");
   const [session, setSession] = useState<Session | null>(null);
   const [recoveryMode, setRecoveryMode] = useState(false);
@@ -104,9 +113,27 @@ export default function App() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (session && pendingChallengeId) {
+      setView("online");
+    }
+  }, [session?.user.id, pendingChallengeId]);
+
+  const clearChallengeLink = () => {
+    setPendingChallengeId(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete(CHALLENGE_PARAM);
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      // Keep navigation working even when history APIs are unavailable.
+    }
+  };
+
   const openOnlineGame = (gameId: string) => {
     setOnlineGameId(gameId);
     setView("online");
+    if (pendingChallengeId === gameId) clearChallengeLink();
     try {
       window.localStorage.setItem(ONLINE_GAME_KEY, gameId);
     } catch {
@@ -274,11 +301,22 @@ export default function App() {
           ) : null}
 
           {view === "online" && isOnline && session && onlineGameId ? (
-            <OnlineGame gameId={onlineGameId} session={session} onBack={leaveOnlineTable} />
+            <OnlineGame
+              gameId={onlineGameId}
+              session={session}
+              onBack={leaveOnlineTable}
+              onOpenGame={openOnlineGame}
+            />
           ) : null}
 
           {view === "online" && isOnline && (!session || !onlineGameId) ? (
-            <OnlineLobby session={session} onOpenGame={openOnlineGame} />
+            <OnlineLobby
+              session={session}
+              onOpenGame={openOnlineGame}
+              challengeGameId={pendingChallengeId}
+              onChallengeHandled={clearChallengeLink}
+              onSignIn={() => navigate("account")}
+            />
           ) : null}
 
           {view === "account" && !isOnline ? (

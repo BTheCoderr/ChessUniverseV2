@@ -20,6 +20,8 @@ type GameRow = {
   started_at: string | null;
   last_move_at: string | null;
   draw_offer_by: string | null;
+  rematch_game_id: string | null;
+  rematch_requested_by: string | null;
 };
 
 type GameMove = {
@@ -76,10 +78,12 @@ export function OnlineGame({
   gameId,
   session,
   onBack,
+  onOpenGame,
 }: {
   gameId: string;
   session: Session;
   onBack: () => void;
+  onOpenGame: (gameId: string) => void;
 }) {
   const client = supabase;
   const [gameRow, setGameRow] = useState<GameRow | null>(null);
@@ -103,7 +107,7 @@ export function OnlineGame({
     if (!client) return;
     const { data, error } = await client
       .from("games")
-      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by")
+      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by,rematch_game_id,rematch_requested_by")
       .eq("id", gameId)
       .single();
 
@@ -321,6 +325,33 @@ export function OnlineGame({
     setSaving(false);
   };
 
+  const openRematch = async () => {
+    if (!myColor || gameRow.status !== "completed" || saving) return;
+
+    setSaving(true);
+    setMessage("");
+
+    const action = gameRow.rematch_game_id ? "accept_rematch" : "create_rematch";
+    const { data, error } = await client.functions.invoke("online-game", {
+      body: { action, gameId },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      setSaving(false);
+      await load();
+      return;
+    }
+
+    if (data?.gameId) {
+      onOpenGame(String(data.gameId));
+      return;
+    }
+
+    setMessage("The rematch could not be opened.");
+    setSaving(false);
+  };
+
   const attemptMove = async (from: Square, to: Square) => {
     if (!isMyTurn || saving || !myColor) return;
 
@@ -485,6 +516,38 @@ export function OnlineGame({
                 Offer draw
               </button>
             ) : null}
+          </div>
+        ) : null}
+
+        {gameRow.status === "completed" && myColor ? (
+          <div className={gameRow.rematch_game_id ? "rematch-card requested" : "rematch-card"}>
+            <div>
+              <strong>
+                {gameRow.rematch_game_id
+                  ? gameRow.rematch_requested_by === session.user.id
+                    ? "Rematch table ready"
+                    : "Opponent wants a rematch"
+                  : "Run it back?"}
+              </strong>
+              <span>
+                {gameRow.rematch_game_id
+                  ? gameRow.rematch_requested_by === session.user.id
+                    ? "Your private rematch is waiting for the other player."
+                    : "Accept to start a private rematch with the same clock."
+                  : "Start a private rematch with the same time control."}
+              </span>
+            </div>
+            <button
+              className="primary-action compact"
+              disabled={saving}
+              onClick={() => void openRematch()}
+            >
+              {gameRow.rematch_game_id
+                ? gameRow.rematch_requested_by === session.user.id
+                  ? "Open rematch"
+                  : "Accept rematch"
+                : "Rematch"}
+            </button>
           </div>
         ) : null}
 

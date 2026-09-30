@@ -93,6 +93,24 @@ Deno.serve(async (req: Request) => {
     return response({ ok: true, gameId: data });
   }
 
+  if (action === "create_private_challenge") {
+    const variant = String(body.variant ?? "traditional");
+    const minutes = Number(body.minutes ?? 0);
+
+    if (!Number.isInteger(minutes)) {
+      return response({ error: "Invalid time control" }, 400);
+    }
+
+    const { data, error } = await admin.rpc("create_private_challenge_service", {
+      actor_id: userId,
+      game_variant: variant,
+      game_minutes: minutes,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: true, gameId: data, private: true });
+  }
+
   if (action === "join_game") {
     const gameId = String(body.gameId ?? "");
     if (!gameId) return response({ error: "Game id is required" }, 400);
@@ -104,6 +122,63 @@ Deno.serve(async (req: Request) => {
 
     if (error) return response({ error: error.message }, 409);
     return response({ ok: true, gameId: data });
+  }
+
+  if (action === "create_rematch") {
+    const gameId = String(body.gameId ?? "");
+    if (!gameId) return response({ error: "Game id is required" }, 400);
+
+    const { data, error } = await admin.rpc("create_rematch_game_service", {
+      actor_id: userId,
+      source_game_id: gameId,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: true, gameId: data, rematch: true });
+  }
+
+  if (action === "accept_rematch") {
+    const sourceGameId = String(body.gameId ?? "");
+    if (!sourceGameId) return response({ error: "Game id is required" }, 400);
+
+    const { data: source, error: sourceError } = await admin
+      .from("games")
+      .select("id,white_id,black_id,status,rematch_game_id")
+      .eq("id", sourceGameId)
+      .single();
+
+    if (sourceError || !source) return response({ error: "Game not found" }, 404);
+    if (source.white_id !== userId && source.black_id !== userId) {
+      return response({ error: "Not a participant" }, 403);
+    }
+    if (source.status !== "completed" || !source.rematch_game_id) {
+      return response({ error: "No rematch is waiting" }, 409);
+    }
+
+    const rematchId = String(source.rematch_game_id);
+    const { data: rematch, error: rematchError } = await admin
+      .from("games")
+      .select("id,white_id,black_id,status")
+      .eq("id", rematchId)
+      .single();
+
+    if (rematchError || !rematch) return response({ error: "Rematch not found" }, 404);
+
+    if (rematch.white_id === userId || rematch.black_id === userId) {
+      return response({ ok: true, gameId: rematchId, status: rematch.status });
+    }
+
+    if (rematch.status !== "waiting") {
+      return response({ error: "Rematch is no longer available" }, 409);
+    }
+
+    const { data, error } = await admin.rpc("join_waiting_game_service", {
+      target_game_id: rematchId,
+      actor_id: userId,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: true, gameId: data, status: "active" });
   }
 
   const gameId = String(body.gameId ?? "");

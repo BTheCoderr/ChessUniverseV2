@@ -120,8 +120,13 @@ export type Database = {
           fen: string
           id: string
           increment_seconds: number
+          invited_user_id: string | null
+          is_private: boolean
           last_move_at: string | null
           pgn: string
+          rematch_game_id: string | null
+          rematch_of: string | null
+          rematch_requested_by: string | null
           result: Database["public"]["Enums"]["game_result"] | null
           result_reason: string | null
           started_at: string | null
@@ -142,8 +147,13 @@ export type Database = {
           fen?: string
           id?: string
           increment_seconds?: number
+          invited_user_id?: string | null
+          is_private?: boolean
           last_move_at?: string | null
           pgn?: string
+          rematch_game_id?: string | null
+          rematch_of?: string | null
+          rematch_requested_by?: string | null
           result?: Database["public"]["Enums"]["game_result"] | null
           result_reason?: string | null
           started_at?: string | null
@@ -164,8 +174,13 @@ export type Database = {
           fen?: string
           id?: string
           increment_seconds?: number
+          invited_user_id?: string | null
+          is_private?: boolean
           last_move_at?: string | null
           pgn?: string
+          rematch_game_id?: string | null
+          rematch_of?: string | null
+          rematch_requested_by?: string | null
           result?: Database["public"]["Enums"]["game_result"] | null
           result_reason?: string | null
           started_at?: string | null
@@ -187,6 +202,34 @@ export type Database = {
           {
             foreignKeyName: "games_draw_offer_by_fkey"
             columns: ["draw_offer_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_invited_user_id_fkey"
+            columns: ["invited_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_rematch_game_id_fkey"
+            columns: ["rematch_game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_rematch_of_fkey"
+            columns: ["rematch_of"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_rematch_requested_by_fkey"
+            columns: ["rematch_requested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -347,6 +390,14 @@ export type Database = {
           target_game_id: string
         }
         Returns: number
+      }
+      create_private_challenge_service: {
+        Args: { actor_id: string; game_minutes?: number; game_variant?: string }
+        Returns: string
+      }
+      create_rematch_game_service: {
+        Args: { actor_id: string; source_game_id: string }
+        Returns: string
       }
       create_waiting_game: {
         Args: { game_minutes?: number; game_variant?: string }
