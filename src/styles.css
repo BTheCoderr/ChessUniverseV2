@@ -2961,3 +2961,321 @@ code {
     gap: 3px;
   }
 }
+
+
+/* Season Championship */
+.championship-card {
+  overflow: hidden;
+}
+
+.championship-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.championship-heading > div > strong,
+.championship-heading > div > span {
+  display: block;
+}
+
+.championship-heading > div > strong {
+  font-size: 22px;
+}
+
+.championship-heading > div > span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.championship-status {
+  border: 1px solid #46521e;
+  background: #1b230f;
+  color: #e8ffc0;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.championship-status.active {
+  border-color: #6d8525;
+  background: #26310f;
+}
+
+.championship-status.completed {
+  border-color: #6d8525;
+}
+
+.championship-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.championship-timeline > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 3px 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 10px;
+  background: #101516;
+}
+
+.championship-timeline > div > span {
+  grid-row: 1 / span 2;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #242d10;
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.championship-timeline strong,
+.championship-timeline small {
+  display: block;
+}
+
+.championship-timeline small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.championship-callout,
+.my-championship-match,
+.championship-game-result,
+.tournament-game-banner {
+  margin-top: 14px;
+  border: 1px solid #52601f;
+  border-radius: 14px;
+  padding: 13px;
+  background: #17200e;
+}
+
+.championship-callout,
+.my-championship-match,
+.championship-game-result {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.championship-callout > span,
+.my-championship-match span,
+.championship-game-result span,
+.tournament-game-banner span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.championship-callout > strong,
+.my-championship-match strong,
+.championship-game-result strong,
+.tournament-game-banner strong {
+  display: block;
+}
+
+.tournament-game-banner {
+  margin-top: 8px;
+}
+
+.championship-field,
+.championship-bracket,
+.champion-history {
+  margin-top: 18px;
+}
+
+.championship-seeds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.seed-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 9px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 9px 10px;
+  background: #111617;
+}
+
+.seed-row.me {
+  border-color: #53651c;
+  background: #18200f;
+}
+
+.seed-row > span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.seed-row strong,
+.seed-row small {
+  display: block;
+}
+
+.seed-row small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.seed-row em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  text-transform: capitalize;
+}
+
+.championship-bracket {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.bracket-round {
+  min-width: 0;
+}
+
+.bracket-match-list {
+  display: grid;
+  gap: 9px;
+}
+
+.bracket-match {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px;
+  background: #101516;
+}
+
+.bracket-match.mine {
+  border-color: #53651c;
+  background: #151d0e;
+}
+
+.bracket-player {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+}
+
+.bracket-player + .bracket-player {
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.bracket-player.winner {
+  background: #24300f;
+  color: #eaffbb;
+}
+
+.bracket-player small {
+  color: var(--muted);
+}
+
+.bracket-match-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 7px 0;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.champion-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  border: 1px solid #71852d;
+  border-radius: 16px;
+  padding: 16px;
+  background: #202b0f;
+}
+
+.champion-banner > span {
+  font-size: 34px;
+  color: var(--accent);
+}
+
+.champion-banner strong,
+.champion-banner small {
+  display: block;
+}
+
+.champion-banner small {
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.champion-history {
+  display: grid;
+  gap: 7px;
+}
+
+.champion-history-row {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 9px 11px;
+  background: #101516;
+}
+
+.champion-history-row > span {
+  color: var(--accent);
+}
+
+.champion-history-row strong,
+.champion-history-row small {
+  display: block;
+}
+
+.champion-history-row small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+@media (max-width: 860px) {
+  .championship-bracket {
+    grid-template-columns: 1fr;
+  }
+
+  .championship-seeds {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .championship-heading,
+  .championship-callout,
+  .my-championship-match,
+  .championship-game-result {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .championship-timeline {
+    grid-template-columns: 1fr;
+  }
+}
