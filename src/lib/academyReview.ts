@@ -1,7 +1,9 @@
+import { Chess } from "chess.js";
 import { ACADEMY_POSITIONS } from "./academyLessons";
 import { ENDGAME_LESSONS } from "./endgameLessons";
 import { OPPONENT_RESPONSE_LESSONS } from "./opponentResponseLessons";
 import { PIECE_SCHOOLS } from "./pieceSchools";
+import { MULTI_MOVE_PUZZLES, multiMoveParts } from "./multiMovePuzzles";
 
 export const ACADEMY_REVIEW_KEY = "chess-universe-adaptive-review-v1";
 
@@ -153,7 +155,39 @@ export function reviewCatalog(): ReviewLesson[] {
     orientation: lesson.orientation,
   }));
 
-  return [...pieceSchoolLessons, ...responses, ...endgames, ...decisions];
+  const multiMoveReviews: ReviewLesson[] = MULTI_MOVE_PUZZLES.flatMap((puzzle) => {
+    const game = new Chess(puzzle.fen);
+    const reviews: ReviewLesson[] = [];
+
+    puzzle.steps.forEach((step, stepIndex) => {
+      if (step.actor === "player") {
+        reviews.push({
+          id: `multi-${puzzle.id}-${stepIndex}`,
+          source: "Piece Decision",
+          title: `${puzzle.title}: ${step.label}`,
+          concept: puzzle.theme,
+          fen: game.fen(),
+          expectedMove: step.uci,
+          prompt: `${puzzle.goal} Current decision: ${step.label}.`,
+          why: step.explanation,
+          mistakeLesson: `The move is legal, but it breaks the sequence's plan. Reconnect to this step: ${step.label.toLowerCase()}.`,
+          takeaway: puzzle.takeaway,
+          orientation: puzzle.orientation,
+        });
+      }
+
+      const parts = multiMoveParts(step.uci);
+      game.move({
+        from: parts.from,
+        to: parts.to,
+        ...(parts.promotion ? { promotion: parts.promotion } : {}),
+      });
+    });
+
+    return reviews;
+  });
+
+  return [...pieceSchoolLessons, ...responses, ...endgames, ...decisions, ...multiMoveReviews];
 }
 
 export function adaptiveQueue(now = Date.now()) {
