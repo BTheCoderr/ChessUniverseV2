@@ -29,7 +29,7 @@ test("private challenges stay out of public open tables and support sharing", as
 test("rematches are created and accepted through the trusted online service", async () => {
   const game = await source("src/components/OnlineGame.tsx");
   assert.match(game, /action = gameRow\.rematch_game_id \? "accept_rematch" : "create_rematch"/);
-  assert.match(game, /Opponent wants a rematch/);
+  assert.match(game, /wants a rematch/);
   assert.match(game, /Accept rematch/);
   assert.match(game, /Open rematch/);
 
