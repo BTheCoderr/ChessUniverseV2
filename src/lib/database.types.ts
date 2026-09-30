@@ -112,6 +112,8 @@ export type Database = {
       games: {
         Row: {
           black_id: string | null
+          black_rating_after: number | null
+          black_rating_before: number | null
           black_time_ms: number | null
           created_at: string
           current_turn: string
@@ -135,10 +137,14 @@ export type Database = {
           updated_at: string
           variant: string
           white_id: string | null
+          white_rating_after: number | null
+          white_rating_before: number | null
           white_time_ms: number | null
         }
         Insert: {
           black_id?: string | null
+          black_rating_after?: number | null
+          black_rating_before?: number | null
           black_time_ms?: number | null
           created_at?: string
           current_turn?: string
@@ -162,10 +168,14 @@ export type Database = {
           updated_at?: string
           variant?: string
           white_id?: string | null
+          white_rating_after?: number | null
+          white_rating_before?: number | null
           white_time_ms?: number | null
         }
         Update: {
           black_id?: string | null
+          black_rating_after?: number | null
+          black_rating_before?: number | null
           black_time_ms?: number | null
           created_at?: string
           current_turn?: string
@@ -189,6 +199,8 @@ export type Database = {
           updated_at?: string
           variant?: string
           white_id?: string | null
+          white_rating_after?: number | null
+          white_rating_before?: number | null
           white_time_ms?: number | null
         }
         Relationships: [

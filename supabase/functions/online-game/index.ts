@@ -137,6 +137,46 @@ Deno.serve(async (req: Request) => {
     return response({ ok: true, gameId: data, rematch: true });
   }
 
+  if (action === "inspect_challenge") {
+    const gameId = String(body.gameId ?? "");
+    if (!gameId) return response({ error: "Game id is required" }, 400);
+
+    const { data: challenge, error: challengeError } = await admin
+      .from("games")
+      .select("id,white_id,invited_user_id,status,is_private,time_control_minutes,rematch_of")
+      .eq("id", gameId)
+      .single();
+
+    if (challengeError || !challenge) return response({ error: "Challenge not found" }, 404);
+    if (!challenge.is_private || challenge.status !== "waiting" || !challenge.white_id) {
+      return response({ error: "Challenge is no longer available" }, 409);
+    }
+
+    if (
+      challenge.invited_user_id &&
+      challenge.invited_user_id !== userId &&
+      challenge.white_id !== userId
+    ) {
+      return response({ error: "This challenge is for another player" }, 403);
+    }
+
+    const { data: challenger } = await admin
+      .from("profiles")
+      .select("id,username,rating,wins,losses,draws")
+      .eq("id", challenge.white_id)
+      .single();
+
+    return response({
+      ok: true,
+      challenge: {
+        gameId: challenge.id,
+        timeControlMinutes: challenge.time_control_minutes,
+        isRematch: Boolean(challenge.rematch_of),
+        challenger: challenger ?? null,
+      },
+    });
+  }
+
   if (action === "accept_rematch") {
     const sourceGameId = String(body.gameId ?? "");
     if (!sourceGameId) return response({ error: "Game id is required" }, 400);

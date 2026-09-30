@@ -22,6 +22,10 @@ type GameRow = {
   draw_offer_by: string | null;
   rematch_game_id: string | null;
   rematch_requested_by: string | null;
+  white_rating_before: number | null;
+  white_rating_after: number | null;
+  black_rating_before: number | null;
+  black_rating_after: number | null;
 };
 
 type GameMove = {
@@ -33,6 +37,15 @@ type GameMove = {
   to_square: Square;
   san: string;
   created_at: string;
+};
+
+type PlayerProfile = {
+  id: string;
+  username: string;
+  rating: number;
+  wins: number;
+  losses: number;
+  draws: number;
 };
 
 function boardPieces(game: Chess) {
@@ -94,6 +107,7 @@ export function OnlineGame({
   const [now, setNow] = useState(Date.now());
   const [opponentOnline, setOpponentOnline] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<"connecting" | "connected" | "reconnecting">("connecting");
+  const [playerProfiles, setPlayerProfiles] = useState<Record<string, PlayerProfile>>({});
   const [learningHelp, setLearningHelp] = useState(() => {
     try {
       return window.localStorage.getItem("chess-universe-learning-help") !== "off";
@@ -103,11 +117,31 @@ export function OnlineGame({
   });
   const timeoutClaimed = useRef(false);
 
+  const loadPlayers = useCallback(async (row: GameRow) => {
+    if (!client) return;
+    const ids = [row.white_id, row.black_id].filter((id): id is string => Boolean(id));
+    if (ids.length === 0) {
+      setPlayerProfiles({});
+      return;
+    }
+
+    const { data } = await client
+      .from("profiles")
+      .select("id,username,rating,wins,losses,draws")
+      .in("id", ids);
+
+    const next: Record<string, PlayerProfile> = {};
+    for (const profile of (data ?? []) as PlayerProfile[]) {
+      next[profile.id] = profile;
+    }
+    setPlayerProfiles(next);
+  }, [client]);
+
   const load = useCallback(async () => {
     if (!client) return;
     const { data, error } = await client
       .from("games")
-      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by,rematch_game_id,rematch_requested_by")
+      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by,rematch_game_id,rematch_requested_by,white_rating_before,white_rating_after,black_rating_before,black_rating_after")
       .eq("id", gameId)
       .single();
 
@@ -116,9 +150,11 @@ export function OnlineGame({
       return;
     }
 
-    setGameRow(data as GameRow);
+    const row = data as GameRow;
+    setGameRow(row);
+    await loadPlayers(row);
     setMessage("");
-  }, [client, gameId]);
+  }, [client, gameId, loadPlayers]);
 
   const loadMoves = useCallback(async () => {
     if (!client) return;
@@ -164,7 +200,9 @@ export function OnlineGame({
           filter: `id=eq.${gameId}`,
         },
         (payload) => {
-          setGameRow(payload.new as GameRow);
+          const row = payload.new as GameRow;
+          setGameRow(row);
+          void loadPlayers(row);
           setSelected(null);
           timeoutClaimed.current = false;
         }
@@ -211,7 +249,7 @@ export function OnlineGame({
       setOpponentOnline(false);
       void client.removeChannel(channel);
     };
-  }, [client, gameId, load, loadMoves, myColor]);
+  }, [client, gameId, load, loadMoves, loadPlayers, myColor]);
 
   useEffect(() => {
     if (gameRow?.status !== "active" || gameRow.time_control_minutes === 0) return;
@@ -280,6 +318,30 @@ export function OnlineGame({
     gameRow.status === "active" &&
     myColor !== null &&
     gameRow.current_turn === myColor;
+
+  const myProfile = myColor === "w"
+    ? (gameRow.white_id ? playerProfiles[gameRow.white_id] : undefined)
+    : myColor === "b"
+      ? (gameRow.black_id ? playerProfiles[gameRow.black_id] : undefined)
+      : undefined;
+  const opponentId = myColor === "w" ? gameRow.black_id : myColor === "b" ? gameRow.white_id : null;
+  const opponentProfile = opponentId ? playerProfiles[opponentId] : undefined;
+  const opponentName = opponentProfile?.username ?? "Opponent";
+
+  const myRatingBefore = myColor === "w" ? gameRow.white_rating_before : myColor === "b" ? gameRow.black_rating_before : null;
+  const myRatingAfter = myColor === "w" ? gameRow.white_rating_after : myColor === "b" ? gameRow.black_rating_after : null;
+  const myRatingDelta =
+    myRatingBefore !== null && myRatingAfter !== null
+      ? myRatingAfter - myRatingBefore
+      : null;
+  const resultForMe =
+    gameRow.result === "draw"
+      ? "Draw"
+      : gameRow.result === "white"
+        ? myColor === "w" ? "Win" : "Loss"
+        : gameRow.result === "black"
+          ? myColor === "b" ? "Win" : "Loss"
+          : "Game over";
 
   const drawOfferedByMe = gameRow.draw_offer_by === session.user.id;
   const drawOfferedByOpponent = Boolean(gameRow.draw_offer_by && !drawOfferedByMe);
@@ -415,10 +477,10 @@ export function OnlineGame({
 
   const presenceCopy =
     realtimeStatus !== "connected"
-      ? "Reconnecting to table…"
+      ? `Reconnecting to ${opponentName}…`
       : opponentOnline
-        ? "Opponent online"
-        : "Opponent away / reconnecting";
+        ? `${opponentName} online`
+        : `${opponentName} away / reconnecting`;
 
   return (
     <section className="play-layout">
@@ -439,6 +501,22 @@ export function OnlineGame({
         <button className="text-button back-link" onClick={onBack}>← Lobby</button>
         <div className="eyebrow">ONLINE TABLE</div>
         <h2>{myColor === "w" ? "You are White" : myColor === "b" ? "You are Black" : "Spectating"}</h2>
+
+        {myColor ? (
+          <div className="matchup-profile-strip" aria-label="Match players">
+            <div>
+              <span>You</span>
+              <strong>{myProfile?.username ?? "Player"}</strong>
+              <small>{myProfile?.rating ?? "—"} rating</small>
+            </div>
+            <b>VS</b>
+            <div>
+              <span>Opponent</span>
+              <strong>{opponentName}</strong>
+              <small>{opponentProfile ? `${opponentProfile.rating} rating · ${opponentProfile.wins}-${opponentProfile.losses}-${opponentProfile.draws}` : "Waiting for player"}</small>
+            </div>
+          </div>
+        ) : null}
 
         {gameRow.status === "active" && myColor ? (
           <div className="online-presence">
@@ -520,20 +598,45 @@ export function OnlineGame({
         ) : null}
 
         {gameRow.status === "completed" && myColor ? (
+          <div className={`post-game-summary ${resultForMe.toLowerCase().replace(" ", "-")}`}>
+            <div>
+              <div className="eyebrow">FINAL</div>
+              <strong>{resultForMe}</strong>
+              <span>{gameRow.result_reason ? gameRow.result_reason.replaceAll("_", " ") : "completed"}</span>
+            </div>
+            <div className="rating-result">
+              {myRatingDelta !== null && myRatingBefore !== null && myRatingAfter !== null ? (
+                <>
+                  <strong className={myRatingDelta > 0 ? "rating-up" : myRatingDelta < 0 ? "rating-down" : ""}>
+                    {myRatingDelta > 0 ? "+" : ""}{myRatingDelta}
+                  </strong>
+                  <span>{myRatingBefore} → {myRatingAfter} rating</span>
+                </>
+              ) : (
+                <>
+                  <strong>{myProfile?.rating ?? "—"}</strong>
+                  <span>Current rating · older game has no rating snapshot</span>
+                </>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {gameRow.status === "completed" && myColor ? (
           <div className={gameRow.rematch_game_id ? "rematch-card requested" : "rematch-card"}>
             <div>
               <strong>
                 {gameRow.rematch_game_id
                   ? gameRow.rematch_requested_by === session.user.id
                     ? "Rematch table ready"
-                    : "Opponent wants a rematch"
+                    : `${opponentName} wants a rematch`
                   : "Run it back?"}
               </strong>
               <span>
                 {gameRow.rematch_game_id
                   ? gameRow.rematch_requested_by === session.user.id
                     ? "Your private rematch is waiting for the other player."
-                    : "Accept to start a private rematch with the same clock."
+                    : `Accept to play ${opponentName} again with the same clock.`
                   : "Start a private rematch with the same time control."}
               </span>
             </div>

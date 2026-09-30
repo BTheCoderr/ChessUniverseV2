@@ -14,7 +14,7 @@ Chess Universe is an offline-first React/Vite/TypeScript chess app with Supabase
 - Magic Horse and Evolving Queens as separate playable variants
 - Installable offline PWA
 - Supabase email/password accounts and profiles
-- Realtime online chess with server-authoritative moves, clocks, results, resignations and draws\n- Private challenge links and post-game rematches
+- Realtime online chess with server-authoritative moves, clocks, results, resignations and draws\n- Private challenge links and post-game rematches\n- Rated online games with Elo-style rating movement, player profiles and a top-10 leaderboard
 - Opponent presence/reconnect state and resumable online games
 - Recent online match history and W/L/D tracking
 - Signed-in sync for Puzzles, Legends, preferences, and saved Practice games
@@ -74,6 +74,6 @@ Production deploys from `main`.
 4. Mobile responsiveness and PWA install/offline behavior
 5. Cross-device Puzzle, Legends and My Games sync
 6. Feedback collection and account recovery/deletion
-7. Ratings and leaderboard progression after the beta lifecycle is proven
+7. Tournament and seasonal progression after the beta lifecycle is proven
 
 Chess Universe does **not** provide real-money wagering.
