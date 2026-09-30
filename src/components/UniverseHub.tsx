@@ -33,12 +33,14 @@ export function UniverseHub({
   onOpenHorse,
   onOpenQueens,
   onOpenBattle,
+  onOpenOnline,
   onSignIn,
 }: {
   session: Session | null;
   onOpenHorse: () => void;
   onOpenQueens: () => void;
   onOpenBattle: (unlockKeys: string[]) => void;
+  onOpenOnline: () => void;
   onSignIn: () => void;
 }) {
   const client = supabase;
@@ -170,9 +172,14 @@ export function UniverseHub({
             Formation Clash changes the back rank while keeping normal chess movement and the Black-first Universe rule.
           </p>
           {battleUnlocked ? (
-            <button className="primary-action" onClick={() => onOpenBattle(unlockKeys)}>
-              Enter Battle Chess
-            </button>
+            <div className="universe-world-actions">
+              <button className="primary-action" onClick={() => onOpenBattle(unlockKeys)}>
+                Battle locally
+              </button>
+              <button className="secondary-action" onClick={onOpenOnline}>
+                Battle online
+              </button>
+            </div>
           ) : session ? (
             <div className="locked-world-progress">
               <strong>{Math.min(profile?.wins ?? 0, 3)} / 3 rated wins</strong>

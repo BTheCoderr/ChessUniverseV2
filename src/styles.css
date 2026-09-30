@@ -3590,3 +3590,183 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Online Battle Chess */
+.universe-world-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.battle-online-section {
+  border: 1px solid #5d7023;
+  background: #121a0e;
+}
+
+.battle-online-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.battle-online-heading > div:first-child > strong,
+.battle-online-heading > div:first-child > span {
+  display: block;
+}
+
+.battle-online-heading > div:first-child > strong {
+  font-size: 20px;
+}
+
+.battle-online-heading > div:first-child > span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.battle-online-record {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  min-width: min(460px, 100%);
+}
+
+.battle-online-record > div {
+  border: 1px solid #3f4c1b;
+  border-radius: 11px;
+  padding: 9px 10px;
+  background: #18200f;
+}
+
+.battle-online-record strong,
+.battle-online-record span {
+  display: block;
+}
+
+.battle-online-record strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-online-record span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.battle-online-formations {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.battle-online-formation {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #101516;
+  color: inherit;
+}
+
+.battle-online-formation.active {
+  border-color: #6b8126;
+  background: #1d270e;
+}
+
+.battle-online-formation code {
+  color: #dfff9d;
+  letter-spacing: 2px;
+  font-size: 11px;
+}
+
+.battle-online-formation span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.battle-online-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.battle-game-row {
+  border-color: #46551c;
+  background: #151d0f;
+}
+
+.battle-challenge {
+  border-color: #6d8427;
+  background: #1b260e;
+}
+
+.battle-online-locked {
+  border: 1px dashed #49531f;
+  background: #13180f;
+}
+
+.battle-online-locked strong,
+.battle-online-locked span {
+  display: block;
+}
+
+.battle-online-locked span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.compact-battle-leaderboard .leaderboard-row {
+  cursor: default;
+}
+
+.battle-history-section {
+  border-top: 1px solid #45531c;
+}
+
+.battle-online-game-banner {
+  margin: 8px 0 12px;
+  border: 1px solid #5c6f22;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #17200e;
+}
+
+.battle-online-game-banner strong,
+.battle-online-game-banner span {
+  display: block;
+}
+
+.battle-online-game-banner span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .battle-online-heading {
+    flex-direction: column;
+  }
+
+  .battle-online-record,
+  .battle-online-formations,
+  .battle-online-columns {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .universe-world-actions {
+    grid-template-columns: 1fr;
+  }
+}

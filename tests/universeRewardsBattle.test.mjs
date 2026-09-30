@@ -52,7 +52,8 @@ test("Universe hub gates Battle Chess and exposes reward progression", async () 
   assert.match(hub, /Reward Vault/);
   assert.match(hub, /3 rated wins/);
   assert.match(hub, /Battle formations/);
-  assert.match(hub, /Enter Battle Chess/);
+  assert.match(hub, /Battle locally/);
+  assert.match(hub, /Battle online/);
   assert.match(app, /"universe"/);
   assert.match(app, /"battle"/);
   assert.match(app, /battleUnlockKeys\.includes\("battle_chess"\)/);

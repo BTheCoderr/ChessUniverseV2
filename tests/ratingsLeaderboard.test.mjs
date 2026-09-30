@@ -29,12 +29,12 @@ test("all online completion paths use the shared rating finalizer", async () => 
 
 test("lobby exposes leaderboard, named opponents and rating deltas", async () => {
   const lobby = await source("src/components/OnlineLobby.tsx");
-  assert.match(lobby, /Leaderboard/);
+  assert.match(lobby, /Classic leaderboard/);
   assert.match(lobby, /order\("rating", \{ ascending: false \}\)/);
   assert.match(lobby, /PLAYER PROFILE/);
   assert.match(lobby, /ratingDeltaForPlayer/);
   assert.match(lobby, /challenged you/);
-  assert.match(lobby, /Online games now affect rating/);
+  assert.match(lobby, /Traditional and Battle ratings are tracked separately/);
 });
 
 test("online table displays player identity and post-game rating movement", async () => {

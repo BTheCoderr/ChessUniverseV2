@@ -11,6 +11,8 @@ const corsHeaders = {
 type GameRow = {
   id: string;
   white_id: string;
+  variant: string;
+  battle_formation_key: string | null;
   black_id: string | null;
   status: "waiting" | "active" | "completed" | "cancelled";
   result: "white" | "black" | "draw" | null;
@@ -83,6 +85,19 @@ Deno.serve(async (req: Request) => {
       return response({ error: "Invalid time control" }, 400);
     }
 
+    if (variant === "battle") {
+      const formationKey = String(body.formationKey ?? "classic");
+      const { data, error } = await admin.rpc("create_battle_game_service", {
+        actor_id: userId,
+        game_minutes: minutes,
+        formation_key: formationKey,
+        game_private: false,
+      });
+
+      if (error) return response({ error: error.message }, 409);
+      return response({ ok: true, gameId: data, variant, formationKey });
+    }
+
     const { data, error } = await admin.rpc("create_waiting_game_service", {
       actor_id: userId,
       game_variant: variant,
@@ -90,7 +105,7 @@ Deno.serve(async (req: Request) => {
     });
 
     if (error) return response({ error: error.message }, 409);
-    return response({ ok: true, gameId: data });
+    return response({ ok: true, gameId: data, variant });
   }
 
   if (action === "create_private_challenge") {
@@ -101,6 +116,19 @@ Deno.serve(async (req: Request) => {
       return response({ error: "Invalid time control" }, 400);
     }
 
+    if (variant === "battle") {
+      const formationKey = String(body.formationKey ?? "classic");
+      const { data, error } = await admin.rpc("create_battle_game_service", {
+        actor_id: userId,
+        game_minutes: minutes,
+        formation_key: formationKey,
+        game_private: true,
+      });
+
+      if (error) return response({ error: error.message }, 409);
+      return response({ ok: true, gameId: data, private: true, variant, formationKey });
+    }
+
     const { data, error } = await admin.rpc("create_private_challenge_service", {
       actor_id: userId,
       game_variant: variant,
@@ -108,7 +136,7 @@ Deno.serve(async (req: Request) => {
     });
 
     if (error) return response({ error: error.message }, 409);
-    return response({ ok: true, gameId: data, private: true });
+    return response({ ok: true, gameId: data, private: true, variant });
   }
 
   if (action === "join_game") {
@@ -143,7 +171,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: challenge, error: challengeError } = await admin
       .from("games")
-      .select("id,white_id,invited_user_id,status,is_private,time_control_minutes,rematch_of")
+      .select("id,white_id,invited_user_id,status,is_private,time_control_minutes,rematch_of,variant,battle_formation_key")
       .eq("id", gameId)
       .single();
 
@@ -166,13 +194,24 @@ Deno.serve(async (req: Request) => {
       .eq("id", challenge.white_id)
       .single();
 
+    const { data: battleStats } = challenge.variant === "battle"
+      ? await admin
+          .from("battle_player_stats")
+          .select("rating,wins,losses,draws,games_played")
+          .eq("user_id", challenge.white_id)
+          .single()
+      : { data: null };
+
     return response({
       ok: true,
       challenge: {
         gameId: challenge.id,
         timeControlMinutes: challenge.time_control_minutes,
         isRematch: Boolean(challenge.rematch_of),
+        variant: challenge.variant,
+        formationKey: challenge.battle_formation_key,
         challenger: challenger ?? null,
+        challengerBattleStats: battleStats ?? null,
       },
     });
   }
@@ -320,7 +359,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: gameData, error: gameError } = await admin
     .from("games")
-    .select("id,white_id,black_id,status,result,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,last_move_at,draw_offer_by")
+    .select("id,white_id,black_id,status,result,variant,battle_formation_key,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,last_move_at,draw_offer_by")
     .eq("id", gameId)
     .single();
 
