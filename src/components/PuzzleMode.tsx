@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
+import { MultiMovePuzzleMode } from "./MultiMovePuzzleMode";
 import {
   OFFLINE_PUZZLES,
   PUZZLE_PROGRESS_KEY,
@@ -306,6 +307,8 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
           <button className="text-button puzzle-practice-link" onClick={onPractice}>Take the idea into Practice</button>
         </aside>
       </div>
+
+      <MultiMovePuzzleMode />
     </section>
   );
 }

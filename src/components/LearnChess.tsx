@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
+import { PieceSchools } from "./PieceSchools";
+import { OpponentResponseTrainer } from "./OpponentResponseTrainer";
 import { ACADEMY_POSITIONS, academyMoveParts } from "../lib/academyLessons";
 import { OPENING_LESSONS, openingMoveParts } from "../lib/openingLessons";
 
@@ -134,7 +136,7 @@ function standardPieces() {
 }
 
 export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) {
-  const [lesson, setLesson] = useState<"pieces" | "decisions" | "openings" | "strategy" | "universe">("pieces");
+  const [lesson, setLesson] = useState<"pieces" | "decisions" | "schools" | "responses" | "openings" | "strategy" | "universe">("pieces");
 
   const [pieceIndex, setPieceIndex] = useState(0);
   const [pieceComplete, setPieceComplete] = useState(false);
@@ -355,12 +357,14 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
         </div>
       </div>
 
-      <div className="academy-tabs" aria-label="Chess Academy sections">
+      <div className="academy-tabs academy-tabs-expanded" aria-label="Chess Academy sections">
         <button className={lesson === "pieces" ? "active" : ""} onClick={() => setLesson("pieces")}>1 · Piece basics</button>
         <button className={lesson === "decisions" ? "active" : ""} onClick={() => setLesson("decisions")}>2 · Piece decisions</button>
-        <button className={lesson === "openings" ? "active" : ""} onClick={() => setLesson("openings")}>3 · Opening Lab</button>
-        <button className={lesson === "strategy" ? "active" : ""} onClick={() => setLesson("strategy")}>4 · Strategy & tactics</button>
-        <button className={lesson === "universe" ? "active" : ""} onClick={() => setLesson("universe")}>5 · Universe</button>
+        <button className={lesson === "schools" ? "active" : ""} onClick={() => setLesson("schools")}>3 · Piece Schools</button>
+        <button className={lesson === "responses" ? "active" : ""} onClick={() => setLesson("responses")}>4 · Opponent response</button>
+        <button className={lesson === "openings" ? "active" : ""} onClick={() => setLesson("openings")}>5 · Opening Lab</button>
+        <button className={lesson === "strategy" ? "active" : ""} onClick={() => setLesson("strategy")}>6 · Strategy & tactics</button>
+        <button className={lesson === "universe" ? "active" : ""} onClick={() => setLesson("universe")}>7 · Universe</button>
       </div>
 
       {lesson === "pieces" ? (
@@ -490,6 +494,10 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
           </div>
         </>
       ) : null}
+
+      {lesson === "schools" ? <PieceSchools /> : null}
+
+      {lesson === "responses" ? <OpponentResponseTrainer /> : null}
 
       {lesson === "openings" ? (
         <>
