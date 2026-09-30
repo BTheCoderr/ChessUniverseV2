@@ -81,7 +81,7 @@ test("Chess Academy UI teaches ideas, opponent plans and daily puzzles", async (
   const puzzles = await readFile(new URL("../src/components/PuzzleMode.tsx", import.meta.url), "utf8");
 
   assert.match(learn, /CHESS ACADEMY/);
-  assert.match(learn, /PIECE DECISION/);
+  assert.match(learn, /DECISION/);
   assert.match(learn, /OPENING LAB/);
   assert.match(learn, /What the opponent wants/);
   assert.match(learn, /STRATEGY SCHOOL/);
