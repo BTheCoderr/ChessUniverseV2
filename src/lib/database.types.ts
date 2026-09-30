@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      battle_formation_stats: {
+        Row: {
+          draws: number
+          formation_key: string
+          games_played: number
+          losses: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          draws?: number
+          formation_key: string
+          games_played?: number
+          losses?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          draws?: number
+          formation_key?: string
+          games_played?: number
+          losses?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_formation_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_player_stats: {
+        Row: {
+          created_at: string
+          draws: number
+          games_played: number
+          losses: number
+          rating: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          created_at?: string
+          draws?: number
+          games_played?: number
+          losses?: number
+          rating?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          created_at?: string
+          draws?: number
+          games_played?: number
+          losses?: number
+          rating?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_player_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beta_feedback: {
         Row: {
           app_view: string | null
@@ -111,6 +190,11 @@ export type Database = {
       }
       games: {
         Row: {
+          battle_black_rating_after: number | null
+          battle_black_rating_before: number | null
+          battle_formation_key: string | null
+          battle_white_rating_after: number | null
+          battle_white_rating_before: number | null
           black_id: string | null
           black_rating_after: number | null
           black_rating_before: number | null
@@ -144,6 +228,11 @@ export type Database = {
           white_time_ms: number | null
         }
         Insert: {
+          battle_black_rating_after?: number | null
+          battle_black_rating_before?: number | null
+          battle_formation_key?: string | null
+          battle_white_rating_after?: number | null
+          battle_white_rating_before?: number | null
           black_id?: string | null
           black_rating_after?: number | null
           black_rating_before?: number | null
@@ -177,6 +266,11 @@ export type Database = {
           white_time_ms?: number | null
         }
         Update: {
+          battle_black_rating_after?: number | null
+          battle_black_rating_before?: number | null
+          battle_formation_key?: string | null
+          battle_white_rating_after?: number | null
+          battle_white_rating_before?: number | null
           black_id?: string | null
           black_rating_after?: number | null
           black_rating_before?: number | null
@@ -836,6 +930,15 @@ export type Database = {
           target_game_id: string
         }
         Returns: number
+      }
+      create_battle_game_service: {
+        Args: {
+          actor_id: string
+          formation_key: string
+          game_minutes: number
+          game_private?: boolean
+        }
+        Returns: string
       }
       create_private_challenge_service: {
         Args: { actor_id: string; game_minutes?: number; game_variant?: string }
