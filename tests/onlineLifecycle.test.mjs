@@ -44,7 +44,7 @@ test("online lifecycle migration records results exactly when games complete", a
 
 test("lobby loads profile record and recent completed games", async () => {
   const lobby = await source("src/components/OnlineLobby.tsx");
-  assert.match(lobby, /select\("rating,wins,losses,draws"\)/);
+  assert.match(lobby, /select\("id,username,rating,wins,losses,draws"\)/);
   assert.match(lobby, /W-L-D/);
   assert.match(lobby, /Recent online games/);
   assert.match(lobby, /resultForPlayer/);
