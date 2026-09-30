@@ -5,7 +5,7 @@
 [![Supabase](https://img.shields.io/badge/backend-Supabase-3FCF8E)](https://supabase.com/)
 [![Netlify](https://img.shields.io/badge/deploy-Netlify-00C7B7)](https://chessuniverse.netlify.app/)
 
-**Chess Universe** is an offline-first chess PWA built around a custom **Black-moves-first** ruleset, trusted realtime multiplayer, competitive Seasons, Battle Chess progression, and player identity.
+**Chess Universe** is a local-first chess PWA built around a custom **Black-moves-first** ruleset. Offline and single-device features persist in the browser as JSON-backed local state; Supabase is reserved for the features that genuinely require trusted shared state such as accounts, realtime multiplayer, ratings, Seasons, Championships, and cross-device sync.
 
 **Live app:** https://chessuniverse.netlify.app/
 
@@ -122,6 +122,21 @@ Compete through the bracket
 Build rivalries and defend your profile history
 ```
 
+## Local-first storage
+
+Chess Universe avoids a traditional app-server/database dependency for offline and single-device play.
+
+Local features use:
+
+- React state for the active UI/game session
+- browser `localStorage` for small persisted player data
+- JSON serialization/deserialization for saved games, puzzle progress, Legends progress, preferences, and resume state
+- the service worker / PWA cache for offline app assets
+
+That means Practice, local play, Puzzles, Legends, and other offline-first experiences do not need MongoDB, Express, Socket.io, or a separate database server.
+
+Supabase/Postgres is used only where local JSON cannot safely replace shared authoritative state: authenticated accounts, realtime multiplayer, Elo, Season standings, Championships, public competitive profiles, and cross-device synchronization.
+
 ## Trust model
 
 Online games use the browser for responsive UI, not authority.
@@ -166,7 +181,7 @@ Browser roles cannot directly award themselves ratings, tournament results, achi
 | Frontend | React 19, TypeScript, Vite |
 | Chess rules | chess.js |
 | Practice AI | Stockfish |
-| Backend | Supabase |
+| Shared online state | Supabase / PostgreSQL |
 | Database | PostgreSQL |
 | Auth | Supabase Auth |
 | Realtime | Supabase Realtime |
