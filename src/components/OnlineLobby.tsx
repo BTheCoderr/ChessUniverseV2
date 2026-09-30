@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { BATTLE_FORMATIONS } from "../lib/battleChess";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
@@ -173,6 +173,8 @@ export function OnlineLobby({
   const [battleUnlockKeys, setBattleUnlockKeys] = useState<string[]>([]);
   const [spotlightProfile, setSpotlightProfile] = useState<PlayerProfile | null>(null);
   const [challengeInfo, setChallengeInfo] = useState<ChallengeInfo | null>(null);
+  const [challengeLoading, setChallengeLoading] = useState(false);
+  const [challengeLookupError, setChallengeLookupError] = useState<string | null>(null);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
   const [selectedBattleFormation, setSelectedBattleFormation] = useState("classic");
   const [message, setMessage] = useState("");
@@ -334,17 +336,36 @@ export function OnlineLobby({
   useEffect(() => {
     if (!client || !session || !challengeGameId) {
       setChallengeInfo(null);
+      setChallengeLoading(false);
+      setChallengeLookupError(null);
       return;
     }
 
     let cancelled = false;
+    setChallengeInfo(null);
+    setChallengeLookupError(null);
+    setChallengeLoading(true);
+
     void client.functions
       .invoke("online-game", {
         body: { action: "inspect_challenge", gameId: challengeGameId },
       })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return;
-        setChallengeInfo((data?.challenge ?? null) as ChallengeInfo | null);
+
+        const challenge = (data?.challenge ?? null) as ChallengeInfo | null;
+        if (error || !challenge) {
+          setChallengeInfo(null);
+          setChallengeLookupError(
+            "This challenge is unavailable, expired, or belongs to another player."
+          );
+          return;
+        }
+
+        setChallengeInfo(challenge);
+      })
+      .finally(() => {
+        if (!cancelled) setChallengeLoading(false);
       });
 
     return () => {
@@ -499,7 +520,10 @@ export function OnlineLobby({
 
   const linkedChallengeOwnedByMe = Boolean(
     challengeGameId &&
-    myPrivateChallenges.some((game) => game.id === challengeGameId)
+    (
+      challengeInfo?.challenger?.id === session.user.id ||
+      myPrivateChallenges.some((game) => game.id === challengeGameId)
+    )
   );
   const challenger = challengeInfo?.challenger;
   const challengeRating =
@@ -534,33 +558,47 @@ export function OnlineLobby({
       {challengeGameId ? (
         <section className={challengeInfo?.variant === "battle" ? "lobby-section private-challenge-card incoming battle-challenge" : "lobby-section private-challenge-card incoming"}>
           <div>
-            <div className="eyebrow">{challengeInfo?.variant === "battle" ? "BATTLE CHALLENGE" : "PRIVATE CHALLENGE"}</div>
+            <div className="eyebrow">
+              {challengeLookupError
+                ? "CHALLENGE UNAVAILABLE"
+                : challengeInfo?.variant === "battle"
+                  ? "BATTLE CHALLENGE"
+                  : "PRIVATE CHALLENGE"}
+            </div>
             <strong>
-              {linkedChallengeOwnedByMe
-                ? "This is your invite."
-                : challenger
-                  ? `${challenger.username} challenged you.`
-                  : "Someone challenged you."}
+              {challengeLoading
+                ? "Checking challenge…"
+                : challengeLookupError
+                  ? "This invite can’t be accepted."
+                  : linkedChallengeOwnedByMe
+                    ? "This is your invite."
+                    : challenger
+                      ? `${challenger.username} challenged you.`
+                      : "Challenge ready."}
             </strong>
             <span>
-              {linkedChallengeOwnedByMe
-                ? "Open the table or share this same link with the person you want to play."
-                : challengeInfo
-                  ? `${challengeInfo.isRematch ? "Rematch" : challengeInfo.variant === "battle" ? "Formation Clash" : "Private match"} · ${challengeInfo.variant === "battle" ? formationName(challengeInfo.formationKey) + " · " : ""}${timeLabel(challengeInfo.timeControlMinutes)} · ${challengeRating ?? "—"} rating`
-                  : "Accepting takes you straight to the board and starts the match."}
+              {challengeLoading
+                ? "Verifying the invite before showing any action."
+                : challengeLookupError
+                  ? challengeLookupError
+                  : linkedChallengeOwnedByMe
+                    ? "Open the table or share this same link with the person you want to play."
+                    : challengeInfo
+                      ? `${challengeInfo.isRematch ? "Rematch" : challengeInfo.variant === "battle" ? "Formation Clash" : "Private match"} · ${challengeInfo.variant === "battle" ? formationName(challengeInfo.formationKey) + " · " : ""}${timeLabel(challengeInfo.timeControlMinutes)} · ${challengeRating ?? "—"} rating`
+                      : "Challenge details are loading."}
             </span>
           </div>
           <div className="challenge-actions">
-            {linkedChallengeOwnedByMe ? (
+            {challengeLoading || challengeLookupError ? null : linkedChallengeOwnedByMe ? (
               <>
                 <button className="primary-action compact" onClick={() => onOpenGame(challengeGameId)}>Open table</button>
                 <button className="secondary-action compact" onClick={() => void shareChallenge(challengeGameId)}>Share invite</button>
               </>
-            ) : (
+            ) : challengeInfo ? (
               <button className="primary-action compact" onClick={() => void joinGame(challengeGameId, true)}>
                 Accept challenge
               </button>
-            )}
+            ) : null}
             <button className="text-button" onClick={onChallengeHandled}>Dismiss</button>
           </div>
         </section>
