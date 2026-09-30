@@ -1,4 +1,5 @@
 export const ACADEMY_REVIEW_KEY = "chess-universe-adaptive-review-v1";
+export const ACADEMY_ACTIVITY_KEY = "chess-universe-academy-activity-v1";
 
 export type ReviewRecord = {
   lessonId: string;
@@ -10,6 +11,13 @@ export type ReviewRecord = {
 };
 
 export type ReviewState = Record<string, ReviewRecord>;
+
+export type ReviewActivity = {
+  lessonId: string;
+  correct: boolean;
+  move?: string;
+  attemptedAt: number;
+};
 
 export function loadReviewState(): ReviewState {
   if (typeof window === "undefined") return {};
@@ -29,6 +37,38 @@ export function saveReviewState(state: ReviewState) {
   } catch {
     // Review stays usable for this session if browser storage is unavailable.
   }
+}
+
+export function loadReviewActivity(): ReviewActivity[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(ACADEMY_ACTIVITY_KEY) ?? "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is ReviewActivity =>
+        Boolean(item) &&
+        typeof item.lessonId === "string" &&
+        typeof item.correct === "boolean" &&
+        typeof item.attemptedAt === "number"
+      )
+      .slice(-200);
+  } catch {
+    return [];
+  }
+}
+
+export function saveReviewActivity(activity: ReviewActivity[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ACADEMY_ACTIVITY_KEY, JSON.stringify(activity.slice(-200)));
+  } catch {
+    // Activity history is optional local analytics.
+  }
+}
+
+function appendReviewActivity(activity: ReviewActivity) {
+  const current = loadReviewActivity();
+  saveReviewActivity([...current, activity]);
 }
 
 function intervalFor(correct: number, misses: number) {
@@ -67,6 +107,12 @@ export function recordReviewAttempt(
 
   state[lessonId] = next;
   saveReviewState(state);
+  appendReviewActivity({
+    lessonId,
+    correct: correctAttempt,
+    move,
+    attemptedAt: now,
+  });
   return next;
 }
 
