@@ -6,6 +6,7 @@ import {
   RESPONSE_PROGRESS_KEY,
   normalizeResponseProgress,
 } from "../lib/opponentResponseLessons";
+import { recordReviewAttempt } from "../lib/academyReview";
 
 function boardPieces(game: Chess) {
   return game.board().flatMap((rank, rankIndex) =>
@@ -78,13 +79,15 @@ export function OpponentResponseTrainer() {
       const uci = `${made.from}${made.to}${made.promotion ?? ""}`;
 
       if (uci !== lesson.expectedMove) {
+        recordReviewAttempt(lesson.id, false, uci);
         setSelected(null);
         setMessage(
-          `${made.san} is legal, but start with the opponent's last move. What new threat did it create?`
+          `${made.san} is legal, but it does not answer what changed. ${lesson.threat}`
         );
         return;
       }
 
+      recordReviewAttempt(lesson.id, true, uci);
       setGame(next);
       setSelected(null);
       setComplete(true);
