@@ -28,7 +28,7 @@ test("online lobby restores active games for either participant", async () => {
   assert.match(lobby, /\.in\("status", \["waiting", "active", "completed"\]\)/);
   assert.match(lobby, /game\.white_id === session\.user\.id \|\| game\.black_id === session\.user\.id/);
   assert.match(lobby, /\bResume\b/);
-  assert.match(lobby, /Recent online games/);
+  assert.match(lobby, /Recent Classic games/);
 });
 
 test("casual lobby exposes untimed and timed choices", async () => {
