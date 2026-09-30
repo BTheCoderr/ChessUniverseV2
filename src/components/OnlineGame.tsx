@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import type { Session } from "@supabase/supabase-js";
 import { ChessBoard } from "./ChessBoard";
+import { BATTLE_FORMATIONS } from "../lib/battleChess";
 import { supabase } from "../lib/supabase";
 
 type GameRow = {
@@ -11,6 +12,8 @@ type GameRow = {
   status: "waiting" | "active" | "completed" | "cancelled";
   result: "white" | "black" | "draw" | null;
   result_reason: string | null;
+  variant: string;
+  battle_formation_key: string | null;
   fen: string;
   current_turn: "w" | "b";
   time_control_minutes: number;
@@ -26,6 +29,10 @@ type GameRow = {
   white_rating_after: number | null;
   black_rating_before: number | null;
   black_rating_after: number | null;
+  battle_white_rating_before: number | null;
+  battle_white_rating_after: number | null;
+  battle_black_rating_before: number | null;
+  battle_black_rating_after: number | null;
   tournament_match_id: string | null;
 };
 
@@ -48,6 +55,19 @@ type PlayerProfile = {
   losses: number;
   draws: number;
 };
+
+type BattleStats = {
+  user_id: string;
+  rating: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  games_played: number;
+};
+
+function formationName(key: string | null) {
+  return BATTLE_FORMATIONS.find((formation) => formation.key === key)?.name ?? "Classic Line";
+}
 
 function boardPieces(game: Chess) {
   return game.board().flatMap((rank, rankIndex) =>
@@ -109,6 +129,7 @@ export function OnlineGame({
   const [opponentOnline, setOpponentOnline] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<"connecting" | "connected" | "reconnecting">("connecting");
   const [playerProfiles, setPlayerProfiles] = useState<Record<string, PlayerProfile>>({});
+  const [battleStats, setBattleStats] = useState<Record<string, BattleStats>>({});
   const [learningHelp, setLearningHelp] = useState(() => {
     try {
       return window.localStorage.getItem("chess-universe-learning-help") !== "off";
@@ -126,23 +147,35 @@ export function OnlineGame({
       return;
     }
 
-    const { data } = await client
-      .from("profiles")
-      .select("id,username,rating,wins,losses,draws")
-      .in("id", ids);
+    const [{ data }, { data: battleData }] = await Promise.all([
+      client
+        .from("profiles")
+        .select("id,username,rating,wins,losses,draws")
+        .in("id", ids),
+      client
+        .from("battle_player_stats")
+        .select("user_id,rating,wins,losses,draws,games_played")
+        .in("user_id", ids),
+    ]);
 
     const next: Record<string, PlayerProfile> = {};
     for (const profile of (data ?? []) as PlayerProfile[]) {
       next[profile.id] = profile;
     }
     setPlayerProfiles(next);
+
+    const nextBattle: Record<string, BattleStats> = {};
+    for (const stats of (battleData ?? []) as BattleStats[]) {
+      nextBattle[stats.user_id] = stats;
+    }
+    setBattleStats(nextBattle);
   }, [client]);
 
   const load = useCallback(async () => {
     if (!client) return;
     const { data, error } = await client
       .from("games")
-      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by,rematch_game_id,rematch_requested_by,white_rating_before,white_rating_after,black_rating_before,black_rating_after,tournament_match_id")
+      .select("id,white_id,black_id,status,result,result_reason,variant,battle_formation_key,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by,rematch_game_id,rematch_requested_by,white_rating_before,white_rating_after,black_rating_before,black_rating_after,battle_white_rating_before,battle_white_rating_after,battle_black_rating_before,battle_black_rating_after,tournament_match_id")
       .eq("id", gameId)
       .single();
 
@@ -328,9 +361,20 @@ export function OnlineGame({
   const opponentId = myColor === "w" ? gameRow.black_id : myColor === "b" ? gameRow.white_id : null;
   const opponentProfile = opponentId ? playerProfiles[opponentId] : undefined;
   const opponentName = opponentProfile?.username ?? "Opponent";
+  const isBattle = gameRow.variant === "battle";
+  const myBattleStats = myColor === "w"
+    ? (gameRow.white_id ? battleStats[gameRow.white_id] : undefined)
+    : myColor === "b"
+      ? (gameRow.black_id ? battleStats[gameRow.black_id] : undefined)
+      : undefined;
+  const opponentBattleStats = opponentId ? battleStats[opponentId] : undefined;
 
-  const myRatingBefore = myColor === "w" ? gameRow.white_rating_before : myColor === "b" ? gameRow.black_rating_before : null;
-  const myRatingAfter = myColor === "w" ? gameRow.white_rating_after : myColor === "b" ? gameRow.black_rating_after : null;
+  const myRatingBefore = isBattle
+    ? (myColor === "w" ? gameRow.battle_white_rating_before : myColor === "b" ? gameRow.battle_black_rating_before : null)
+    : (myColor === "w" ? gameRow.white_rating_before : myColor === "b" ? gameRow.black_rating_before : null);
+  const myRatingAfter = isBattle
+    ? (myColor === "w" ? gameRow.battle_white_rating_after : myColor === "b" ? gameRow.battle_black_rating_after : null)
+    : (myColor === "w" ? gameRow.white_rating_after : myColor === "b" ? gameRow.black_rating_after : null);
   const myRatingDelta =
     myRatingBefore !== null && myRatingAfter !== null
       ? myRatingAfter - myRatingBefore
@@ -500,8 +544,14 @@ export function OnlineGame({
 
       <aside className="game-panel">
         <button className="text-button back-link" onClick={onBack}>← Lobby</button>
-        <div className="eyebrow">{gameRow.tournament_match_id ? "SEASON CHAMPIONSHIP" : "ONLINE TABLE"}</div>
+        <div className="eyebrow">{gameRow.tournament_match_id ? "SEASON CHAMPIONSHIP" : isBattle ? "BATTLE CHESS ONLINE" : "ONLINE TABLE"}</div>
         <h2>{myColor === "w" ? "You are White" : myColor === "b" ? "You are Black" : "Spectating"}</h2>
+        {isBattle ? (
+          <div className="battle-online-game-banner">
+            <strong>Formation Clash · {formationName(gameRow.battle_formation_key)}</strong>
+            <span>Battle Elo is separate from Classic Elo. Normal chess movement, Black first, no castling.</span>
+          </div>
+        ) : null}
         {gameRow.tournament_match_id ? (
           <div className="tournament-game-banner">
             <strong>Knockout match</strong>
@@ -514,13 +564,21 @@ export function OnlineGame({
             <div>
               <span>You</span>
               <strong>{myProfile?.username ?? "Player"}</strong>
-              <small>{myProfile?.rating ?? "—"} rating</small>
+              <small>{isBattle ? `${myBattleStats?.rating ?? 1200} Battle rating` : `${myProfile?.rating ?? "—"} Classic rating`}</small>
             </div>
             <b>VS</b>
             <div>
               <span>Opponent</span>
               <strong>{opponentName}</strong>
-              <small>{opponentProfile ? `${opponentProfile.rating} rating · ${opponentProfile.wins}-${opponentProfile.losses}-${opponentProfile.draws}` : "Waiting for player"}</small>
+              <small>{
+                isBattle
+                  ? opponentProfile
+                    ? `${opponentBattleStats?.rating ?? 1200} Battle rating · ${opponentBattleStats?.wins ?? 0}-${opponentBattleStats?.losses ?? 0}-${opponentBattleStats?.draws ?? 0}`
+                    : "Waiting for player"
+                  : opponentProfile
+                    ? `${opponentProfile.rating} Classic rating · ${opponentProfile.wins}-${opponentProfile.losses}-${opponentProfile.draws}`
+                    : "Waiting for player"
+              }</small>
             </div>
           </div>
         ) : null}
@@ -617,12 +675,12 @@ export function OnlineGame({
                   <strong className={myRatingDelta > 0 ? "rating-up" : myRatingDelta < 0 ? "rating-down" : ""}>
                     {myRatingDelta > 0 ? "+" : ""}{myRatingDelta}
                   </strong>
-                  <span>{myRatingBefore} → {myRatingAfter} rating</span>
+                  <span>{myRatingBefore} → {myRatingAfter} {isBattle ? "Battle" : "Classic"} rating</span>
                 </>
               ) : (
                 <>
-                  <strong>{myProfile?.rating ?? "—"}</strong>
-                  <span>Current rating · older game has no rating snapshot</span>
+                  <strong>{isBattle ? myBattleStats?.rating ?? 1200 : myProfile?.rating ?? "—"}</strong>
+                  <span>Current {isBattle ? "Battle" : "Classic"} rating · older game has no rating snapshot</span>
                 </>
               )}
             </div>
@@ -697,6 +755,7 @@ export function OnlineGame({
         <div className="online-meta">
           <span>{gameRow.time_control_minutes === 0 ? "Untimed" : `${gameRow.time_control_minutes} min`}</span>
           <span>Black moves first</span>
+          {isBattle ? <span>Battle · {formationName(gameRow.battle_formation_key)}</span> : null}
           {gameRow.tournament_match_id ? <span>Season Championship</span> : null}
           <span>{gameRow.id.slice(0, 8)}</span>
         </div>
@@ -733,6 +792,7 @@ export function OnlineGame({
 
         <p className="muted">
           Moves, results, and draw agreements are validated by the trusted game service before the database accepts them.
+          {isBattle ? " Battle results update only Battle rating and Battle stats." : ""}
           {gameRow.time_control_minutes === 0
             ? " Untimed games do not expire from a chess clock."
             : " Timed games keep running after they begin, so reconnect instead of expecting a pause."}
