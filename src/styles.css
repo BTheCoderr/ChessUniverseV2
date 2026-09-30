@@ -4911,3 +4911,146 @@ code {
     text-align: left;
   }
 }
+
+
+/* Adaptive Review + Endgame School */
+.endgame-school,
+.adaptive-review {
+  display: grid;
+  gap: 18px;
+}
+
+.endgame-picker {
+  margin-bottom: 0;
+}
+
+.mistake-explanation {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #76482f;
+  border-radius: 12px;
+  background: #23150f;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.mistake-explanation strong {
+  color: #ffca9f;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.mistake-explanation span {
+  color: #e6c9b4;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.review-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(86px, 1fr));
+  gap: 7px;
+}
+
+.review-summary > div {
+  min-width: 86px;
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  border: 1px solid #596b20;
+  border-radius: 11px;
+  background: #10170b;
+  padding: 10px;
+}
+
+.review-summary strong {
+  color: var(--accent);
+  font-size: 22px;
+}
+
+.review-summary span {
+  color: var(--muted);
+  font-size: 9px;
+  text-align: right;
+}
+
+.review-record-line {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.review-record-line span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #0f1314;
+  color: var(--muted);
+  padding: 6px 9px;
+  font-size: 10px;
+}
+
+.review-record-line b {
+  color: white;
+}
+
+.review-empty {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  border: 1px dashed #4c5c16;
+  border-radius: 15px;
+  background: #11170e;
+  padding: 18px;
+}
+
+.review-empty > span {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #202b0f;
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.review-empty strong,
+.review-empty p {
+  display: block;
+}
+
+.review-empty p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .academy-tabs-expanded {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .review-summary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 680px) {
+  .review-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .review-summary > div {
+    justify-items: start;
+  }
+
+  .review-summary span {
+    text-align: left;
+  }
+
+  .review-record-line {
+    flex-wrap: wrap;
+  }
+}
