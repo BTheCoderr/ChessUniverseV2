@@ -138,12 +138,12 @@ export function ProfileTrophyCase({
   }, [showcase]);
 
   const displayedAchievements = useMemo(
-    () => (compact ? showcase?.achievements.slice(0, 6) ?? [] : showcase?.achievements ?? []),
+    () => (compact ? showcase?.achievements?.slice(0, 6) ?? [] : showcase?.achievements ?? []),
     [compact, showcase]
   );
 
   const displayedMastery = useMemo(
-    () => (compact ? showcase?.formationStats.slice(0, 3) ?? [] : showcase?.formationStats ?? []),
+    () => (compact ? showcase?.formationStats?.slice(0, 3) ?? [] : showcase?.formationStats ?? []),
     [compact, showcase]
   );
 
@@ -223,7 +223,7 @@ export function ProfileTrophyCase({
         </div>
       ) : null}
 
-      {showcase.titles.length > 0 ? (
+      {(showcase.titles ?? []).length > 0 ? (
         <div className="title-rack">
           <div className="section-heading">
             <div>
@@ -232,7 +232,7 @@ export function ProfileTrophyCase({
             </div>
           </div>
           <div className="title-chip-grid">
-            {showcase.titles.map((title) => {
+            {(showcase.titles ?? []).map((title) => {
               const equipped = showcase.equippedTitle?.titleKey === title.titleKey;
               return (
                 <button
@@ -256,7 +256,7 @@ export function ProfileTrophyCase({
         <div className="section-heading">
           <div>
             <strong>Achievements</strong>
-            <span>{showcase.achievements.length} earned across Classic, Battle, Seasons and Championships.</span>
+            <span>{showcase.achievements?.length ?? 0} earned across Classic, Battle, Seasons and Championships.</span>
           </div>
         </div>
         {displayedAchievements.length === 0 ? (
