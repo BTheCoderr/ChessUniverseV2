@@ -46,7 +46,7 @@ test("lobby loads profile record and recent completed games", async () => {
   const lobby = await source("src/components/OnlineLobby.tsx");
   assert.match(lobby, /select\("id,username,rating,wins,losses,draws"\)/);
   assert.match(lobby, /W-L-D/);
-  assert.match(lobby, /Recent online games/);
+  assert.match(lobby, /Recent Classic games/);
   assert.match(lobby, /resultForPlayer/);
   assert.match(lobby, /status === "completed"/);
 });
