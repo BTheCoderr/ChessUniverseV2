@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievement_definitions: {
+        Row: {
+          achievement_key: string
+          created_at: string
+          description: string
+          icon: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          achievement_key: string
+          created_at?: string
+          description: string
+          icon?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          achievement_key?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       battle_formation_stats: {
         Row: {
           draws: number
@@ -369,6 +396,39 @@ export type Database = {
           },
         ]
       }
+      player_achievements: {
+        Row: {
+          achievement_key: string
+          earned_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          earned_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          earned_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_achievements_achievement_key_fkey"
+            columns: ["achievement_key"]
+            isOneToOne: false
+            referencedRelation: "achievement_definitions"
+            referencedColumns: ["achievement_key"]
+          },
+          {
+            foreignKeyName: "player_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_progress: {
         Row: {
           created_at: string
@@ -402,6 +462,39 @@ export type Database = {
             foreignKeyName: "player_progress_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_titles: {
+        Row: {
+          earned_at: string
+          title_key: string
+          user_id: string
+        }
+        Insert: {
+          earned_at?: string
+          title_key: string
+          user_id: string
+        }
+        Update: {
+          earned_at?: string
+          title_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_titles_title_key_fkey"
+            columns: ["title_key"]
+            isOneToOne: false
+            referencedRelation: "title_definitions"
+            referencedColumns: ["title_key"]
+          },
+          {
+            foreignKeyName: "player_titles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -441,6 +534,39 @@ export type Database = {
             foreignKeyName: "player_unlocks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_equipment: {
+        Row: {
+          equipped_title_key: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          equipped_title_key?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          equipped_title_key?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_equipment_equipped_title_key_fkey"
+            columns: ["equipped_title_key"]
+            isOneToOne: false
+            referencedRelation: "title_definitions"
+            referencedColumns: ["title_key"]
+          },
+          {
+            foreignKeyName: "profile_equipment_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -622,6 +748,30 @@ export type Database = {
           starts_at?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      title_definitions: {
+        Row: {
+          created_at: string
+          description: string
+          name: string
+          sort_order: number
+          title_key: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          name: string
+          sort_order?: number
+          title_key: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          name?: string
+          sort_order?: number
+          title_key?: string
         }
         Relationships: []
       }
@@ -955,6 +1105,10 @@ export type Database = {
       create_waiting_game_service: {
         Args: { actor_id: string; game_minutes?: number; game_variant?: string }
         Returns: string
+      }
+      equip_player_title_service: {
+        Args: { actor_id: string; requested_title_key?: string }
+        Returns: boolean
       }
       finish_online_game: {
         Args: {
