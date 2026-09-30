@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import {
@@ -43,14 +43,15 @@ export function AdaptiveReview() {
   const [mistake, setMistake] = useState("");
   const [complete, setComplete] = useState(false);
 
-  if (lesson && lesson.id !== loadedLessonId) {
+  useEffect(() => {
+    if (!lesson || lesson.id === loadedLessonId) return;
     setLoadedLessonId(lesson.id);
     setGame(new Chess(lesson.fen));
     setSelected(null);
     setMessage(lesson.prompt);
     setMistake("");
     setComplete(false);
-  }
+  }, [lesson, loadedLessonId]);
 
   const pieces = useMemo(() => boardPieces(game), [game]);
   const legalTargets = useMemo(() => {
