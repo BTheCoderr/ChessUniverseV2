@@ -33,7 +33,10 @@ The result is one app that supports offline play, serious online state, alternat
 - Timed and untimed Practice
 - Pause/resume, undo, move history, drag controls, sound, and haptics
 - Interactive Chess Academy with piece-decision boards, guided openings, strategy/tactics instruction, and opponent-plan explanations
+- Piece Schools for Queen, Rook, Bishop, and Knight with local mastery progress
+- Opponent-response training that starts from the opponent's last move, threat, and best practical answer
 - Offline tactical Puzzles with a deterministic Puzzle of the Day, queen/rook/bishop/knight/defense/strategy themes, both-color positions, and signed-in progress sync
+- Multi-move puzzle sequences that alternate your decisions with scripted opponent responses so players learn combinations and multi-step plans
 - Legends mode with famous games, pivotal moments, and **Rewrite History**
 - My Games replay + Stockfish review
 
