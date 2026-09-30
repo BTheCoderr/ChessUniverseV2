@@ -6,11 +6,13 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("challenge links survive sign-in and route back to the online lobby", async () => {
+test("challenge links survive sign-in, override saved tables, and route to the lobby", async () => {
   const app = await source("src/App.tsx");
   assert.match(app, /CHALLENGE_PARAM = "challenge"/);
   assert.match(app, /challengeFromUrl/);
+  assert.match(app, /initialChallenge \? null : savedOnlineGame\(\)/);
   assert.match(app, /pendingChallengeId/);
+  assert.match(app, /setOnlineGameId\(null\)/);
   assert.match(app, /challengeGameId=\{pendingChallengeId\}/);
   assert.match(app, /onChallengeHandled=\{clearChallengeLink\}/);
 });
@@ -24,6 +26,10 @@ test("private challenges stay out of public open tables and support sharing", as
   assert.match(lobby, /url\.searchParams\.set\("challenge", gameId\)/);
   assert.match(lobby, /Challenges for you/);
   assert.match(lobby, /My private invites/);
+  assert.match(lobby, /challengeLookupError/);
+  assert.match(lobby, /This challenge is unavailable, expired, or belongs to another player/);
+  assert.match(lobby, /challengeLoading \|\| challengeLookupError \? null/);
+  assert.match(lobby, /challengeInfo\?\.challenger\?\.id === session\.user\.id/);
 });
 
 test("rematches are created and accepted through the trusted online service", async () => {
