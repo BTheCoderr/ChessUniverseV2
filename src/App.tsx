@@ -226,8 +226,8 @@ export default function App() {
                   <div className="feature-grid">
                     <article>
                       <span>01</span>
-                      <strong>Learn → Practice</strong>
-                      <p>Interactive beginner lessons lead straight into no-pressure practice against Stockfish.</p>
+                      <strong>Chess Academy</strong>
+                      <p>Learn piece decisions, opening ideas, strategy, tactics, then practice them on interactive boards.</p>
                     </article>
                     <article>
                       <span>02</span>
@@ -280,6 +280,7 @@ export default function App() {
               onBack={() => navigate("home")}
               onPractice={() => navigate("play")}
               onHistory={() => navigate("history")}
+              onPuzzles={() => navigate("puzzles")}
             />
           ) : null}
 

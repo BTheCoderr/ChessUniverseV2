@@ -32,8 +32,8 @@ The result is one app that supports offline play, serious online state, alternat
 - Stockfish Practice with multiple difficulty levels
 - Timed and untimed Practice
 - Pause/resume, undo, move history, drag controls, sound, and haptics
-- Beginner Learn mode
-- Offline tactical Puzzles with signed-in progress sync
+- Interactive Chess Academy with piece-decision boards, guided openings, strategy/tactics instruction, and opponent-plan explanations
+- Offline tactical Puzzles with a deterministic Puzzle of the Day, queen/rook/bishop/knight/defense/strategy themes, both-color positions, and signed-in progress sync
 - Legends mode with famous games, pivotal moments, and **Rewrite History**
 - My Games replay + Stockfish review
 

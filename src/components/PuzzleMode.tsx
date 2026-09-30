@@ -4,10 +4,12 @@ import { ChessBoard } from "./ChessBoard";
 import {
   OFFLINE_PUZZLES,
   PUZZLE_PROGRESS_KEY,
+  dailyPuzzleIndex,
   normalizePuzzleProgress,
   puzzleMoveUci,
   puzzleOrientation,
   puzzlePosition,
+  type PuzzleTheme,
 } from "../lib/puzzles";
 import { loadFeedbackSettings, playChessFeedback } from "../lib/feedback";
 import { mergePuzzleProgress } from "../lib/progressMerge";
@@ -44,22 +46,44 @@ function loadProgress() {
   }
 }
 
+function todayLabel() {
+  return new Date().toLocaleDateString([], {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function PuzzleMode({ onBack, onPractice, userId }: Props) {
-  const [index, setIndex] = useState(0);
+  const todayIndex = useMemo(() => dailyPuzzleIndex(), []);
+  const [index, setIndex] = useState(todayIndex);
   const puzzle = OFFLINE_PUZZLES[index];
-  const [game, setGame] = useState(() => puzzlePosition(puzzle));
+  const [game, setGame] = useState(() => puzzlePosition(OFFLINE_PUZZLES[todayIndex]));
   const [selected, setSelected] = useState<Square | null>(null);
-  const [message, setMessage] = useState(puzzle.goal);
+  const [message, setMessage] = useState(OFFLINE_PUZZLES[todayIndex].goal);
   const [complete, setComplete] = useState(false);
   const [hintShown, setHintShown] = useState(false);
   const [progress, setProgress] = useState(loadProgress);
   const [cloudReady, setCloudReady] = useState(false);
+  const [theme, setTheme] = useState<"All" | PuzzleTheme>("All");
 
   const pieces = useMemo(() => boardPieces(game), [game]);
   const legalTargets = useMemo(() => {
     if (!selected || complete) return [];
     return game.moves({ square: selected, verbose: true }).map((move) => move.to as Square);
   }, [game, selected, complete]);
+
+  const themes = useMemo(
+    () => ["All", ...Array.from(new Set(OFFLINE_PUZZLES.map((item) => item.theme)))] as Array<"All" | PuzzleTheme>,
+    []
+  );
+
+  const visiblePuzzles = useMemo(
+    () =>
+      OFFLINE_PUZZLES.map((item, puzzleIndex) => ({ item, puzzleIndex }))
+        .filter(({ item }) => theme === "All" || item.theme === theme),
+    [theme]
+  );
 
   useEffect(() => {
     try {
@@ -132,7 +156,9 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
 
       if (!correct) {
         setSelected(null);
-        setMessage(`${made.san} is legal, but it is not the puzzle move. Try again.`);
+        setMessage(
+          `${made.san} is legal, but it misses the best idea here. Ask what your opponent is threatening and which piece needs a better job.`
+        );
         return;
       }
 
@@ -177,9 +203,12 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
 
       <div className="puzzle-heading">
         <div>
-          <div className="eyebrow">OFFLINE PUZZLES</div>
-          <h1>See it. Solve it.</h1>
-          <p>Short tactical positions for learning checks, captures, defense, and promotion. No account or connection needed.</p>
+          <div className="eyebrow">TACTICS LAB · OFFLINE</div>
+          <h1>Do not just find a move. Understand the position.</h1>
+          <p>
+            Daily queen, rook, bishop, knight, defense, strategy, and mating challenges.
+            Solve from both colors, then learn what your opponent wanted and the pattern you should remember.
+          </p>
         </div>
         <div className="puzzle-score">
           <strong>{progress.length}<span>/{OFFLINE_PUZZLES.length}</span></strong>
@@ -187,8 +216,29 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
         </div>
       </div>
 
+      <button className={index === todayIndex ? "daily-puzzle-card active" : "daily-puzzle-card"} onClick={() => resetPuzzle(todayIndex)}>
+        <span>
+          <b>PUZZLE OF THE DAY</b>
+          <small>{todayLabel()}</small>
+        </span>
+        <strong>{OFFLINE_PUZZLES[todayIndex].title}</strong>
+        <em>{OFFLINE_PUZZLES[todayIndex].theme} · {OFFLINE_PUZZLES[todayIndex].level}</em>
+      </button>
+
+      <div className="puzzle-theme-filter" aria-label="Puzzle themes">
+        {themes.map((item) => (
+          <button
+            key={item}
+            className={theme === item ? "active" : ""}
+            onClick={() => setTheme(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
       <div className="puzzle-picker">
-        {OFFLINE_PUZZLES.map((item, puzzleIndex) => (
+        {visiblePuzzles.map(({ item, puzzleIndex }) => (
           <button
             key={item.id}
             className={puzzleIndex === index ? "active" : ""}
@@ -196,6 +246,7 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
           >
             <span>{progress.includes(item.id) ? "✓" : puzzleIndex + 1}</span>
             <strong>{item.title}</strong>
+            <small>{item.theme}</small>
           </button>
         ))}
       </div>
@@ -216,13 +267,18 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
         </div>
 
         <aside className="game-panel puzzle-panel">
-          <div className="eyebrow">{puzzle.level} · PUZZLE {index + 1}</div>
+          <div className="eyebrow">{puzzle.level} · {puzzle.theme.toUpperCase()}</div>
           <h2>{puzzle.title}</h2>
           <p className={complete ? "puzzle-message success" : "puzzle-message"}>{message}</p>
 
           <div className="puzzle-objective">
-            <strong>Objective</strong>
+            <strong>Position question</strong>
             <span>{puzzle.goal}</span>
+          </div>
+
+          <div className="academy-explanation">
+            <strong>What is the opponent trying to do?</strong>
+            <span>{puzzle.opponentIdea}</span>
           </div>
 
           {!complete ? (
@@ -236,14 +292,18 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
           ) : (
             <>
               <div className="puzzle-complete">
-                <strong>✓ Solved</strong>
+                <strong>✓ Solved · Why it works</strong>
                 <span>{puzzle.explanation}</span>
+              </div>
+              <div className="academy-explanation takeaway">
+                <strong>Pattern to remember</strong>
+                <span>{puzzle.takeaway}</span>
               </div>
               <button className="primary-action" onClick={nextPuzzle}>Next puzzle</button>
             </>
           )}
 
-          <button className="text-button puzzle-practice-link" onClick={onPractice}>Go to Practice</button>
+          <button className="text-button puzzle-practice-link" onClick={onPractice}>Take the idea into Practice</button>
         </aside>
       </div>
     </section>
