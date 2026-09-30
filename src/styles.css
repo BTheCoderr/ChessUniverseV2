@@ -2432,3 +2432,98 @@ code {
     bottom: 12px;
   }
 }
+
+
+/* Private challenges + rematches */
+.create-game-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.create-game-actions .create-game-button {
+  width: 100%;
+  margin: 0;
+}
+
+.private-challenge-card,
+.rematch-card {
+  border: 1px solid #4c5c16;
+  background: #17200d;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.private-challenge-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.private-challenge-card > div:first-child,
+.rematch-card > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.private-challenge-card > div:first-child > span,
+.rematch-card > div:first-child > span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.challenge-actions,
+.inline-game-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.private-game-row {
+  border-color: #3f4f1d;
+  background: #12180e;
+}
+
+.rematch-card {
+  display: grid;
+  gap: 11px;
+  margin: 12px 0 16px;
+}
+
+.rematch-card.requested {
+  border-color: #63781f;
+}
+
+.rematch-card .primary-action {
+  width: 100%;
+  margin: 0;
+}
+
+.challenge-entry-card .primary-action {
+  width: 100%;
+  margin-top: 12px;
+}
+
+@media (max-width: 680px) {
+  .create-game-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .private-challenge-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .challenge-actions,
+  .inline-game-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .challenge-actions .text-button {
+    justify-self: start;
+  }
+}
