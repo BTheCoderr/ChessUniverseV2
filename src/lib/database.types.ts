@@ -131,6 +131,7 @@ export type Database = {
           rematch_requested_by: string | null
           result: Database["public"]["Enums"]["game_result"] | null
           result_reason: string | null
+          season_id: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["game_status"]
           time_control_minutes: number
@@ -162,6 +163,7 @@ export type Database = {
           rematch_requested_by?: string | null
           result?: Database["public"]["Enums"]["game_result"] | null
           result_reason?: string | null
+          season_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["game_status"]
           time_control_minutes?: number
@@ -193,6 +195,7 @@ export type Database = {
           rematch_requested_by?: string | null
           result?: Database["public"]["Enums"]["game_result"] | null
           result_reason?: string | null
+          season_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["game_status"]
           time_control_minutes?: number
@@ -244,6 +247,13 @@ export type Database = {
             columns: ["rematch_requested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
           {
@@ -375,6 +385,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      season_player_stats: {
+        Row: {
+          created_at: string
+          draws: number
+          games_played: number
+          losses: number
+          points: number
+          rating_current: number
+          rating_peak: number
+          rating_start: number
+          season_id: string
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          created_at?: string
+          draws?: number
+          games_played?: number
+          losses?: number
+          points?: number
+          rating_current: number
+          rating_peak: number
+          rating_start: number
+          season_id: string
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          created_at?: string
+          draws?: number
+          games_played?: number
+          losses?: number
+          points?: number
+          rating_current?: number
+          rating_peak?: number
+          rating_start?: number
+          season_id?: string
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_player_stats_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_player_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          championship_slots: number
+          created_at: string
+          ends_at: string
+          id: string
+          name: string
+          slug: string
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          championship_slots?: number
+          created_at?: string
+          ends_at: string
+          id?: string
+          name: string
+          slug: string
+          starts_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          championship_slots?: number
+          created_at?: string
+          ends_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
