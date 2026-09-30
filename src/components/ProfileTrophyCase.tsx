@@ -35,6 +35,33 @@ type FormationStat = {
   games_played: number;
 };
 
+type RivalryRecord = {
+  wins: number;
+  losses: number;
+  draws: number;
+  games: number;
+};
+
+type Rivalry = {
+  totalGames: number;
+  relationshipLabel: "New opponent" | "Opponent" | "Rival" | "Nemesis";
+  classic: RivalryRecord;
+  battle: RivalryRecord;
+  favoriteBattleFormation: string | null;
+  favoriteBattleFormationGames: number;
+  streakResult: "win" | "loss" | "draw" | null;
+  streakCount: number;
+  lastGame: {
+    gameId: string;
+    variant: string;
+    result: string | null;
+    resultReason: string | null;
+    timeControlMinutes: number;
+    battleFormationKey: string | null;
+    endedAt: string | null;
+  } | null;
+};
+
 type Showcase = {
   profile: {
     id: string;
@@ -59,6 +86,7 @@ type Showcase = {
   titles: ShowcaseTitle[];
   equippedTitle: ShowcaseTitle | null;
   championshipWins: number;
+  rivalry: Rivalry | null;
 };
 
 function formationName(key: string | null | undefined) {
@@ -85,15 +113,18 @@ export function ProfileTrophyCase({
   userId,
   compact = false,
   editable = false,
+  onOpenGame,
 }: {
   userId: string;
   compact?: boolean;
   editable?: boolean;
+  onOpenGame?: (gameId: string) => void;
 }) {
   const client = supabase;
   const [showcase, setShowcase] = useState<Showcase | null>(null);
   const [loading, setLoading] = useState(true);
   const [titleBusy, setTitleBusy] = useState(false);
+  const [challengeBusy, setChallengeBusy] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
@@ -167,6 +198,43 @@ export function ProfileTrophyCase({
     setTitleBusy(false);
   };
 
+  const challengeRival = async () => {
+    if (!client || !showcase?.rivalry || challengeBusy) return;
+
+    const lastGame = showcase.rivalry.lastGame;
+    const variant = lastGame?.variant === "battle" ? "battle" : "traditional";
+    const minutes = lastGame?.timeControlMinutes ?? 10;
+    const formationKey =
+      variant === "battle" ? lastGame?.battleFormationKey ?? "classic" : null;
+
+    setChallengeBusy(true);
+    setMessage("");
+
+    const { data, error } = await client.functions.invoke("online-game", {
+      body: {
+        action: "challenge_rival",
+        userId,
+        variant,
+        minutes,
+        formationKey,
+      },
+    });
+
+    if (error || !data?.gameId) {
+      setMessage(error?.message ?? "Unable to create challenge.");
+      setChallengeBusy(false);
+      return;
+    }
+
+    setMessage(
+      variant === "battle"
+        ? `Battle challenge sent · ${formationName(formationKey)} · ${minutes === 0 ? "Untimed" : `${minutes} min`}`
+        : `Classic challenge sent · ${minutes === 0 ? "Untimed" : `${minutes} min`}`
+    );
+    setChallengeBusy(false);
+    onOpenGame?.(String(data.gameId));
+  };
+
   if (loading) {
     return (
       <section className={compact ? "trophy-case compact" : "trophy-case"}>
@@ -206,6 +274,64 @@ export function ProfileTrophyCase({
         <strong>{showcase.equippedTitle?.name ?? "None"}</strong>
         {showcase.equippedTitle ? <small>{showcase.equippedTitle.description}</small> : null}
       </div>
+
+      {showcase.rivalry ? (
+        <div className={`rivalry-card ${showcase.rivalry.relationshipLabel.toLowerCase().replace(" ", "-")}`}>
+          <div className="rivalry-heading">
+            <div>
+              <div className="eyebrow">HEAD-TO-HEAD</div>
+              <strong>{showcase.rivalry.relationshipLabel}</strong>
+              <span>
+                {showcase.rivalry.totalGames === 0
+                  ? "No completed meetings yet."
+                  : `${showcase.rivalry.totalGames} completed meeting${showcase.rivalry.totalGames === 1 ? "" : "s"}`}
+              </span>
+            </div>
+            {showcase.rivalry.totalGames >= 3 ? (
+              <span className="rival-badge">
+                {showcase.rivalry.relationshipLabel === "Nemesis" ? "☄" : "⚔"} {showcase.rivalry.relationshipLabel}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="rivalry-record-grid">
+            <div>
+              <strong>{showcase.rivalry.classic.wins}-{showcase.rivalry.classic.losses}-{showcase.rivalry.classic.draws}</strong>
+              <span>Classic series</span>
+            </div>
+            <div>
+              <strong>{showcase.rivalry.battle.wins}-{showcase.rivalry.battle.losses}-{showcase.rivalry.battle.draws}</strong>
+              <span>Battle series</span>
+            </div>
+            <div>
+              <strong>
+                {showcase.rivalry.streakCount > 0
+                  ? `${showcase.rivalry.streakCount} ${showcase.rivalry.streakResult === "win" ? "W" : showcase.rivalry.streakResult === "loss" ? "L" : "D"}`
+                  : "—"}
+              </strong>
+              <span>Current series streak</span>
+            </div>
+            <div>
+              <strong>{formationName(showcase.rivalry.favoriteBattleFormation)}</strong>
+              <span>Shared Battle formation</span>
+            </div>
+          </div>
+
+          {onOpenGame ? (
+            <button
+              className="primary-action compact rivalry-challenge"
+              disabled={challengeBusy}
+              onClick={() => void challengeRival()}
+            >
+              {challengeBusy
+                ? "Creating challenge…"
+                : showcase.rivalry.totalGames > 0
+                  ? "Challenge again"
+                  : "Challenge player"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="trophy-battle-summary">
         <div><strong>{battle.rating}</strong><span>Battle Elo</span></div>
