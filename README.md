@@ -15,6 +15,27 @@
 
 **Live app:** https://chessuniverse.netlify.app/
 
+## Product at a glance
+
+| Area | Current experience |
+| --- | --- |
+| **Local play** | Two-player, Stockfish practice, saved games, offline-first PWA |
+| **Learning** | Chess Academy, Piece Schools, endgames, adaptive review, puzzles, Legends |
+| **Online** | Server-authoritative Classic + Battle multiplayer, private challenges, reconnect/rematch |
+| **Competition** | Separate Elo systems, Seasons, Championships, leaderboards, rivalries |
+| **Progression** | Battle unlocks, achievements, formation mastery, titles, Trophy Cases |
+| **Identity** | Authenticated profiles plus deterministic public-safe player identity marks |
+
+## Engineering highlights
+
+- **Trusted multiplayer:** online moves, clocks, ratings, tournament advancement, unlocks, achievements, and titles are validated through server-side paths.
+- **Local-first product design:** practice, puzzles, Legends, preferences, and saved offline state do not require the database.
+- **Separate competitive systems:** Classic and Battle ratings/history stay distinct instead of sharing one ladder.
+- **Account lifecycle:** signed-in progress can sync across devices, while account deletion removes personal progression and can preserve de-identified completed-match history.
+- **PWA release discipline:** production builds include offline verification in addition to gameplay/regression tests.
+
+
+
 ## Why this project is different
 
 Chess Universe started as a chess experiment and has grown into a full multiplayer product with a server-authoritative competition layer.
