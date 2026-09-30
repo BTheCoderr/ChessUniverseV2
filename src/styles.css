@@ -3279,3 +3279,314 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Universe rewards + Battle Chess */
+.universe-hub {
+  display: grid;
+  gap: 18px;
+}
+
+.universe-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 24px;
+  border: 1px solid #3c4719;
+  border-radius: 20px;
+  padding: 22px;
+  background: linear-gradient(135deg, #151b0f, #0f1516);
+}
+
+.universe-hero h1 {
+  margin: 4px 0 8px;
+}
+
+.universe-hero p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.universe-orbit {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #647725;
+  border-radius: 50%;
+  background: #202a10;
+  font-size: 42px;
+}
+
+.universe-world-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.universe-world {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  background: #111617;
+}
+
+.universe-world h2 {
+  margin: 4px 0 8px;
+}
+
+.universe-world p {
+  min-height: 68px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.universe-world.battle.unlocked {
+  border-color: #617520;
+  background: #18210f;
+}
+
+.universe-world.battle.locked {
+  opacity: .78;
+}
+
+.locked-world-progress {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.locked-world-progress span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.universe-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.universe-progress-grid > div {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: #101516;
+}
+
+.universe-progress-grid strong,
+.universe-progress-grid span {
+  display: block;
+}
+
+.universe-progress-grid strong {
+  font-size: 22px;
+}
+
+.universe-progress-grid span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.reward-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.reward-card {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 12px;
+  background: #101415;
+  opacity: .62;
+}
+
+.reward-card.unlocked {
+  border-color: #53651c;
+  background: #18200f;
+  opacity: 1;
+}
+
+.reward-card-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.reward-card-topline b {
+  color: inherit;
+}
+
+.reward-card.unlocked .reward-card-topline b {
+  color: #dfff9d;
+}
+
+.reward-card > strong {
+  display: block;
+  font-size: 15px;
+}
+
+.reward-card p {
+  min-height: 48px;
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.reward-card small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.formation-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.formation-preview {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px;
+  background: #101415;
+  opacity: .55;
+}
+
+.formation-preview.unlocked {
+  border-color: #48571c;
+  opacity: 1;
+}
+
+.formation-preview code {
+  letter-spacing: 2px;
+  font-size: 12px;
+  color: #dfff9d;
+}
+
+.formation-preview span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.battle-board {
+  border-color: #586a20;
+}
+
+.battle-panel {
+  border-color: #3b471b;
+}
+
+.battle-mode-switch {
+  margin: 10px 0 12px;
+}
+
+.battle-formations {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.battle-formation {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 10px 11px;
+  background: #101516;
+  color: inherit;
+}
+
+.battle-formation.active {
+  border-color: #617520;
+  background: #1a220f;
+}
+
+.battle-formation:disabled {
+  opacity: .45;
+}
+
+.battle-formation span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.battle-formation-detail {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #3f4a1c;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #151c0f;
+}
+
+.battle-formation-detail span,
+.battle-formation-detail strong {
+  display: block;
+}
+
+.battle-formation-detail span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.battle-formation-detail code {
+  color: #dfff9d;
+  letter-spacing: 2px;
+}
+
+.battle-history {
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .universe-world-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reward-grid,
+  .formation-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .universe-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .universe-orbit {
+    width: 64px;
+    height: 64px;
+    font-size: 32px;
+  }
+
+  .universe-progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reward-grid,
+  .formation-preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
