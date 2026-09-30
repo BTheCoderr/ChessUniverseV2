@@ -86,7 +86,108 @@ export const OPENING_LESSONS: OpeningLesson[] = [
       { uci: "e2e3", sanLabel: "4. e3", side: "White", purpose: "Support d4 and prepare Bd3 without trapping the bishop.", opponentIdea: "The position becomes about piece placement, c-pawn breaks, and king safety." },
     ],
   },
+  {
+    id: "caro-kann",
+    name: "Caro-Kann Defense",
+    family: "Solid counterattack",
+    summary: "Challenge e4 with ...c6 and ...d5 while keeping a sturdy pawn structure.",
+    bigIdea: "The Caro-Kann teaches patient counterplay. Black prepares ...d5 with the c-pawn so the center can be challenged without blocking the c8 bishop permanently.",
+    whenToUse: "Useful for learning how to fight for the center without creating as many early weaknesses as sharper defenses.",
+    steps: [
+      { uci: "e2e4", sanLabel: "1. e4", side: "White", purpose: "Take central space and free the queen and bishop.", opponentIdea: "Black prepares a pawn break rather than mirroring with ...e5." },
+      { uci: "c7c6", sanLabel: "... c6", side: "Black", purpose: "Prepare ...d5 with support and keep the pawn structure flexible.", opponentIdea: "White usually builds a second central pawn before Black challenges it." },
+      { uci: "d2d4", sanLabel: "2. d4", side: "White", purpose: "Build a broad pawn center before Black strikes.", opponentIdea: "Black now challenges the center immediately." },
+      { uci: "d7d5", sanLabel: "... d5", side: "Black", purpose: "Attack e4 and force White to clarify the center.", opponentIdea: "White can exchange, advance, or defend e4." },
+      { uci: "b1c3", sanLabel: "3. Nc3", side: "White", purpose: "Develop while reinforcing e4.", opponentIdea: "Black can exchange on e4 and then develop the light bishop outside the pawn chain." },
+      { uci: "d5e4", sanLabel: "... dxe4", side: "Black", purpose: "Resolve the central tension and temporarily remove White's e-pawn.", opponentIdea: "White should recapture with development." },
+      { uci: "c3e4", sanLabel: "4. Nxe4", side: "White", purpose: "Recover the pawn while centralizing the knight.", opponentIdea: "Black should use the moment to develop the c8 bishop before ...e6." },
+      { uci: "c8f5", sanLabel: "... Bf5", side: "Black", purpose: "Develop the bishop outside the future pawn chain.", opponentIdea: "White will continue development and may challenge the bishop with Ng3." },
+    ],
+  },
+  {
+    id: "kings-indian",
+    name: "King's Indian Defense",
+    family: "Dynamic counterplay",
+    summary: "Let White take space, then attack the center with pieces and pawn breaks.",
+    bigIdea: "The King's Indian teaches that space is not the same as control. Black allows White to build a center, castles quickly, and later attacks that center with ...e5 or ...c5.",
+    whenToUse: "Useful for learning closed-center plans, kingside development, and how counterplay can grow behind a compact setup.",
+    steps: [
+      { uci: "d2d4", sanLabel: "1. d4", side: "White", purpose: "Take central space and open the c1 bishop.", opponentIdea: "Black develops a knight instead of immediately occupying the center with a pawn." },
+      { uci: "g8f6", sanLabel: "... Nf6", side: "Black", purpose: "Control e4 and develop without committing the central pawns.", opponentIdea: "White can claim more space with c4." },
+      { uci: "c2c4", sanLabel: "2. c4", side: "White", purpose: "Expand the center and control d5.", opponentIdea: "Black prepares a kingside fianchetto." },
+      { uci: "g7g6", sanLabel: "... g6", side: "Black", purpose: "Prepare ...Bg7 where the bishop pressures the long diagonal.", opponentIdea: "White develops and supports the central pawns." },
+      { uci: "b1c3", sanLabel: "3. Nc3", side: "White", purpose: "Support e4 and develop toward the center.", opponentIdea: "Black completes the fianchetto." },
+      { uci: "f8g7", sanLabel: "... Bg7", side: "Black", purpose: "Place the bishop on the long diagonal toward the center.", opponentIdea: "White can now build the full pawn center with e4." },
+      { uci: "e2e4", sanLabel: "4. e4", side: "White", purpose: "Claim maximum central space.", opponentIdea: "Black stays compact and prepares a later pawn break." },
+      { uci: "d7d6", sanLabel: "... d6", side: "Black", purpose: "Support ...e5 and keep the center flexible before castling.", opponentIdea: "The next phase is about whether White closes the center and which wing each side attacks." },
+    ],
+  },
 ];
+
+export type OpeningBranch = {
+  name: string;
+  trigger: string;
+  line: string[];
+  idea: string;
+  responsePlan: string;
+};
+
+export const OPENING_BRANCHES: Record<string, OpeningBranch[]> = {
+  "italian-game": [
+    {
+      name: "Giuoco Piano",
+      trigger: "After 3.Bc4, Black chooses ...Bc5 instead of ...Nf6.",
+      line: ["e2e4","e7e5","g1f3","b8c6","f1c4","f8c5"],
+      idea: "Both sides develop naturally and keep the center flexible instead of forcing tactics immediately.",
+      responsePlan: "White usually castles, plays c3, and prepares d4; Black develops and watches the d4 break.",
+    },
+  ],
+  "queens-gambit": [
+    {
+      name: "Queen's Gambit Accepted",
+      trigger: "Black accepts the c-pawn with ...dxc4.",
+      line: ["d2d4","d7d5","c2c4","d5c4","e2e3","e7e5","f1c4"],
+      idea: "Black takes the pawn but gives White time to build development and recover it.",
+      responsePlan: "White should recover the pawn without chasing it recklessly; Black tries to use the temporary extra pawn to gain time.",
+    },
+  ],
+  "sicilian-defense": [
+    {
+      name: "Najdorf shell",
+      trigger: "Black follows the Open Sicilian with ...a6.",
+      line: ["e2e4","c7c5","g1f3","d7d6","d2d4","c5d4","f3d4","g8f6","b1c3","a7a6"],
+      idea: "...a6 controls b5 and prepares flexible queenside expansion without declaring the whole plan yet.",
+      responsePlan: "White develops aggressively; Black decides between ...e5, ...e6, ...b5, and piece pressure based on White's setup.",
+    },
+  ],
+  "london-system": [
+    {
+      name: "Immediate ...c5 challenge",
+      trigger: "Black attacks the d4 structure with ...c5.",
+      line: ["d2d4","d7d5","g1f3","g8f6","c1f4","c7c5","e2e3","b8c6"],
+      idea: "Black challenges White's structure before the London setup becomes completely comfortable.",
+      responsePlan: "White keeps development smooth and decides whether to support d4, exchange in the center, or use c3.",
+    },
+  ],
+  "caro-kann": [
+    {
+      name: "Advance Variation",
+      trigger: "White closes the center with 3.e5 instead of defending e4.",
+      line: ["e2e4","c7c6","d2d4","d7d5","e4e5","c8f5"],
+      idea: "White gains space, while Black develops the bishop before locking it behind ...e6.",
+      responsePlan: "Black attacks the pawn chain with ...c5 or ...f6 later; White uses the extra space to improve pieces.",
+    },
+  ],
+  "kings-indian": [
+    {
+      name: "Classical setup",
+      trigger: "White develops Nf3 and Black castles before striking the center.",
+      line: ["d2d4","g8f6","c2c4","g7g6","b1c3","f8g7","e2e4","d7d6","g1f3","e8g8"],
+      idea: "Black finishes king safety before deciding how to attack White's broad center.",
+      responsePlan: "White develops and may close the center; Black prepares ...e5 or ...c5 and then chooses a wing for counterplay.",
+    },
+  ],
+};
 
 export function openingMoveParts(uci: string) {
   return {

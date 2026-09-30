@@ -5438,3 +5438,344 @@ code {
     width: 100%;
   }
 }
+
+
+/* Final beta polish */
+.square:focus-visible,
+.academy-tabs button:focus-visible,
+.academy-card-picker button:focus-visible,
+.academy-progress-card:focus-visible,
+.academy-path-list button:focus-visible,
+.puzzle-picker button:focus-visible,
+.puzzle-theme-filter button:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.academy-learning-insights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.academy-learning-insights > div {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #4c5c16;
+  border-radius: 12px;
+  background: #151d0f;
+  padding: 12px;
+}
+
+.academy-learning-insights strong {
+  color: var(--accent);
+  font-size: 22px;
+}
+
+.academy-learning-insights span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.academy-recent-activity {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.academy-recent-activity > strong {
+  font-size: 12px;
+}
+
+.academy-recent-activity > div {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.academy-recent-activity > div > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1c250e;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.academy-recent-activity b,
+.academy-recent-activity small {
+  display: block;
+}
+
+.academy-recent-activity b {
+  font-size: 10px;
+}
+
+.academy-recent-activity small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.academy-data-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #101516;
+  padding: 16px;
+}
+
+.academy-data-tools h3 {
+  margin: 5px 0 7px;
+  font-size: 20px;
+}
+
+.academy-data-tools p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.academy-data-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.danger-action {
+  border-color: #7b4730;
+  color: #ffd1b5;
+}
+
+.opening-branches {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.opening-branch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.opening-branch-grid article {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #4c5c16;
+  border-radius: 13px;
+  background: #151d0f;
+  padding: 13px;
+}
+
+.opening-branch-grid article > span {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.opening-branch-grid article > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.opening-branch-grid article > div {
+  display: grid;
+  gap: 2px;
+}
+
+.opening-branch-grid b {
+  font-size: 10px;
+}
+
+.opening-branch-grid small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.review-teaching-card {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0;
+  border: 1px solid #4c5c16;
+  border-radius: 11px;
+  background: #171f0e;
+  padding: 11px;
+}
+
+.review-teaching-card strong {
+  color: var(--accent);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.review-teaching-card span {
+  color: #d6dec5;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.review-best-line {
+  margin: 10px 0;
+}
+
+.player-identity-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  border: 1px solid #46551c;
+  border-radius: 14px;
+  background: #11180f;
+  padding: 12px;
+}
+
+.player-avatar {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #6a8126;
+  border-radius: 15px;
+  background: #202b0f;
+  color: #e8ffb7;
+}
+
+.player-avatar > span {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.player-avatar > small {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #11180f;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #111;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.player-identity-copy strong,
+.player-identity-copy small {
+  display: block;
+}
+
+.player-identity-copy strong {
+  font-size: 16px;
+}
+
+.player-identity-copy small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.player-identity-stats {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 8px;
+}
+
+.player-identity-stats > div {
+  min-width: 82px;
+  display: grid;
+  justify-items: end;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0f1415;
+  padding: 8px;
+}
+
+.player-identity-stats strong {
+  font-size: 13px;
+}
+
+.player-identity-stats span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+@media (max-width: 760px) {
+  .academy-learning-insights,
+  .opening-branch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .academy-data-tools,
+  .player-identity-card {
+    grid-template-columns: 1fr;
+  }
+
+  .academy-data-actions {
+    justify-content: stretch;
+  }
+
+  .academy-data-actions button {
+    width: 100%;
+  }
+
+  .player-identity-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .player-identity-stats > div {
+    justify-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+
+  .ai-piece-move,
+  .drag-ghost {
+    animation: none !important;
+    transition: none !important;
+  }
+}

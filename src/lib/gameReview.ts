@@ -12,6 +12,9 @@ export type ReviewedMove = {
   cpLoss: number;
   bestMove: string;
   bestSan: string;
+  bestLineSan: string[];
+  explanation: string;
+  reviewCue: string;
   scoreBefore: number;
   scoreAfter: number;
 };
@@ -39,6 +42,60 @@ function bestMoveSan(position: Chess, uci: string) {
   } catch {
     return uci;
   }
+}
+
+function principalVariationSan(position: Chess, pv: string[], maxPlies = 4) {
+  const copy = new Chess(position.fen());
+  const line: string[] = [];
+
+  for (const uci of pv.slice(0, maxPlies)) {
+    try {
+      const move = copy.move({
+        from: uci.slice(0, 2),
+        to: uci.slice(2, 4),
+        promotion: uci[4] ?? "q",
+      });
+      line.push(move.san);
+    } catch {
+      break;
+    }
+  }
+
+  return line;
+}
+
+function reviewCueFor(bestSan: string) {
+  if (bestSan.includes("#")) {
+    return "The engine found a mating move, so every non-mating alternative deserves extra scrutiny.";
+  }
+  if (bestSan.includes("+")) {
+    return "The preferred move gives check, which forces the opponent to respond before continuing their own plan.";
+  }
+  if (bestSan.includes("x")) {
+    return "The preferred move is a capture, so compare the material and tactical consequences before choosing a quieter move.";
+  }
+  if (bestSan.startsWith("O-O")) {
+    return "The engine prefers castling here, pointing to king safety and rook activation as the immediate priority.";
+  }
+  if (/^[NBRQK]/.test(bestSan)) {
+    return "The preferred move improves or repositions a piece. Compare the new square, targets, and opponent replies.";
+  }
+  return "The preferred move is a pawn move. Look at what it changes permanently: space, structure, files, diagonals, and piece squares.";
+}
+
+function explainReview(grade: MoveGrade, cpLoss: number, bestSan: string, line: string[]) {
+  const lineText = line.length > 0 ? ` A sample engine line begins ${line.join(" ")}.` : "";
+
+  if (grade === "Best") {
+    return `Your move preserved the engine's preferred evaluation. Stockfish's first choice was ${bestSan}.${lineText}`;
+  }
+
+  if (cpLoss >= 90000) {
+    return `The move changed a mating evaluation. Stockfish preferred ${bestSan}.${lineText}`;
+  }
+
+  const pawns = Math.max(0.01, cpLoss / 100).toFixed(cpLoss < 100 ? 2 : 1);
+  return `Stockfish preferred ${bestSan}; your move gave up about ${pawns} pawn-equivalents of evaluation at this search depth.${lineText}`;
 }
 
 export async function reviewStoredMove(game: StoredGame, index: number, depth = 6): Promise<ReviewedMove> {
@@ -69,15 +126,21 @@ export async function reviewStoredMove(game: StoredGame, index: number, depth = 
   const rawLoss = beforeAnalysis.scoreCp - moverScoreAfter;
   const cpLoss = Math.max(0, Math.min(100000, Math.round(rawLoss)));
   const matchedBestMove = actualUci === beforeAnalysis.bestMove;
+  const grade = gradeMove(cpLoss, matchedBestMove);
+  const bestSan = bestMoveSan(before, beforeAnalysis.bestMove);
+  const bestLineSan = principalVariationSan(before, beforeAnalysis.pv);
 
   return {
     index,
     san: move.san,
     color: move.color,
-    grade: gradeMove(cpLoss, matchedBestMove),
+    grade,
     cpLoss,
     bestMove: beforeAnalysis.bestMove,
-    bestSan: bestMoveSan(before, beforeAnalysis.bestMove),
+    bestSan,
+    bestLineSan,
+    explanation: explainReview(grade, cpLoss, bestSan, bestLineSan),
+    reviewCue: reviewCueFor(bestSan),
     scoreBefore: beforeAnalysis.scoreCp,
     scoreAfter: moverScoreAfter,
   };

@@ -558,12 +558,21 @@ export function GameLibrary({ onBack, onPractice, userId }: Props) {
 
                 {currentReview ? (
                   <>
-                    <p>
-                      Stockfish preferred <strong>{currentReview.bestSan}</strong>.
-                      {currentReview.grade === "Best"
-                        ? " Your move matched or stayed within the best line."
-                        : ` Estimated loss: ${currentReview.cpLoss} centipawns.`}
-                    </p>
+                    <p>{currentReview.explanation}</p>
+                    <div className="review-teaching-card">
+                      <strong>What to inspect</strong>
+                      <span>{currentReview.reviewCue}</span>
+                    </div>
+                    {currentReview.bestLineSan.length > 1 ? (
+                      <div className="branch-history review-best-line">
+                        <strong>Engine line</strong>
+                        <div>
+                          {currentReview.bestLineSan.map((move, index) => (
+                            <span key={`${index}-${move}`}>{move}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                     <button className="secondary-action" onClick={startTryPosition}>Try this position again</button>
                   </>
                 ) : (

@@ -10,7 +10,9 @@ export type PuzzleTheme =
   | "Defense"
   | "Checkmate"
   | "Promotion"
-  | "Strategy";
+  | "Strategy"
+  | "Fork"
+  | "Discovered attack";
 
 export type Puzzle = {
   id: string;
@@ -185,6 +187,46 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "Nxe5 wins the queen. Knights are dangerous because their attack pattern is easy to overlook and cannot be blocked.",
     opponentIdea: "Black should track every knight jump before placing a valuable piece on a forkable or capturable square.",
     takeaway: "When a knight is nearby, scan all eight possible jumps — not just the squares on a straight line.",
+  },
+  {
+    id: "back-rank-rook-mate",
+    title: "Back-Rank Door Slams",
+    level: "Easy",
+    theme: "Checkmate",
+    fen: "6k1/5ppp/8/8/8/8/6PP/4R1K1 w - - 0 1",
+    solution: "e1e8",
+    goal: "White to move. Use the boxed-in king to deliver a back-rank mate.",
+    hint: "The pawns on f7, g7, and h7 take away the king's flight squares.",
+    explanation: "Re8# works because the rook controls the entire eighth rank while Black's own pawns remove the escape squares.",
+    opponentIdea: "Black needed luft — an escape square such as ...h6 or ...g6 — before allowing a rook onto the back rank.",
+    takeaway: "Before attacking the king, count its escape squares. A strong back-rank pattern often begins with a king trapped by its own pawns.",
+    expectsMate: true,
+  },
+  {
+    id: "queen-rook-fork",
+    title: "Queen Forks King and Rook",
+    level: "Easy",
+    theme: "Fork",
+    fen: "r5k1/8/8/8/8/8/8/3Q2K1 w - - 0 1",
+    solution: "d1d5",
+    goal: "Find a queen move that checks the king and attacks the rook on a8 at the same time.",
+    hint: "Look for a square that lines up with g8 on one diagonal and a8 on another.",
+    explanation: "Qd5+ checks the king along d5-e6-f7-g8 and simultaneously attacks the rook on a8 along d5-c6-b7-a8.",
+    opponentIdea: "Black must answer the check first, which gives White time to win the rook next.",
+    takeaway: "Forks are about move priority: when one target is the king, the opponent must answer the check before saving the second target.",
+  },
+  {
+    id: "discovered-rook-attack",
+    title: "Move the Pawn, Reveal the Rook",
+    level: "Intermediate",
+    theme: "Discovered attack",
+    fen: "3q2k1/8/8/4n3/3P4/8/8/3R2K1 w - - 0 1",
+    solution: "d4e5",
+    goal: "Capture the knight while uncovering the rook's attack on the queen.",
+    hint: "The pawn on d4 is blocking your rook from seeing d8.",
+    explanation: "dxe5 removes the knight and clears the d-file. The rook on d1 now attacks the queen on d8, creating two gains with one pawn move.",
+    opponentIdea: "Black must react to the newly opened rook line and move the queen before White wins even more material.",
+    takeaway: "A discovered attack happens when one piece moves away and reveals the line of another piece. Always ask what your move uncovers behind it.",
   },
 ];
 

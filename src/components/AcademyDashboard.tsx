@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ACADEMY_POSITIONS } from "../lib/academyLessons";
 import { loadAcademyCoreProgress } from "../lib/academyProgress";
 import { loadPlacement, recommendedStart } from "../lib/academyPlacement";
 import { ACADEMY_COURSE_PATHS } from "../lib/academyCourses";
-import { loadReviewState, reviewPriority } from "../lib/academyReviewState";
+import { loadReviewActivity, loadReviewState, reviewPriority } from "../lib/academyReviewState";
+import { reviewCatalog } from "../lib/academyReview";
+import { AcademyDataTools } from "./AcademyDataTools";
 import { ENDGAME_LESSONS, ENDGAME_PROGRESS_KEY, normalizeEndgameProgress } from "../lib/endgameLessons";
 import { MULTI_MOVE_PROGRESS_KEY, MULTI_MOVE_PUZZLES, normalizeMultiMoveProgress } from "../lib/multiMovePuzzles";
 import { OPENING_LESSONS } from "../lib/openingLessons";
@@ -50,6 +52,7 @@ function readArray(key: string, normalize: (value: unknown) => string[]) {
 }
 
 export function AcademyDashboard({ onNavigate, onPuzzles, onPlacement }: Props) {
+  const [revision, setRevision] = useState(0);
   const snapshot = useMemo(() => {
     const placement = loadPlacement();
     const core = loadAcademyCoreProgress();
@@ -59,7 +62,15 @@ export function AcademyDashboard({ onNavigate, onPuzzles, onPlacement }: Props) 
     const puzzleProgress = readArray(PUZZLE_PROGRESS_KEY, normalizePuzzleProgress);
     const multiProgress = readArray(MULTI_MOVE_PROGRESS_KEY, normalizeMultiMoveProgress);
     const reviewState = loadReviewState();
+    const activity = loadReviewActivity();
+    const catalog = new Map(reviewCatalog().map((lesson) => [lesson.id, lesson.title]));
     const now = Date.now();
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const recentActivity = activity.filter((item) => item.attemptedAt >= sevenDaysAgo);
+    const recentCorrect = recentActivity.filter((item) => item.correct).length;
+    const recentAccuracy = recentActivity.length > 0
+      ? Math.round((recentCorrect / recentActivity.length) * 100)
+      : 0;
     const reviewRecords = Object.values(reviewState);
     const due = reviewRecords.filter((record) => record.misses > 0 && record.nextReviewAt <= now).length;
     const weakest = [...reviewRecords]
@@ -106,12 +117,15 @@ export function AcademyDashboard({ onNavigate, onPuzzles, onPlacement }: Props) 
       reviewRecords,
       due,
       weakest,
+      recentActivity,
+      recentAccuracy,
+      catalog,
       totals,
       completed,
       total,
       percent,
     };
-  }, []);
+  }, [revision]);
 
   const level = snapshot.placement?.level ?? null;
   const path = ACADEMY_COURSE_PATHS[level ?? "Beginner"];
@@ -209,6 +223,21 @@ export function AcademyDashboard({ onNavigate, onPuzzles, onPlacement }: Props) 
         ) : null}
       </div>
 
+      <div className="academy-learning-insights" aria-label="Recent learning activity">
+        <div>
+          <strong>{snapshot.recentActivity.length}</strong>
+          <span>attempts in 7 days</span>
+        </div>
+        <div>
+          <strong>{snapshot.recentAccuracy}%</strong>
+          <span>7-day review accuracy</span>
+        </div>
+        <div>
+          <strong>{snapshot.due}</strong>
+          <span>reviews due now</span>
+        </div>
+      </div>
+
       <div className="academy-progress-grid">
         {categoryCards.map((card) => {
           const pct = card.total > 0 ? Math.round((card.done / card.total) * 100) : 0;
@@ -283,8 +312,25 @@ export function AcademyDashboard({ onNavigate, onPuzzles, onPlacement }: Props) 
           <button className="secondary-action" onClick={() => onNavigate("review")}>
             Open Adaptive Review
           </button>
+
+          {snapshot.recentActivity.length > 0 ? (
+            <div className="academy-recent-activity">
+              <strong>Recent review activity</strong>
+              {snapshot.recentActivity.slice(-5).reverse().map((item, index) => (
+                <div key={`${item.lessonId}-${item.attemptedAt}-${index}`}>
+                  <span>{item.correct ? "✓" : "↻"}</span>
+                  <div>
+                    <b>{snapshot.catalog.get(item.lessonId) ?? item.lessonId.replaceAll("-", " ")}</b>
+                    <small>{item.correct ? "Correct recall" : "Needs another pass"}</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
+
+      <AcademyDataTools onChanged={() => setRevision((value) => value + 1)} />
     </section>
   );
 }

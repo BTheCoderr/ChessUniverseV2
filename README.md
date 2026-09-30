@@ -27,6 +27,8 @@ The result is one app that supports offline play, serious online state, alternat
 
 ### Chess + learning
 
+- Keyboard-navigable chessboards, visible focus states, screen-reader square labels, and reduced-motion support
+
 - Traditional Chess Universe play with **Black moving first**
 - Local two-player games
 - Stockfish Practice with multiple difficulty levels
@@ -34,7 +36,8 @@ The result is one app that supports offline play, serious online state, alternat
 - Pause/resume, undo, move history, drag controls, sound, and haptics
 - Interactive Chess Academy with piece-decision boards, guided openings, strategy/tactics instruction, and opponent-plan explanations
 - Six-question knowledge-based Academy placement that recommends Beginner, Developing, or Intermediate learning paths
-- Academy Dashboard with overall progress, reviews due, weak concepts, course-by-course completion, and a recommended next lesson
+- Academy Dashboard with overall progress, 7-day learning activity, reviews due, weak concepts, course-by-course completion, and a recommended next lesson
+- Local Academy progress export/import/reset so learners can back up or move their JSON progress without touching saved games or online data
 - Piece Schools for Queen, Rook, Bishop, and Knight with local mastery progress
 - Opponent-response training that starts from the opponent's last move, threat, and best practical answer
 - Endgame School covering opposition, key squares, king activity, rook technique, passed pawns, and basic mating structure
@@ -43,9 +46,11 @@ The result is one app that supports offline play, serious online state, alternat
 - Guided local-first course paths that change by placement level instead of dumping the full lesson library on every player
 - Offline tactical Puzzles with a deterministic Puzzle of the Day, queen/rook/bishop/knight/defense/strategy themes, both-color positions, and signed-in progress sync
 - Multi-move puzzle sequences that alternate your decisions with scripted opponent responses so players learn combinations and multi-step plans
+- Expanded Opening Lab with Caro-Kann, King's Indian, and common response branches for all six opening families
+- Expanded puzzle library with back-rank mate, queen fork, and discovered-attack patterns
 - Missed Piece School, Piece Decision, Opponent Response, Endgame, and multi-move concepts feed a playable local review queue
 - Legends mode with famous games, pivotal moments, and **Rewrite History**
-- My Games replay + Stockfish review
+- My Games replay + Stockfish review with engine principal variation, evaluation context, and teaching cues
 
 ### Alternate worlds
 
@@ -106,6 +111,7 @@ The result is one app that supports offline play, serious online state, alternat
 - Earned profile titles
 - One equipped title per player
 - Public-safe Trophy Cases
+- Lightweight deterministic player identity marks using existing username/title/rating data — no avatar upload backend required
 
 ### Social competition
 

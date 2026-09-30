@@ -8,6 +8,7 @@ export type EngineAnalysis = {
   bestMove: string;
   scoreCp: number;
   depth: number;
+  pv: string[];
 };
 
 export const STOCKFISH_LEVELS: Record<Difficulty, { depth: number; skill: number }> = {
@@ -47,6 +48,7 @@ export async function analyzePosition(game: Chess, depth = 6): Promise<EngineAna
     let timer = 0;
     let latestScore = 0;
     let latestDepth = 0;
+    let latestPv: string[] = [];
 
     const finish = (analysis?: EngineAnalysis, error?: Error) => {
       if (settled) return;
@@ -82,8 +84,12 @@ export async function analyzePosition(game: Chess, depth = 6): Promise<EngineAna
         if (line.startsWith("info ")) {
           const score = parseEngineScore(line);
           const depthMatch = line.match(/\bdepth\s+(\d+)/);
+          const pvMatch = line.match(/\bpv\s+(.+)$/);
           if (score !== null) latestScore = score;
           if (depthMatch) latestDepth = Number(depthMatch[1]);
+          if (pvMatch) {
+            latestPv = pvMatch[1].trim().split(/\s+/).filter(Boolean);
+          }
           return;
         }
 
@@ -97,6 +103,7 @@ export async function analyzePosition(game: Chess, depth = 6): Promise<EngineAna
             bestMove,
             scoreCp: latestScore,
             depth: latestDepth || depth,
+            pv: latestPv.length > 0 ? latestPv : [bestMove],
           });
         }
       };
