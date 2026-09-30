@@ -35,8 +35,12 @@ The result is one app that supports offline play, serious online state, alternat
 - Interactive Chess Academy with piece-decision boards, guided openings, strategy/tactics instruction, and opponent-plan explanations
 - Piece Schools for Queen, Rook, Bishop, and Knight with local mastery progress
 - Opponent-response training that starts from the opponent's last move, threat, and best practical answer
+- Endgame School covering opposition, key squares, king activity, rook technique, passed pawns, and basic mating structure
+- Mistake explanations for legal-but-weaker moves, with the positional reason the move misses the lesson
+- Adaptive local review that prioritizes repeated mistakes and spaces successful recalls over time
 - Offline tactical Puzzles with a deterministic Puzzle of the Day, queen/rook/bishop/knight/defense/strategy themes, both-color positions, and signed-in progress sync
 - Multi-move puzzle sequences that alternate your decisions with scripted opponent responses so players learn combinations and multi-step plans
+- Missed Piece School, Piece Decision, Opponent Response, Endgame, and multi-move concepts feed a playable local review queue
 - Legends mode with famous games, pivotal moments, and **Rewrite History**
 - My Games replay + Stockfish review
 
