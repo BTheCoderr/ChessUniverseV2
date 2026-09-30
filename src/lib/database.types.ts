@@ -313,6 +313,45 @@ export type Database = {
           },
         ]
       }
+      player_unlocks: {
+        Row: {
+          reward_key: string
+          source_id: string | null
+          source_type: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          reward_key: string
+          source_id?: string | null
+          source_type: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          reward_key?: string
+          source_id?: string | null
+          source_type?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_unlocks_reward_key_fkey"
+            columns: ["reward_key"]
+            isOneToOne: false
+            referencedRelation: "universe_rewards"
+            referencedColumns: ["reward_key"]
+          },
+          {
+            foreignKeyName: "player_unlocks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -733,6 +772,36 @@ export type Database = {
           },
         ]
       }
+      universe_rewards: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          name: string
+          requirement_copy: string
+          reward_key: string
+          sort_order: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          name: string
+          requirement_copy: string
+          reward_key: string
+          sort_order?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          name?: string
+          requirement_copy?: string
+          reward_key?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -815,6 +884,10 @@ export type Database = {
       open_tournament_match_service: {
         Args: { actor_id: string; event_time?: string; target_match_id: string }
         Returns: string
+      }
+      refresh_universe_unlocks_service: {
+        Args: { actor_id: string; event_time?: string }
+        Returns: undefined
       }
       sync_tournament_service: {
         Args: { event_time?: string; target_tournament_id: string }
