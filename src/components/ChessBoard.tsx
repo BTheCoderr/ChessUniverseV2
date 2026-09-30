@@ -156,7 +156,7 @@ export function ChessBoard({
   return (
     <div
       className="board"
-      role="grid"
+      role="group"
       aria-label={`Chess board, ${orientation === "w" ? "White" : "Black"} perspective. Use arrow keys to move between squares and Enter or Space to select.`}
     >
       {Array.from({ length: 8 }, (_, row) =>
@@ -195,7 +195,6 @@ export function ChessBoard({
               disabled={disabled}
               aria-label={`${square}, ${piece ? `${piece.color === "w" ? "White" : "Black"} ${pieceName(piece.type)}` : "empty"}${isTarget ? ", legal move" : ""}${isLastMove ? ", last move" : ""}`}
               aria-pressed={isSelected}
-              role="gridcell"
             >
               {piece ? (
                 <img
