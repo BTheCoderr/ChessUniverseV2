@@ -55,5 +55,5 @@ test("Traditional, Evolving Queens, and Magic Horse remain separate app views", 
   assert.ok(app.includes("<LocalGame onOpenLibrary="));
   assert.match(app, /<EvolvingQueensGame \/>/);
   assert.match(app, /<MagicHorseGame \/>/);
-  assert.match(app, /<OnlineGame\\b/);
+  assert.match(app, /<OnlineGame\b/);
 });
