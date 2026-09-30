@@ -2742,3 +2742,222 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* Season progression */
+.season-progression-card {
+  overflow: hidden;
+}
+
+.season-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.season-heading > div > strong,
+.season-heading > div > span {
+  display: block;
+}
+
+.season-heading > div > strong {
+  font-size: 22px;
+}
+
+.season-heading > div > span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.season-title-badge,
+.rank-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #53651c;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #20290f;
+  color: #e9ffc1;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.season-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.season-stat-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px;
+  background: #111617;
+}
+
+.season-stat-card > span,
+.season-stat-card > small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.season-stat-card > strong {
+  display: block;
+  margin: 4px 0;
+  font-size: 24px;
+}
+
+.rank-progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #252d2e;
+  margin: 9px 0 7px;
+}
+
+.rank-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.season-unlocks,
+.season-standings {
+  margin-top: 18px;
+}
+
+.unlock-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.unlock-chip {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #101415;
+  opacity: .58;
+}
+
+.unlock-chip.unlocked {
+  border-color: #53651c;
+  background: #18200f;
+  opacity: 1;
+}
+
+.unlock-chip > span {
+  font-weight: 900;
+}
+
+.unlock-chip strong,
+.unlock-chip small {
+  display: block;
+}
+
+.unlock-chip small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.season-standing-list {
+  display: grid;
+  gap: 6px;
+}
+
+.season-standing-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 9px 11px;
+  background: #111617;
+}
+
+.season-standing-row.me {
+  border-color: #53651c;
+  background: #18200f;
+}
+
+.season-standing-row > span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.season-standing-row div strong,
+.season-standing-row div small {
+  display: block;
+}
+
+.season-standing-row div small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.profile-rank-stack {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.profile-rank-progress {
+  margin: 4px 0 14px;
+}
+
+.profile-rank-progress > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.profile-rank-progress span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 860px) {
+  .unlock-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .season-heading {
+    flex-direction: column;
+  }
+
+  .season-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .unlock-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-rank-stack {
+    justify-content: flex-start;
+  }
+
+  .profile-rank-progress > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}

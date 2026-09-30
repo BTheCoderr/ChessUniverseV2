@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { SeasonProgression } from "./SeasonProgression";
 
 type GameRow = {
   id: string;
@@ -399,6 +400,8 @@ export function OnlineLobby({
       </div>
 
       {message ? <p className="form-message">{message}</p> : null}
+
+      <SeasonProgression session={session} />
 
       {challengeGameId ? (
         <section className="lobby-section private-challenge-card incoming">

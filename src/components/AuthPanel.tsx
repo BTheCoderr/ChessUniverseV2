@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { clearLocalPlayerData } from "../lib/localPlayerData";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { rankForRating } from "../lib/progression";
 
 type Props = {
   session: Session | null;
@@ -115,6 +116,7 @@ export function AuthPanel({ session, recoveryMode = false, onRecoveryComplete }:
     const winRate = profile && gamesPlayed > 0
       ? Math.round((profile.wins / gamesPlayed) * 100)
       : 0;
+    const rank = rankForRating(profile?.rating ?? 1200);
 
     const deleteAccount = async () => {
       if (deleteConfirm !== "DELETE") return;
@@ -141,17 +143,33 @@ export function AuthPanel({ session, recoveryMode = false, onRecoveryComplete }:
             <h2>{profileLoading ? "Loading profile…" : displayName}</h2>
             <p>{session.user.email}</p>
           </div>
-          {profile ? <span className="rating-pill">{profile.rating}</span> : null}
+          {profile ? (
+            <div className="profile-rank-stack">
+              <span className="rank-pill">{rank.name}</span>
+              <span className="rating-pill">{profile.rating}</span>
+            </div>
+          ) : null}
         </div>
 
         {profile ? (
-          <div className="profile-stats profile-stats-expanded" aria-label="Player stats">
+          <>
+            <div className="profile-rank-progress">
+              <div>
+                <strong>{rank.name}</strong>
+                <span>{rank.next ? `${rank.pointsToNext} rating to ${rank.next.name}` : "Highest rank reached"}</span>
+              </div>
+              <div className="rank-progress-track" aria-label="Rank progress">
+                <span style={{ width: `${rank.progress}%` }} />
+              </div>
+            </div>
+            <div className="profile-stats profile-stats-expanded" aria-label="Player stats">
             <div><strong>{profile.wins}</strong><span>Wins</span></div>
             <div><strong>{profile.losses}</strong><span>Losses</span></div>
             <div><strong>{profile.draws}</strong><span>Draws</span></div>
             <div><strong>{gamesPlayed}</strong><span>Games</span></div>
             <div><strong>{winRate}%</strong><span>Win rate</span></div>
-          </div>
+            </div>
+          </>
         ) : (
           <p className="muted">Signed in and ready for online play.</p>
         )}
