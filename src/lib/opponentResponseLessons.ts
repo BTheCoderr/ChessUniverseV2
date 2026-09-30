@@ -50,7 +50,7 @@ export const OPPONENT_RESPONSE_LESSONS: OpponentResponseLesson[] = [
     id: "response-center",
     title: "Challenge their center",
     theme: "Pawn structure",
-    fen: "6k1/pp3ppp/8/3p4/8/8/PP2PPPP/6K1 w - - 0 1",
+    fen: "6k1/pp3ppp/8/3p4/8/8/PPP1PPPP/6K1 w - - 0 1",
     expectedMove: "c2c4",
     lastMove: "...d5 claimed central space.",
     threat: "If you do nothing, the d5 pawn gives Black space and controls useful squares.",
