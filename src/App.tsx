@@ -55,7 +55,9 @@ function savedOnlineGame() {
 
 export default function App() {
   const initialChallenge = challengeFromUrl();
-  const [onlineGameId, setOnlineGameId] = useState<string | null>(() => savedOnlineGame());
+  const [onlineGameId, setOnlineGameId] = useState<string | null>(() =>
+    initialChallenge ? null : savedOnlineGame()
+  );
   const [pendingChallengeId, setPendingChallengeId] = useState<string | null>(initialChallenge);
   const [view, setView] = useState<View>(() => (savedOnlineGame() || initialChallenge ? "online" : "home"));
   const [previousView, setPreviousView] = useState<View>("home");
@@ -119,8 +121,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (session && pendingChallengeId) {
-      setView("online");
+    if (pendingChallengeId) {
+      // An invite URL must take precedence over a stale/saved table so the user
+      // actually sees the challenge they opened. The saved table remains in
+      // localStorage and can still be resumed from the lobby.
+      setOnlineGameId(null);
+      if (session) setView("online");
     }
   }, [session?.user.id, pendingChallengeId]);
 
