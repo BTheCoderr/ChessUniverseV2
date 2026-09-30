@@ -12,8 +12,8 @@ test("online game tracks opponent presence and reconnect state", async () => {
   assert.match(game, /\.on\("presence", \{ event: "sync" \}/);
   assert.match(game, /channel\.track\(\{ side: myColor/);
   assert.match(game, /CHANNEL_ERROR/);
-  assert.match(game, /Opponent online/);
-  assert.match(game, /Opponent away \/ reconnecting/);
+  assert.match(game, /\$\{opponentName\} online/);
+  assert.match(game, /\$\{opponentName\} away \/ reconnecting/);
 });
 
 test("online game exposes draw offer, accept, and decline actions", async () => {
