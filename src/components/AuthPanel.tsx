@@ -111,6 +111,11 @@ export function AuthPanel({ session, recoveryMode = false, onRecoveryComplete }:
       session.user.email?.split("@")[0] ||
       "Player";
 
+    const gamesPlayed = profile ? profile.wins + profile.losses + profile.draws : 0;
+    const winRate = profile && gamesPlayed > 0
+      ? Math.round((profile.wins / gamesPlayed) * 100)
+      : 0;
+
     const deleteAccount = async () => {
       if (deleteConfirm !== "DELETE") return;
       setDeleting(true);
@@ -140,10 +145,12 @@ export function AuthPanel({ session, recoveryMode = false, onRecoveryComplete }:
         </div>
 
         {profile ? (
-          <div className="profile-stats" aria-label="Player stats">
+          <div className="profile-stats profile-stats-expanded" aria-label="Player stats">
             <div><strong>{profile.wins}</strong><span>Wins</span></div>
             <div><strong>{profile.losses}</strong><span>Losses</span></div>
             <div><strong>{profile.draws}</strong><span>Draws</span></div>
+            <div><strong>{gamesPlayed}</strong><span>Games</span></div>
+            <div><strong>{winRate}%</strong><span>Win rate</span></div>
           </div>
         ) : (
           <p className="muted">Signed in and ready for online play.</p>
