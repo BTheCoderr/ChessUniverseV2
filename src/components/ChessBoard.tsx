@@ -33,6 +33,24 @@ function displayedPosition(square: Square, orientation: "w" | "b") {
     : { col: fileIndex, row: 8 - rank };
 }
 
+function squareAtDisplayedPosition(col: number, row: number, orientation: "w" | "b") {
+  if (col < 0 || col > 7 || row < 0 || row > 7) return null;
+  const displayedFiles = orientation === "b" ? [...files].reverse() : [...files];
+  const file = displayedFiles[col];
+  const rank = orientation === "b" ? row + 1 : 8 - row;
+  return `${file}${rank}` as Square;
+}
+
+function pieceName(type: string) {
+  if (type === "p") return "pawn";
+  if (type === "n") return "knight";
+  if (type === "b") return "bishop";
+  if (type === "r") return "rook";
+  if (type === "q") return "queen";
+  if (type === "k") return "king";
+  return "piece";
+}
+
 function aiMoveStyle(
   move: { from: Square; to: Square },
   orientation: "w" | "b"
@@ -115,8 +133,32 @@ export function ChessBoard({
     setDragVisual(null);
   };
 
+  const moveKeyboardFocus = (square: Square, key: string) => {
+    const position = displayedPosition(square, orientation);
+    const delta = key === "ArrowLeft"
+      ? { col: -1, row: 0 }
+      : key === "ArrowRight"
+        ? { col: 1, row: 0 }
+        : key === "ArrowUp"
+          ? { col: 0, row: -1 }
+          : key === "ArrowDown"
+            ? { col: 0, row: 1 }
+            : null;
+
+    if (!delta) return false;
+    const target = squareAtDisplayedPosition(position.col + delta.col, position.row + delta.row, orientation);
+    if (!target) return true;
+
+    document.querySelector<HTMLButtonElement>(`[data-square="${target}"]`)?.focus();
+    return true;
+  };
+
   return (
-    <div className="board" aria-label="Chess board">
+    <div
+      className="board"
+      role="grid"
+      aria-label={`Chess board, ${orientation === "w" ? "White" : "Black"} perspective. Use arrow keys to move between squares and Enter or Space to select.`}
+    >
       {Array.from({ length: 8 }, (_, row) =>
         displayedFiles.map((file, col) => {
           const rank = orientation === "b" ? row + 1 : 8 - row;
@@ -145,8 +187,15 @@ export function ChessBoard({
                 }
                 onSquareClick(square);
               }}
+              onKeyDown={(event) => {
+                if (moveKeyboardFocus(square, event.key)) {
+                  event.preventDefault();
+                }
+              }}
               disabled={disabled}
-              aria-label={`${square}${isTarget ? ", legal move" : ""}`}
+              aria-label={`${square}, ${piece ? `${piece.color === "w" ? "White" : "Black"} ${pieceName(piece.type)}` : "empty"}${isTarget ? ", legal move" : ""}${isLastMove ? ", last move" : ""}`}
+              aria-pressed={isSelected}
+              role="gridcell"
             >
               {piece ? (
                 <img
