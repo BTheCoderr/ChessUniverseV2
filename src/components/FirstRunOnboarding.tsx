@@ -42,7 +42,7 @@ export function FirstRunOnboarding({ onChoose }: Props) {
           <button onClick={() => finish("learn")}>
             <span>01</span>
             <strong>I’m new to chess</strong>
-            <small>Learn how every piece moves, checkmate, and the Black-first Universe rule.</small>
+            <small>Open Chess Academy, take the quick placement, and get a guided path through pieces, tactics, openings, and endgames.</small>
           </button>
           <button onClick={() => finish("play")}>
             <span>02</span>
