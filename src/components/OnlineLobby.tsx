@@ -247,6 +247,7 @@ export function OnlineLobby({
       client
         .from("battle_player_stats")
         .select("user_id,rating,wins,losses,draws,games_played")
+        .gt("games_played", 0)
         .order("rating", { ascending: false })
         .order("wins", { ascending: false })
         .limit(10),
@@ -264,8 +265,16 @@ export function OnlineLobby({
     setLeaderboard((traditionalLeaderboard ?? []) as PlayerProfile[]);
     const topBattle = (battleLeaderboardRows ?? []) as BattleStats[];
     setBattleLeaderboard(topBattle);
-    setBattleUnlockKeys((unlockRows ?? []).map((row) => String(row.reward_key)));
+    const nextUnlockKeys = (unlockRows ?? []).map((row) => String(row.reward_key));
+    setBattleUnlockKeys(nextUnlockKeys);
     setBattleFormationStats((formationRows ?? []) as BattleFormationStats[]);
+
+    const nextAvailableFormations = BATTLE_FORMATIONS.filter(
+      (formation) => !formation.requires || nextUnlockKeys.includes(formation.requires)
+    );
+    if (!nextAvailableFormations.some((formation) => formation.key === selectedBattleFormation)) {
+      setSelectedBattleFormation(nextAvailableFormations[0]?.key ?? "classic");
+    }
 
     const participantIds = Array.from(
       new Set(
@@ -387,13 +396,6 @@ export function OnlineLobby({
     draws: 0,
     games_played: 0,
   };
-
-  const selectedFormationAvailable = availableBattleFormations.some(
-    (formation) => formation.key === selectedBattleFormation
-  );
-  if (!selectedFormationAvailable && availableBattleFormations.length > 0) {
-    queueMicrotask(() => setSelectedBattleFormation(availableBattleFormations[0].key));
-  }
 
   const createTraditionalGame = async (isPrivate: boolean) => {
     setMessage("");
