@@ -3,6 +3,9 @@ import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import { PieceSchools } from "./PieceSchools";
 import { OpponentResponseTrainer } from "./OpponentResponseTrainer";
+import { EndgameSchool } from "./EndgameSchool";
+import { AdaptiveReview } from "./AdaptiveReview";
+import { recordReviewAttempt } from "../lib/academyReview";
 import { ACADEMY_POSITIONS, academyMoveParts } from "../lib/academyLessons";
 import { OPENING_LESSONS, openingMoveParts } from "../lib/openingLessons";
 
@@ -136,7 +139,7 @@ function standardPieces() {
 }
 
 export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) {
-  const [lesson, setLesson] = useState<"pieces" | "decisions" | "schools" | "responses" | "openings" | "strategy" | "universe">("pieces");
+  const [lesson, setLesson] = useState<"pieces" | "decisions" | "schools" | "responses" | "endgames" | "review" | "openings" | "strategy" | "universe">("pieces");
 
   const [pieceIndex, setPieceIndex] = useState(0);
   const [pieceComplete, setPieceComplete] = useState(false);
@@ -227,13 +230,15 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
       const move = next.move({ from, to, promotion: "q" });
       const uci = `${move.from}${move.to}${move.promotion ?? ""}`;
       if (uci !== currentDecision.expectedMove) {
+        recordReviewAttempt(`decision-${currentDecision.id}`, false, uci);
         setDecisionSelected(null);
         setDecisionMessage(
-          `${move.san} is legal, but it does not solve this positional problem. Ask what job the ${currentDecision.piece.toLowerCase()} needs to do.`
+          `${move.san} is legal, but it misses the positional job: ${currentDecision.concept}. ${currentDecision.opponentPlan}`
         );
         return;
       }
 
+      recordReviewAttempt(`decision-${currentDecision.id}`, true, uci);
       setDecisionGame(next);
       setDecisionSelected(null);
       setDecisionComplete(true);
@@ -362,9 +367,11 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
         <button className={lesson === "decisions" ? "active" : ""} onClick={() => setLesson("decisions")}>2 · Piece decisions</button>
         <button className={lesson === "schools" ? "active" : ""} onClick={() => setLesson("schools")}>3 · Piece Schools</button>
         <button className={lesson === "responses" ? "active" : ""} onClick={() => setLesson("responses")}>4 · Opponent response</button>
-        <button className={lesson === "openings" ? "active" : ""} onClick={() => setLesson("openings")}>5 · Opening Lab</button>
-        <button className={lesson === "strategy" ? "active" : ""} onClick={() => setLesson("strategy")}>6 · Strategy & tactics</button>
-        <button className={lesson === "universe" ? "active" : ""} onClick={() => setLesson("universe")}>7 · Universe</button>
+        <button className={lesson === "endgames" ? "active" : ""} onClick={() => setLesson("endgames")}>5 · Endgame School</button>
+        <button className={lesson === "review" ? "active" : ""} onClick={() => setLesson("review")}>6 · Adaptive Review</button>
+        <button className={lesson === "openings" ? "active" : ""} onClick={() => setLesson("openings")}>7 · Opening Lab</button>
+        <button className={lesson === "strategy" ? "active" : ""} onClick={() => setLesson("strategy")}>8 · Strategy & tactics</button>
+        <button className={lesson === "universe" ? "active" : ""} onClick={() => setLesson("universe")}>9 · Universe</button>
       </div>
 
       {lesson === "pieces" ? (
@@ -498,6 +505,10 @@ export function LearnChess({ onPractice, onHistory, onPuzzles, onBack }: Props) 
       {lesson === "schools" ? <PieceSchools /> : null}
 
       {lesson === "responses" ? <OpponentResponseTrainer /> : null}
+
+      {lesson === "endgames" ? <EndgameSchool /> : null}
+
+      {lesson === "review" ? <AdaptiveReview /> : null}
 
       {lesson === "openings" ? (
         <>
