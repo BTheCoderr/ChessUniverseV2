@@ -295,6 +295,7 @@ export default function App() {
                 setBattleUnlockKeys(unlockKeys);
                 navigate("battle");
               }}
+              onOpenOnline={() => navigate("online")}
               onSignIn={() => navigate("account")}
             />
           ) : null}
