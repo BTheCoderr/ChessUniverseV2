@@ -6,6 +6,7 @@ import {
   PIECE_SCHOOL_PROGRESS_KEY,
   normalizePieceSchoolProgress,
 } from "../lib/pieceSchools";
+import { recordReviewAttempt } from "../lib/academyReview";
 
 function boardPieces(game: Chess) {
   return game.board().flatMap((rank, rankIndex) =>
@@ -82,13 +83,15 @@ export function PieceSchools() {
       const uci = `${made.from}${made.to}${made.promotion ?? ""}`;
 
       if (uci !== lesson.expectedMove) {
+        recordReviewAttempt(lesson.id, false, uci);
         setSelected(null);
         setMessage(
-          `${made.san} is legal, but it does not solve this lesson. Ask: "${school.question}"`
+          `${made.san} is legal, but it misses the piece's main job here. ${lesson.opponentPlan} Ask: "${school.question}"`
         );
         return;
       }
 
+      recordReviewAttempt(lesson.id, true, uci);
       setGame(next);
       setSelected(null);
       setComplete(true);

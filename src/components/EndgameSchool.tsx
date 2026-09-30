@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import {
-  OPPONENT_RESPONSE_LESSONS,
-  RESPONSE_PROGRESS_KEY,
-  normalizeResponseProgress,
-} from "../lib/opponentResponseLessons";
+  ENDGAME_LESSONS,
+  ENDGAME_PROGRESS_KEY,
+  normalizeEndgameProgress,
+} from "../lib/endgameLessons";
 import { recordReviewAttempt } from "../lib/academyReview";
 
 function boardPieces(game: Chess) {
@@ -24,8 +24,8 @@ function boardPieces(game: Chess) {
 
 function loadProgress() {
   try {
-    const raw = window.localStorage.getItem(RESPONSE_PROGRESS_KEY);
-    return raw ? normalizeResponseProgress(JSON.parse(raw)) : [];
+    const raw = window.localStorage.getItem(ENDGAME_PROGRESS_KEY);
+    return raw ? normalizeEndgameProgress(JSON.parse(raw)) : [];
   } catch {
     return [];
   }
@@ -33,19 +33,20 @@ function loadProgress() {
 
 function saveProgress(progress: string[]) {
   try {
-    window.localStorage.setItem(RESPONSE_PROGRESS_KEY, JSON.stringify(progress));
+    window.localStorage.setItem(ENDGAME_PROGRESS_KEY, JSON.stringify(progress));
   } catch {
-    // Keep training usable when storage is unavailable.
+    // Keep lessons playable when browser storage is unavailable.
   }
 }
 
-export function OpponentResponseTrainer() {
+export function EndgameSchool() {
   const [index, setIndex] = useState(0);
-  const lesson = OPPONENT_RESPONSE_LESSONS[index];
+  const lesson = ENDGAME_LESSONS[index];
   const [game, setGame] = useState(() => new Chess(lesson.fen));
   const [selected, setSelected] = useState<Square | null>(null);
   const [complete, setComplete] = useState(false);
   const [message, setMessage] = useState(lesson.prompt);
+  const [mistake, setMistake] = useState("");
   const [progress, setProgress] = useState(loadProgress);
 
   const pieces = useMemo(() => boardPieces(game), [game]);
@@ -55,12 +56,13 @@ export function OpponentResponseTrainer() {
   }, [complete, game, selected]);
 
   const resetLesson = (nextIndex = index) => {
-    const next = OPPONENT_RESPONSE_LESSONS[nextIndex];
+    const next = ENDGAME_LESSONS[nextIndex];
     setIndex(nextIndex);
     setGame(new Chess(next.fen));
     setSelected(null);
     setComplete(false);
     setMessage(next.prompt);
+    setMistake("");
   };
 
   const finish = () => {
@@ -81,9 +83,8 @@ export function OpponentResponseTrainer() {
       if (uci !== lesson.expectedMove) {
         recordReviewAttempt(lesson.id, false, uci);
         setSelected(null);
-        setMessage(
-          `${made.san} is legal, but it does not answer what changed. ${lesson.threat}`
-        );
+        setMistake(`${made.san}: ${lesson.mistakeLesson}`);
+        setMessage("Legal move — but not the endgame move that best uses the position.");
         return;
       }
 
@@ -91,11 +92,12 @@ export function OpponentResponseTrainer() {
       setGame(next);
       setSelected(null);
       setComplete(true);
+      setMistake("");
       setMessage(lesson.why);
       finish();
     } catch {
       setSelected(null);
-      setMessage("That response is not legal in this position.");
+      setMessage("That move is not legal in this position.");
     }
   };
 
@@ -116,25 +118,43 @@ export function OpponentResponseTrainer() {
     attemptMove(selected, square);
   };
 
+  const themes = Array.from(new Set(ENDGAME_LESSONS.map((item) => item.theme)));
+  const currentTheme = lesson.theme;
+
   return (
-    <div className="response-trainer">
+    <div className="endgame-school">
       <div className="piece-school-header">
         <div>
-          <div className="eyebrow">OPPONENT RESPONSE</div>
-          <h2>Their move changed something. Find it.</h2>
+          <div className="eyebrow">ENDGAME SCHOOL</div>
+          <h2>Finish games with a plan, not hope.</h2>
           <p>
-            Instead of starting with your plan, read the opponent's last move first:
-            what did it attack, open, pin, threaten, or improve?
+            Learn king activity, opposition, key squares, rook technique, passed pawns,
+            and basic mating structure on interactive boards.
           </p>
         </div>
         <div className="piece-school-score">
-          <strong>{progress.length}<span>/{OPPONENT_RESPONSE_LESSONS.length}</span></strong>
-          <small>responses mastered</small>
+          <strong>{progress.length}<span>/{ENDGAME_LESSONS.length}</span></strong>
+          <small>endgames mastered</small>
         </div>
       </div>
 
-      <div className="academy-card-picker response-lessons">
-        {OPPONENT_RESPONSE_LESSONS.map((item, lessonIndex) => (
+      <div className="puzzle-theme-filter" aria-label="Endgame themes">
+        {themes.map((theme) => (
+          <button
+            key={theme}
+            className={currentTheme === theme ? "active" : ""}
+            onClick={() => {
+              const nextIndex = ENDGAME_LESSONS.findIndex((item) => item.theme === theme);
+              if (nextIndex >= 0) resetLesson(nextIndex);
+            }}
+          >
+            {theme}
+          </button>
+        ))}
+      </div>
+
+      <div className="academy-card-picker endgame-picker">
+        {ENDGAME_LESSONS.map((item, lessonIndex) => (
           <button
             key={item.id}
             className={lessonIndex === index ? "active" : ""}
@@ -142,7 +162,7 @@ export function OpponentResponseTrainer() {
           >
             <span>{progress.includes(item.id) ? "MASTERED" : item.theme}</span>
             <strong>{item.title}</strong>
-            <small>{item.lastMove}</small>
+            <small>{item.principle}</small>
           </button>
         ))}
       </div>
@@ -161,27 +181,29 @@ export function OpponentResponseTrainer() {
         </div>
 
         <aside className="game-panel tutorial-panel">
-          <div className="eyebrow">READ THEIR MOVE · {index + 1}/{OPPONENT_RESPONSE_LESSONS.length}</div>
+          <div className="eyebrow">{lesson.theme.toUpperCase()} · {index + 1}/{ENDGAME_LESSONS.length}</div>
           <h2>{lesson.title}</h2>
-
-          <div className="opponent-last-move">
-            <strong>Opponent's last move</strong>
-            <span>{lesson.lastMove}</span>
-          </div>
-
-          <div className="academy-explanation danger">
-            <strong>What changed?</strong>
-            <span>{lesson.threat}</span>
-          </div>
-
           <p>{lesson.prompt}</p>
+
+          <div className="academy-concept-card">
+            <strong>Endgame principle</strong>
+            <span>{lesson.principle}</span>
+          </div>
+
+          {mistake ? (
+            <div className="mistake-explanation">
+              <strong>Why that move is weaker</strong>
+              <span>{mistake}</span>
+            </div>
+          ) : null}
+
           <p className={complete ? "tutorial-feedback success" : "tutorial-feedback"}>{message}</p>
 
           {complete ? (
             <>
               <div className="academy-explanation">
-                <strong>Your next plan</strong>
-                <span>{lesson.nextPlan}</span>
+                <strong>What the opponent wants</strong>
+                <span>{lesson.opponentPlan}</span>
               </div>
               <div className="academy-explanation takeaway">
                 <strong>Pattern to remember</strong>
@@ -189,14 +211,14 @@ export function OpponentResponseTrainer() {
               </div>
               <button
                 className="primary-action"
-                onClick={() => resetLesson((index + 1) % OPPONENT_RESPONSE_LESSONS.length)}
+                onClick={() => resetLesson((index + 1) % ENDGAME_LESSONS.length)}
               >
-                Next response
+                Next endgame
               </button>
             </>
           ) : (
             <button className="secondary-action" onClick={() => setMessage(lesson.why)}>
-              Explain the defensive idea
+              Explain the endgame idea
             </button>
           )}
         </aside>
