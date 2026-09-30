@@ -851,7 +851,7 @@ export function OnlineLobby({
               <span><b>{spotlightProfile.draws}</b> draws</span>
               <span><b>{winRate(spotlightProfile)}%</b> win rate</span>
             </div>
-            <ProfileTrophyCase userId={spotlightProfile.id} compact />
+            <ProfileTrophyCase userId={spotlightProfile.id} compact onOpenGame={onOpenGame} />
             <button className="text-button" onClick={() => setSpotlightProfile(null)}>Close</button>
           </div>
         ) : null}
