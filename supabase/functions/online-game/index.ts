@@ -221,6 +221,100 @@ Deno.serve(async (req: Request) => {
     return response({ ok: true, gameId: data, status: "active" });
   }
 
+  if (action === "championship_status") {
+    const tournamentId = String(body.tournamentId ?? "");
+    if (!tournamentId) return response({ error: "Tournament id is required" }, 400);
+
+    const now = new Date().toISOString();
+    const { data, error } = await admin.rpc("sync_tournament_service", {
+      target_tournament_id: tournamentId,
+      event_time: now,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: true, status: data });
+  }
+
+  if (action === "championship_check_in") {
+    const tournamentId = String(body.tournamentId ?? "");
+    if (!tournamentId) return response({ error: "Tournament id is required" }, 400);
+
+    const now = new Date().toISOString();
+    const { error: syncError } = await admin.rpc("sync_tournament_service", {
+      target_tournament_id: tournamentId,
+      event_time: now,
+    });
+    if (syncError) return response({ error: syncError.message }, 409);
+
+    const { data, error } = await admin.rpc("check_in_tournament_service", {
+      actor_id: userId,
+      target_tournament_id: tournamentId,
+      event_time: now,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: true, checkedIn: Boolean(data) });
+  }
+
+  if (action === "open_tournament_match") {
+    const tournamentMatchId = String(body.tournamentMatchId ?? "");
+    if (!tournamentMatchId) {
+      return response({ error: "Tournament match id is required" }, 400);
+    }
+
+    const { data: match, error: matchError } = await admin
+      .from("tournament_matches")
+      .select("id,tournament_id,player1_id,player2_id,status,game_id")
+      .eq("id", tournamentMatchId)
+      .single();
+
+    if (matchError || !match) return response({ error: "Tournament match not found" }, 404);
+    if (match.player1_id !== userId && match.player2_id !== userId) {
+      return response({ error: "Not a Championship participant" }, 403);
+    }
+
+    const now = new Date().toISOString();
+    const { error: syncError } = await admin.rpc("sync_tournament_service", {
+      target_tournament_id: match.tournament_id,
+      event_time: now,
+    });
+    if (syncError) return response({ error: syncError.message }, 409);
+
+    const { data: openedGameId, error: openError } = await admin.rpc(
+      "open_tournament_match_service",
+      {
+        actor_id: userId,
+        target_match_id: tournamentMatchId,
+        event_time: now,
+      }
+    );
+
+    if (openError || !openedGameId) {
+      return response({ error: openError?.message ?? "Unable to open Championship match" }, 409);
+    }
+
+    const gameId = String(openedGameId);
+    const { data: game, error: gameError } = await admin
+      .from("games")
+      .select("id,status,white_id,black_id")
+      .eq("id", gameId)
+      .single();
+
+    if (gameError || !game) return response({ error: "Championship game not found" }, 404);
+
+    if (game.status === "waiting" && match.player2_id === userId && !game.black_id) {
+      const { data: joinedId, error: joinError } = await admin.rpc("join_waiting_game_service", {
+        target_game_id: gameId,
+        actor_id: userId,
+      });
+
+      if (joinError) return response({ error: joinError.message }, 409);
+      return response({ ok: true, gameId: joinedId, status: "active" });
+    }
+
+    return response({ ok: true, gameId, status: game.status });
+  }
+
   const gameId = String(body.gameId ?? "");
   if (!gameId) return response({ error: "Game id is required" }, 400);
 

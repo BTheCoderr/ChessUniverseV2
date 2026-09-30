@@ -74,6 +74,6 @@ Production deploys from `main`.
 4. Mobile responsiveness and PWA install/offline behavior
 5. Cross-device Puzzle, Legends and My Games sync
 6. Feedback collection and account recovery/deletion
-7. Season Championship bracket, registration and tournament match flow
+7. Battle Chess progression, tournament rewards and unlock-driven Universe modes
 
 Chess Universe does **not** provide real-money wagering.

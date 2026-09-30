@@ -26,6 +26,7 @@ type GameRow = {
   white_rating_after: number | null;
   black_rating_before: number | null;
   black_rating_after: number | null;
+  tournament_match_id: string | null;
 };
 
 type GameMove = {
@@ -141,7 +142,7 @@ export function OnlineGame({
     if (!client) return;
     const { data, error } = await client
       .from("games")
-      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by,rematch_game_id,rematch_requested_by,white_rating_before,white_rating_after,black_rating_before,black_rating_after")
+      .select("id,white_id,black_id,status,result,result_reason,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,started_at,last_move_at,draw_offer_by,rematch_game_id,rematch_requested_by,white_rating_before,white_rating_after,black_rating_before,black_rating_after,tournament_match_id")
       .eq("id", gameId)
       .single();
 
@@ -499,8 +500,14 @@ export function OnlineGame({
 
       <aside className="game-panel">
         <button className="text-button back-link" onClick={onBack}>← Lobby</button>
-        <div className="eyebrow">ONLINE TABLE</div>
+        <div className="eyebrow">{gameRow.tournament_match_id ? "SEASON CHAMPIONSHIP" : "ONLINE TABLE"}</div>
         <h2>{myColor === "w" ? "You are White" : myColor === "b" ? "You are Black" : "Spectating"}</h2>
+        {gameRow.tournament_match_id ? (
+          <div className="tournament-game-banner">
+            <strong>Knockout match</strong>
+            <span>Winner advances. A draw sends this bracket match to a replay.</span>
+          </div>
+        ) : null}
 
         {myColor ? (
           <div className="matchup-profile-strip" aria-label="Match players">
@@ -622,7 +629,24 @@ export function OnlineGame({
           </div>
         ) : null}
 
-        {gameRow.status === "completed" && myColor ? (
+        {gameRow.status === "completed" && myColor && gameRow.tournament_match_id ? (
+          <div className="championship-game-result">
+            <div>
+              <div className="eyebrow">CHAMPIONSHIP</div>
+              <strong>{gameRow.result === "draw" ? "Replay required" : "Bracket result recorded"}</strong>
+              <span>
+                {gameRow.result === "draw"
+                  ? "This draw does not eliminate either player. Return to the Championship bracket to start the replay."
+                  : "The winner has advanced automatically in the Season Championship bracket."}
+              </span>
+            </div>
+            <button className="primary-action compact" onClick={onBack}>
+              Back to Championship
+            </button>
+          </div>
+        ) : null}
+
+        {gameRow.status === "completed" && myColor && !gameRow.tournament_match_id ? (
           <div className={gameRow.rematch_game_id ? "rematch-card requested" : "rematch-card"}>
             <div>
               <strong>
@@ -673,6 +697,7 @@ export function OnlineGame({
         <div className="online-meta">
           <span>{gameRow.time_control_minutes === 0 ? "Untimed" : `${gameRow.time_control_minutes} min`}</span>
           <span>Black moves first</span>
+          {gameRow.tournament_match_id ? <span>Season Championship</span> : null}
           <span>{gameRow.id.slice(0, 8)}</span>
         </div>
 
