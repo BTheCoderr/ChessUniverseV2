@@ -216,6 +216,92 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  if (action === "profile_showcase") {
+    const targetUserId = String(body.userId ?? userId);
+
+    const [
+      { data: profile, error: profileError },
+      { data: battleStats },
+      { data: formationStats },
+      { data: unlockRows },
+      { count: championshipWins },
+    ] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("id,username,rating,wins,losses,draws")
+        .eq("id", targetUserId)
+        .single(),
+      admin
+        .from("battle_player_stats")
+        .select("user_id,rating,wins,losses,draws,games_played")
+        .eq("user_id", targetUserId)
+        .maybeSingle(),
+      admin
+        .from("battle_formation_stats")
+        .select("formation_key,wins,losses,draws,games_played")
+        .eq("user_id", targetUserId)
+        .order("games_played", { ascending: false })
+        .order("wins", { ascending: false })
+        .limit(1),
+      admin
+        .from("player_unlocks")
+        .select("reward_key,unlocked_at")
+        .eq("user_id", targetUserId)
+        .order("unlocked_at", { ascending: true }),
+      admin
+        .from("tournament_entries")
+        .select("user_id", { count: "exact", head: true })
+        .eq("user_id", targetUserId)
+        .eq("status", "champion"),
+    ]);
+
+    if (profileError || !profile) return response({ error: "Player profile not found" }, 404);
+
+    const rewardKeys = (unlockRows ?? []).map((row) => row.reward_key);
+    let rewards: Array<Record<string, unknown>> = [];
+
+    if (rewardKeys.length > 0) {
+      const { data: rewardRows, error: rewardError } = await admin
+        .from("universe_rewards")
+        .select("reward_key,name,category,description,requirement_copy,sort_order")
+        .in("reward_key", rewardKeys)
+        .order("sort_order", { ascending: true });
+
+      if (rewardError) return response({ error: "Unable to load trophy data" }, 409);
+
+      const unlockedAtByKey = new Map(
+        (unlockRows ?? []).map((row) => [row.reward_key, row.unlocked_at])
+      );
+
+      rewards = (rewardRows ?? []).map((reward) => ({
+        rewardKey: reward.reward_key,
+        name: reward.name,
+        category: reward.category,
+        description: reward.description,
+        requirementCopy: reward.requirement_copy,
+        unlockedAt: unlockedAtByKey.get(reward.reward_key) ?? null,
+      }));
+    }
+
+    return response({
+      ok: true,
+      showcase: {
+        profile,
+        battleStats: battleStats ?? {
+          user_id: targetUserId,
+          rating: 1200,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          games_played: 0,
+        },
+        favoriteFormation: (formationStats ?? [])[0] ?? null,
+        rewards,
+        championshipWins: championshipWins ?? 0,
+      },
+    });
+  }
+
   if (action === "accept_rematch") {
     const sourceGameId = String(body.gameId ?? "");
     if (!sourceGameId) return response({ error: "Game id is required" }, 400);
