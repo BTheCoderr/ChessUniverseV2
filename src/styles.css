@@ -4180,3 +4180,102 @@ code {
     grid-row: auto;
   }
 }
+
+
+/* Head-to-head rivalry */
+.rivalry-card {
+  margin-top: 14px;
+  border: 1px solid #46551c;
+  border-radius: 14px;
+  padding: 12px;
+  background: #11180f;
+}
+
+.rivalry-card.rival,
+.rivalry-card.nemesis {
+  border-color: #6a8126;
+  background: #18210f;
+}
+
+.rivalry-card.nemesis {
+  box-shadow: inset 0 0 0 1px rgba(223,255,157,.08);
+}
+
+.rivalry-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.rivalry-heading strong,
+.rivalry-heading span {
+  display: block;
+}
+
+.rivalry-heading > div > span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.rival-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #6a8126;
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: #202b0f;
+  color: #e8ffb7;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rivalry-record-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.rivalry-record-grid > div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px;
+  background: #0f1415;
+}
+
+.rivalry-record-grid strong,
+.rivalry-record-grid span {
+  display: block;
+}
+
+.rivalry-record-grid strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rivalry-record-grid span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.rivalry-challenge {
+  width: 100%;
+  margin-top: 10px;
+}
+
+@media (max-width: 680px) {
+  .rivalry-heading {
+    flex-direction: column;
+  }
+
+  .rivalry-record-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

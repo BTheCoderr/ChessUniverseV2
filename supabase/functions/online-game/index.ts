@@ -347,6 +347,22 @@ Deno.serve(async (req: Request) => {
     const equippedTitle =
       titles.find((title) => title.titleKey === equipment?.equipped_title_key) ?? null;
 
+    let rivalry = null;
+    if (targetUserId !== userId) {
+      const { data: rivalryData, error: rivalryError } = await admin.rpc(
+        "get_head_to_head_service",
+        {
+          actor_id: userId,
+          target_user_id: targetUserId,
+        }
+      );
+
+      if (rivalryError) {
+        return response({ error: "Unable to load head-to-head history" }, 409);
+      }
+      rivalry = rivalryData ?? null;
+    }
+
     return response({
       ok: true,
       showcase: {
@@ -366,7 +382,40 @@ Deno.serve(async (req: Request) => {
         titles,
         equippedTitle,
         championshipWins: championshipWins ?? 0,
+        rivalry,
       },
+    });
+  }
+
+  if (action === "challenge_rival") {
+    const targetUserId = String(body.userId ?? "");
+    const variant = String(body.variant ?? "traditional");
+    const minutes = Number(body.minutes ?? 10);
+    const formationKey =
+      body.formationKey === null || body.formationKey === undefined || body.formationKey === ""
+        ? null
+        : String(body.formationKey);
+
+    if (!targetUserId) return response({ error: "Player id is required" }, 400);
+    if (!Number.isInteger(minutes)) return response({ error: "Invalid time control" }, 400);
+
+    const { data, error } = await admin.rpc("create_targeted_challenge_service", {
+      actor_id: userId,
+      target_user_id: targetUserId,
+      game_variant: variant,
+      game_minutes: minutes,
+      formation_key: formationKey,
+    });
+
+    if (error) return response({ error: error.message }, 409);
+
+    return response({
+      ok: true,
+      gameId: data,
+      targeted: true,
+      variant,
+      formationKey,
+      invitedUserId: targetUserId,
     });
   }
 

@@ -1,26 +1,192 @@
 # Chess Universe
 
-Chess Universe is an offline-first React/Vite/TypeScript chess app with Supabase for authentication, Postgres persistence, realtime multiplayer, cross-device progress sync, and trusted online game actions.
+[![CI](https://github.com/BTheCoderr/ChessUniverseV2/actions/workflows/ci.yml/badge.svg)](https://github.com/BTheCoderr/ChessUniverseV2/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-React%20%2B%20Vite-blue)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/backend-Supabase-3FCF8E)](https://supabase.com/)
+[![Netlify](https://img.shields.io/badge/deploy-Netlify-00C7B7)](https://chessuniverse.netlify.app/)
 
-## Beta feature set
+**Chess Universe** is an offline-first chess PWA built around a custom **Black-moves-first** ruleset, trusted realtime multiplayer, competitive Seasons, Battle Chess progression, and player identity.
+
+**Live app:** https://chessuniverse.netlify.app/
+
+## Why this project is different
+
+Chess Universe started as a chess experiment and has grown into a full multiplayer product with a server-authoritative competition layer.
+
+The browser handles interaction and presentation, but it does **not** get to decide online moves, results, clocks, ratings, tournament advancement, Battle unlocks, achievements, or titles. Those decisions are validated through Supabase Edge Functions and trusted Postgres functions.
+
+The result is one app that supports offline play, serious online state, alternate chess modes, progression, and competitive history without mixing trusted server state with client-only gameplay.
+
+## Product highlights
+
+### Chess + learning
 
 - Traditional Chess Universe play with **Black moving first**
-- Local two-player and Stockfish Practice with multiple difficulty levels
-- Untimed and timed Practice, pause/resume, undo, move history, drag controls, sound and haptics
-- Learn mode for piece movement, checkmate, and the Chess Universe Black-first rule
-- Offline tactical Puzzles with local + signed-in progress sync
-- Legends mode with famous historical games, pivotal moments, and Rewrite History challenges
-- My Games with offline replay and Stockfish review
-- Magic Horse and Evolving Queens as separate playable variants
-- Installable offline PWA
-- Supabase email/password accounts and profiles
-- Realtime online chess with server-authoritative moves, clocks, results, resignations and draws\n- Private challenge links and post-game rematches\n- Rated online games with Elo-style rating movement, player profiles and a top-10 leaderboard\n- Beta Season 1 with 3/1/0 standings, rank tiers, milestone unlocks and a top-8 Season Championship qualification line
-- Opponent presence/reconnect state and resumable online games
-- Recent online match history and W/L/D tracking
-- Signed-in sync for Puzzles, Legends, preferences, and saved Practice games
-- In-app beta feedback, Privacy and Beta Terms
-- Password recovery and self-service account deletion
-- CI tests, TypeScript validation and production/PWA build checks
+- Local two-player games
+- Stockfish Practice with multiple difficulty levels
+- Timed and untimed Practice
+- Pause/resume, undo, move history, drag controls, sound, and haptics
+- Beginner Learn mode
+- Offline tactical Puzzles with signed-in progress sync
+- Legends mode with famous games, pivotal moments, and **Rewrite History**
+- My Games replay + Stockfish review
+
+### Alternate worlds
+
+- **Magic Horse**
+- **Evolving Queens**
+- **Battle Chess: Formation Clash**
+  - alternate back-rank formations
+  - Black moves first
+  - normal chess movement
+  - castling disabled
+  - AI, local two-player, and online multiplayer
+
+### Trusted online multiplayer
+
+- Public Classic tables
+- Private challenge links
+- Public Battle tables
+- Private targeted Battle challenges
+- Server-authoritative legal move validation
+- Server clocks
+- Resignations and draw offers
+- Reconnect/resume across signed-in devices
+- Post-game rematches
+- Challenge links that survive authentication
+- Classic and Battle histories kept separate
+
+### Ratings + competition
+
+- Separate **Classic Elo**
+- Separate **Battle Elo**
+- Classic W-L-D and Battle W-L-D
+- Top-player leaderboards
+- Per-formation Battle statistics
+- Beta Season standings using **3/1/0** points
+- Rank tiers and Season milestones
+- Top-8 Season Championship qualification
+- Championship check-in
+- Seeded knockout bracket
+- Draw replays
+- Automatic winner advancement
+- Champion + runner-up history
+
+### Universe progression
+
+- Battle Chess unlock path
+- Back Rank Lab
+- Season Challenger / Season Contender rewards
+- Championship Crest
+- Champion Crown
+- Universe Master
+- 16 permanent achievements
+- Formation mastery levels:
+  - Novice
+  - Adept
+  - Veteran
+  - Elite
+  - Master
+- Earned profile titles
+- One equipped title per player
+- Public-safe Trophy Cases
+
+### Social competition
+
+- Player profile spotlight from the leaderboard
+- Exact **head-to-head Classic record**
+- Exact **head-to-head Battle record**
+- Rival status after repeated meetings
+- **Nemesis** status for long-running matchups
+- Current series streak
+- Most-used Battle formation between two players
+- One-click **Challenge again** from the opponent profile
+
+## Competition loop
+
+```text
+Play Classic
+   ↓
+Earn rating + Season points
+   ↓
+Unlock Battle Chess
+   ↓
+Build a separate Battle rating
+   ↓
+Master formations + earn achievements/titles
+   ↓
+Qualify for the Season Championship
+   ↓
+Compete through the bracket
+   ↓
+Build rivalries and defend your profile history
+```
+
+## Trust model
+
+Online games use the browser for responsive UI, not authority.
+
+The `online-game` Edge Function:
+
+1. verifies the signed-in caller,
+2. reloads trusted game state,
+3. validates participant access,
+4. validates the requested chess move with `chess.js`,
+5. calculates trusted clock state,
+6. resolves game completion,
+7. commits state through service-role-only Postgres functions.
+
+The same trusted path protects:
+
+- Classic ratings
+- Battle ratings
+- Season standings
+- Championship advancement
+- Battle formation access
+- achievements
+- earned/equipped titles
+- targeted rivalry challenges
+
+Browser roles cannot directly award themselves ratings, tournament results, achievements, titles, or Battle progression.
+
+## Privacy + account lifecycle
+
+- Supabase Auth for signed-in profiles
+- Row Level Security on synced personal data
+- Public profile showcases return only intended competitive/progression fields
+- Private unlock-source data remains server-side
+- Self-service account deletion
+- Personal progression cascades on deletion
+- Completed multiplayer games can remain de-identified so opponents keep historical records
+
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite |
+| Chess rules | chess.js |
+| Practice AI | Stockfish |
+| Backend | Supabase |
+| Database | PostgreSQL |
+| Auth | Supabase Auth |
+| Realtime | Supabase Realtime |
+| Trusted game actions | Supabase Edge Functions |
+| PWA | vite-plugin-pwa |
+| Hosting | Netlify |
+| CI | GitHub Actions |
+
+## Project structure
+
+```text
+src/
+  components/        UI, game modes, online lobby, profiles, progression
+  lib/               chess rules, AI helpers, sync, review, progression
+supabase/
+  functions/         trusted Edge Functions
+  migrations/        database schema + competition/security lifecycle
+tests/               regression, security, gameplay and release tests
+scripts/             PWA/release verification
+```
 
 ## Local setup
 
@@ -30,50 +196,69 @@ cp .env.example .env
 npm run dev
 ```
 
-Supabase is optional for offline/local play. To enable accounts, sync and online multiplayer:
+Supabase is optional for offline/local play. Accounts, cross-device sync, ratings, multiplayer, Seasons, Championships, Trophy Cases, and rivalry features require Supabase.
+
+### Environment
 
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
-Apply the SQL files in `supabase/migrations/` in order and deploy these Edge Functions:
+### Database + Edge Functions
+
+Apply the SQL migrations in `supabase/migrations/` in order.
+
+Deploy:
 
 - `supabase/functions/online-game/index.ts`
 - `supabase/functions/delete-account/index.ts`
 
-## Online trust model
+The repository intentionally keeps privileged game mutations behind trusted server paths rather than exposing them to browser roles.
 
-The browser may preview legal moves for UI feedback, but it is not authoritative. The `online-game` Edge Function reloads the current game, validates the authenticated participant, applies moves with `chess.js`, calculates the server clock, determines game-over state, and commits through service-role-only database functions.
+## Quality gates
 
-Browser roles do not directly mutate online game state.
-
-## Privacy and account data
-
-Player-specific synced progress is protected by Row Level Security. A signed-in player can only read or write their own progress and saved Practice games.
-
-Deleting an account removes the account and synced personal progress. Unfinished games are removed. Completed match records can remain de-identified so the opponent does not lose their game history.
-
-## Netlify
-
-Build command:
+Every release branch is expected to pass:
 
 ```bash
+npm test
+npm run typecheck
 npm run build
 ```
 
-Publish directory: `dist`
+The production build also runs the PWA verification script.
 
-Production deploys from `main`.
+Regression coverage currently includes:
 
-## Beta testing priorities
+- chess rules and AI modes
+- offline/PWA behavior
+- online game lifecycle
+- private challenges and rematches
+- reconnect/resume
+- rating separation
+- Season progression
+- Championship bracket flow
+- Battle Chess
+- reward/unlock security
+- achievements, mastery, and titles
+- account sync/deletion
+- head-to-head rivalry and targeted challenges
 
-1. Two-device online create/join and realtime move sync
-2. Disconnect/reconnect and Resume behavior
-3. Draw offer/decline/accept flows
-4. Mobile responsiveness and PWA install/offline behavior
-5. Cross-device Puzzle, Legends and My Games sync
-6. Feedback collection and account recovery/deletion
-7. Expand Battle Chess beyond Formation Clash with additional rule-safe Universe battle levels
+## Current beta focus
 
-Chess Universe does **not** provide real-money wagering.
+The next validation priority is real multi-device usage:
+
+1. two-account Classic and Battle matches on separate phones,
+2. background/disconnect/reconnect behavior,
+3. private and targeted challenge delivery,
+4. clock synchronization under real network conditions,
+5. Season/Championship beta participation,
+6. mobile UX polish from real-player feedback.
+
+## Product note
+
+Chess Universe uses **virtual game progression only**. It does not provide real-money betting or wagering.
+
+---
+
+Built as a production-style React/Supabase multiplayer system, with the security model, database lifecycle, CI coverage, and deployment workflow treated as part of the product — not afterthoughts.
