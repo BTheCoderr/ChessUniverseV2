@@ -13,6 +13,9 @@ type GameRow = {
   time_control_minutes: number;
   created_at: string;
   ended_at: string | null;
+  is_private: boolean;
+  invited_user_id: string | null;
+  rematch_of: string | null;
 };
 
 type ProfileStats = {
@@ -47,16 +50,30 @@ function endedLabel(game: GameRow) {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+function challengeUrl(gameId: string) {
+  const url = new URL(window.location.origin);
+  url.searchParams.set("challenge", gameId);
+  return url.toString();
+}
+
 export function OnlineLobby({
   session,
   onOpenGame,
+  challengeGameId,
+  onChallengeHandled,
+  onSignIn,
 }: {
   session: Session | null;
   onOpenGame: (gameId: string) => void;
+  challengeGameId?: string | null;
+  onChallengeHandled: () => void;
+  onSignIn: () => void;
 }) {
   const client = supabase;
   const [games, setGames] = useState<GameRow[]>([]);
   const [activeGames, setActiveGames] = useState<GameRow[]>([]);
+  const [incomingChallenges, setIncomingChallenges] = useState<GameRow[]>([]);
+  const [myPrivateChallenges, setMyPrivateChallenges] = useState<GameRow[]>([]);
   const [recentGames, setRecentGames] = useState<GameRow[]>([]);
   const [profile, setProfile] = useState<ProfileStats | null>(null);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
@@ -67,10 +84,10 @@ export function OnlineLobby({
 
     const { data, error } = await client
       .from("games")
-      .select("id,white_id,black_id,status,result,result_reason,variant,time_control_minutes,created_at,ended_at")
+      .select("id,white_id,black_id,status,result,result_reason,variant,time_control_minutes,created_at,ended_at,is_private,invited_user_id,rematch_of")
       .in("status", ["waiting", "active", "completed"])
       .order("created_at", { ascending: false })
-      .limit(80);
+      .limit(100);
 
     if (error) {
       setMessage(error.message);
@@ -78,7 +95,24 @@ export function OnlineLobby({
     }
 
     const rows = (data ?? []) as GameRow[];
-    setGames(rows.filter((game) => game.status === "waiting"));
+    setGames(rows.filter((game) => game.status === "waiting" && !game.is_private));
+    setIncomingChallenges(
+      rows.filter(
+        (game) =>
+          game.status === "waiting" &&
+          game.is_private &&
+          game.invited_user_id === session.user.id &&
+          game.white_id !== session.user.id
+      )
+    );
+    setMyPrivateChallenges(
+      rows.filter(
+        (game) =>
+          game.status === "waiting" &&
+          game.is_private &&
+          game.white_id === session.user.id
+      )
+    );
     setActiveGames(
       rows.filter(
         (game) =>
@@ -136,16 +170,27 @@ export function OnlineLobby({
     };
   }, [session?.user.id]);
 
-  if (!isSupabaseConfigured || !session || !client) {
+  if (!isSupabaseConfigured || !client) {
     return (
       <div className="card">
         <div className="eyebrow">ONLINE</div>
         <h2>Online play</h2>
-        <p>
-          {!isSupabaseConfigured
-            ? "Connect Supabase to enable multiplayer."
-            : "Sign in to create or join a game."}
+        <p>Connect Supabase to enable multiplayer.</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="card online-lobby-card challenge-entry-card">
+        <div className="eyebrow">{challengeGameId ? "PRIVATE CHALLENGE" : "ONLINE"}</div>
+        <h2>{challengeGameId ? "You were challenged." : "Online play"}</h2>
+        <p className="muted">
+          {challengeGameId
+            ? "Sign in, then this invite will still be waiting for you."
+            : "Sign in to create, join, and resume online games."}
         </p>
+        <button className="primary-action" onClick={onSignIn}>Sign in</button>
       </div>
     );
   }
@@ -164,7 +209,28 @@ export function OnlineLobby({
     else if (data?.gameId) onOpenGame(String(data.gameId));
   };
 
-  const joinGame = async (gameId: string) => {
+  const createPrivateChallenge = async () => {
+    setMessage("");
+    const { data, error } = await client.functions.invoke("online-game", {
+      body: {
+        action: "create_private_challenge",
+        variant: "traditional",
+        minutes: selectedMinutes,
+      },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    if (data?.gameId) {
+      setMessage("Private challenge ready — share the invite link below.");
+      await load();
+    }
+  };
+
+  const joinGame = async (gameId: string, consumeChallengeLink = false) => {
     setMessage("");
     const { data, error } = await client.functions.invoke("online-game", {
       body: {
@@ -173,9 +239,47 @@ export function OnlineLobby({
       },
     });
 
-    if (error) setMessage(error.message);
-    else if (data?.gameId) onOpenGame(String(data.gameId));
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    if (data?.gameId) {
+      if (consumeChallengeLink) onChallengeHandled();
+      onOpenGame(String(data.gameId));
+    }
   };
+
+  const shareChallenge = async (gameId: string) => {
+    const url = challengeUrl(gameId);
+    const shareData = {
+      title: "Chess Universe challenge",
+      text: "Play me in Chess Universe. Black moves first.",
+      url,
+    };
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share(shareData);
+        setMessage("Challenge invite ready to send.");
+        return;
+      } catch {
+        // Fall back to clipboard when native sharing is cancelled or unavailable.
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setMessage("Challenge link copied.");
+    } catch {
+      setMessage(`Copy this challenge link: ${url}`);
+    }
+  };
+
+  const linkedChallengeOwnedByMe = Boolean(
+    challengeGameId &&
+    myPrivateChallenges.some((game) => game.id === challengeGameId)
+  );
 
   return (
     <div className="card online-lobby-card">
@@ -202,6 +306,57 @@ export function OnlineLobby({
 
       {message ? <p className="form-message">{message}</p> : null}
 
+      {challengeGameId ? (
+        <section className="lobby-section private-challenge-card incoming">
+          <div>
+            <div className="eyebrow">PRIVATE CHALLENGE</div>
+            <strong>{linkedChallengeOwnedByMe ? "This is your invite." : "Someone challenged you."}</strong>
+            <span>
+              {linkedChallengeOwnedByMe
+                ? "Open the table or share this same link with the person you want to play."
+                : "Accepting takes you straight to the board and starts the match."}
+            </span>
+          </div>
+          <div className="challenge-actions">
+            {linkedChallengeOwnedByMe ? (
+              <>
+                <button className="primary-action compact" onClick={() => onOpenGame(challengeGameId)}>Open table</button>
+                <button className="secondary-action compact" onClick={() => void shareChallenge(challengeGameId)}>Share invite</button>
+              </>
+            ) : (
+              <button className="primary-action compact" onClick={() => void joinGame(challengeGameId, true)}>
+                Accept challenge
+              </button>
+            )}
+            <button className="text-button" onClick={onChallengeHandled}>Dismiss</button>
+          </div>
+        </section>
+      ) : null}
+
+      {incomingChallenges.length > 0 ? (
+        <section className="lobby-section">
+          <div className="section-heading">
+            <div>
+              <strong>Challenges for you</strong>
+              <span>Private tables only you and the challenger can see here.</span>
+            </div>
+          </div>
+          <div className="game-list">
+            {incomingChallenges.map((game) => (
+              <div className="game-row private-game-row" key={game.id}>
+                <div>
+                  <strong>{game.rematch_of ? "Rematch request" : "Private challenge"} · {timeLabel(game.time_control_minutes)}</strong>
+                  <span>{game.id.slice(0, 8)} · Black moves first</span>
+                </div>
+                <button className="primary-action compact" onClick={() => void joinGame(game.id)}>
+                  Accept
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {activeGames.length > 0 ? (
         <section className="lobby-section">
           <div className="section-heading">
@@ -217,10 +372,7 @@ export function OnlineLobby({
                   <strong>{timeLabel(game.time_control_minutes)} · Traditional</strong>
                   <span>{game.id.slice(0, 8)} · In progress</span>
                 </div>
-                <button
-                  className="primary-action compact"
-                  onClick={() => onOpenGame(game.id)}
-                >
+                <button className="primary-action compact" onClick={() => onOpenGame(game.id)}>
                   Resume
                 </button>
               </div>
@@ -233,7 +385,7 @@ export function OnlineLobby({
         <div className="section-heading">
           <div>
             <strong>Create a casual game</strong>
-            <span>Untimed is best for learning or games you may finish later.</span>
+            <span>Pick the clock, then open a public table or send a private invite.</span>
           </div>
         </div>
 
@@ -251,19 +403,49 @@ export function OnlineLobby({
           ))}
         </div>
 
-        <button className="primary-action create-game-button" onClick={() => void createGame()}>
-          Create {selectedMinutes === 0 ? "untimed" : `${selectedMinutes}-minute`} game
-        </button>
+        <div className="create-game-actions">
+          <button className="primary-action create-game-button" onClick={() => void createGame()}>
+            Open public table
+          </button>
+          <button className="secondary-action create-game-button" onClick={() => void createPrivateChallenge()}>
+            Create private challenge
+          </button>
+        </div>
         <p className="muted">
-          Untimed games can be left and resumed. Timed games keep running after they begin.
+          Private challenges never appear in Open Tables. Share the invite link directly with the person you want to play.
         </p>
       </section>
+
+      {myPrivateChallenges.length > 0 ? (
+        <section className="lobby-section">
+          <div className="section-heading">
+            <div>
+              <strong>My private invites</strong>
+              <span>Waiting for the other player.</span>
+            </div>
+          </div>
+          <div className="game-list">
+            {myPrivateChallenges.map((game) => (
+              <div className="game-row private-game-row" key={game.id}>
+                <div>
+                  <strong>{game.rematch_of ? "Rematch" : "Private challenge"} · {timeLabel(game.time_control_minutes)}</strong>
+                  <span>{game.id.slice(0, 8)} · Not listed publicly</span>
+                </div>
+                <div className="inline-game-actions">
+                  <button className="secondary-action compact" onClick={() => void shareChallenge(game.id)}>Share</button>
+                  <button className="primary-action compact" onClick={() => onOpenGame(game.id)}>Open</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="lobby-section">
         <div className="section-heading">
           <div>
             <strong>Open tables</strong>
-            <span>Join another player's waiting game.</span>
+            <span>Join another player's public waiting game.</span>
           </div>
         </div>
 
@@ -278,17 +460,11 @@ export function OnlineLobby({
                   <span>{game.id.slice(0, 8)}</span>
                 </div>
                 {game.white_id === session.user.id ? (
-                  <button
-                    className="secondary-action compact"
-                    onClick={() => onOpenGame(game.id)}
-                  >
+                  <button className="secondary-action compact" onClick={() => onOpenGame(game.id)}>
                     Open table
                   </button>
                 ) : (
-                  <button
-                    className="secondary-action compact"
-                    onClick={() => void joinGame(game.id)}
-                  >
+                  <button className="secondary-action compact" onClick={() => void joinGame(game.id)}>
                     Join
                   </button>
                 )}
@@ -325,10 +501,7 @@ export function OnlineLobby({
                     {game.id.slice(0, 8)}
                   </span>
                 </div>
-                <button
-                  className="secondary-action compact"
-                  onClick={() => onOpenGame(game.id)}
-                >
+                <button className="secondary-action compact" onClick={() => onOpenGame(game.id)}>
                   Review
                 </button>
               </div>
