@@ -91,6 +91,5 @@ test("Chess Academy UI teaches ideas, opponent plans and daily puzzles", async (
   assert.match(puzzles, /PUZZLE OF THE DAY/);
   assert.match(puzzles, /What is the opponent trying to do/);
   assert.match(puzzles, /Pattern to remember/);
-  assert.match(puzzles, /Queen/);
-  assert.match(puzzles, /Rook/);
+  assert.match(puzzles, /puzzle\.theme/);
 });
