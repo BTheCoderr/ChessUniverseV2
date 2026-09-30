@@ -1,4 +1,4 @@
-import type { AcademyLevel } from "./academyPlacement";
+export type AcademyLevel = "Beginner" | "Developing" | "Intermediate";
 
 export type AcademyCourseSection =
   | "pieces"
