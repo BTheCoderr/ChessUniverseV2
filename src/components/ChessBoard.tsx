@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import type { Square } from "chess.js";
 
 type Piece = { square: Square; type: string; color: "w" | "b" };
@@ -8,6 +8,7 @@ type Props = {
   selected: Square | null;
   legalTargets: Square[];
   lastMove?: { from: Square; to: Square } | null;
+  animatedMove?: { from: Square; to: Square } | null;
   onSquareClick: (square: Square) => void;
   onMoveAttempt?: (from: Square, to: Square) => void;
   disabled?: boolean;
@@ -23,11 +24,35 @@ type DragVisual = {
 
 const files = ["a","b","c","d","e","f","g","h"] as const;
 
+function displayedPosition(square: Square, orientation: "w" | "b") {
+  const fileIndex = square.charCodeAt(0) - 97;
+  const rank = Number(square[1]);
+
+  return orientation === "b"
+    ? { col: 7 - fileIndex, row: rank - 1 }
+    : { col: fileIndex, row: 8 - rank };
+}
+
+function aiMoveStyle(
+  move: { from: Square; to: Square },
+  orientation: "w" | "b"
+): CSSProperties {
+  const from = displayedPosition(move.from, orientation);
+  const to = displayedPosition(move.to, orientation);
+  const imageToSquareRatio = 100 / 0.86;
+
+  return {
+    "--ai-move-x": `${(from.col - to.col) * imageToSquareRatio}%`,
+    "--ai-move-y": `${(from.row - to.row) * imageToSquareRatio}%`,
+  } as CSSProperties;
+}
+
 export function ChessBoard({
   pieces,
   selected,
   legalTargets,
   lastMove,
+  animatedMove,
   onSquareClick,
   onMoveAttempt,
   disabled,
@@ -101,6 +126,8 @@ export function ChessBoard({
           const isSelected = selected === square;
           const isTarget = legalTargets.includes(square);
           const isLastMove = lastMove?.from === square || lastMove?.to === square;
+          const isAnimatedFrom = animatedMove?.from === square;
+          const isAnimatedTo = animatedMove?.to === square;
           const pieceSrc = piece
             ? `/images/pieces/${piece.color}${piece.type.toUpperCase()}.svg`
             : "";
@@ -110,7 +137,7 @@ export function ChessBoard({
               key={square}
               type="button"
               data-square={square}
-              className={`square ${dark ? "dark" : "light"} ${isLastMove ? "last-move" : ""} ${isSelected ? "selected" : ""} ${isTarget ? "target" : ""}`}
+              className={`square ${dark ? "dark" : "light"} ${isLastMove ? "last-move" : ""} ${isAnimatedFrom ? "ai-move-origin" : ""} ${isAnimatedTo ? "ai-move-destination" : ""} ${isSelected ? "selected" : ""} ${isTarget ? "target" : ""}`}
               onClick={() => {
                 if (suppressClick.current) {
                   suppressClick.current = false;
@@ -124,7 +151,12 @@ export function ChessBoard({
               {piece ? (
                 <img
                   draggable={false}
-                  className={dragVisual?.square === square ? "piece-image dragging-origin" : "piece-image"}
+                  className={[
+                    "piece-image",
+                    dragVisual?.square === square ? "dragging-origin" : "",
+                    isAnimatedTo ? "ai-piece-move" : "",
+                  ].filter(Boolean).join(" ")}
+                  style={isAnimatedTo && animatedMove ? aiMoveStyle(animatedMove, orientation) : undefined}
                   src={pieceSrc}
                   alt={`${piece.color === "w" ? "White" : "Black"} ${piece.type}`}
                   onPointerDown={(event) => beginDrag(event, square, pieceSrc)}
