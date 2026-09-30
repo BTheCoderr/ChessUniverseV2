@@ -40,6 +40,8 @@ type SavedPractice = {
 };
 
 const PRACTICE_STORAGE_KEY = "chess-universe-practice-v2";
+const AI_MOVE_REVEAL_DELAY_MS = 650;
+const AI_MOVE_ANIMATION_MS = 700;
 const DIFFICULTY_COPY: Record<Difficulty, string> = {
   beginner: "Slower search and the gentlest Stockfish setting.",
   easy: "A forgiving opponent that still sees basic tactics.",
@@ -172,9 +174,10 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
   const [clocks, setClocks] = useState<ClockState>(initial.clocks);
   const [paused, setPaused] = useState(initial.paused);
   const [timedOutColor, setTimedOutColor] = useState<PracticeColor | null>(initial.timedOutColor);
+  const [animatedMove, setAnimatedMove] = useState<{ from: Square; to: Square } | null>(null);
   const gameToken = useRef(0);
   const clocksRef = useRef(clocks);
-  const historyEndRef = useRef<HTMLDivElement | null>(null);
+  const historyListRef = useRef<HTMLDivElement | null>(null);
 
   const pieces = useMemo(() => boardPieces(game), [game]);
   const legalTargets = useMemo(() => {
@@ -285,7 +288,19 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
   }, [gameId, resultText, moves, mode, difficulty, timeControlMinutes, userId]);
 
   useEffect(() => {
-    historyEndRef.current?.scrollIntoView({ block: "nearest" });
+    const historyList = historyListRef.current;
+    if (!historyList || moves.length === 0) return;
+
+    // Keep move-history auto-scroll inside its own panel. scrollIntoView()
+    // can move the entire page on mobile and pull the chessboard off-screen.
+    const frame = window.requestAnimationFrame(() => {
+      historyList.scrollTo({
+        top: historyList.scrollHeight,
+        behavior: "smooth",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [moves.length]);
 
   useEffect(() => {
@@ -325,11 +340,24 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
     if (mode !== "ai" || next.isGameOver() || next.turn() !== "w" || timedOutColor) return;
 
     const token = ++gameToken.current;
+    const revealStartedAt = Date.now();
     setThinking(true);
+    setAnimatedMove(null);
     setEngineStatus(`Stockfish thinking · ${difficulty}`);
 
     try {
       const uci = await getComputerMove(next, difficulty);
+      if (token !== gameToken.current) return;
+
+      const remainingRevealDelay = Math.max(
+        0,
+        AI_MOVE_REVEAL_DELAY_MS - (Date.now() - revealStartedAt)
+      );
+      if (remainingRevealDelay > 0) {
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, remainingRevealDelay);
+        });
+      }
       if (token !== gameToken.current) return;
 
       const aiGame = new Chess(next.fen());
@@ -348,11 +376,16 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
       };
 
       const feedbackKind = aiGame.isCheckmate() ? "mate" : aiGame.inCheck() ? "check" : made.captured ? "capture" : "move";
+      setAnimatedMove({ from: aiMove.from, to: aiMove.to });
       playChessFeedback(feedbackKind, feedbackSettings);
       setGame(aiGame);
       setMoves([...movesBeforeAi, aiMove]);
       setEngineStatus(`Stockfish active · ${difficulty}`);
       setMessage(statusTextFor(aiGame));
+
+      window.setTimeout(() => {
+        if (token === gameToken.current) setAnimatedMove(null);
+      }, AI_MOVE_ANIMATION_MS);
     } catch (error) {
       if (token !== gameToken.current) return;
       setEngineStatus("Stockfish unavailable");
@@ -366,6 +399,7 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
     if (paused || thinking || timedOutColor || game.isGameOver()) return false;
     if (mode === "ai" && game.turn() === "w") return false;
 
+    setAnimatedMove(null);
     const next = new Chess(game.fen());
     try {
       const made = next.move({ from, to, promotion: "q" });
@@ -432,6 +466,7 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
     setMoves([]);
     setSelected(null);
     setThinking(false);
+    setAnimatedMove(null);
     setPaused(false);
     setTimedOutColor(null);
     setClocks(nextClocks);
@@ -476,6 +511,7 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
 
     gameToken.current += 1;
     setThinking(false);
+    setAnimatedMove(null);
     const targetLength = Math.max(0, moves.length - count);
     const firstRemoved = moves[targetLength];
     const nextMoves = moves.slice(0, targetLength);
@@ -514,6 +550,7 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
             selected={selected}
             legalTargets={learningHelp ? legalTargets : []}
             lastMove={lastMove}
+            animatedMove={animatedMove}
             onSquareClick={onSquareClick}
             onMoveAttempt={attemptMove}
             disabled={thinking || paused || Boolean(timedOutColor)}
@@ -663,7 +700,7 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
             <strong>Moves</strong>
             <span>{moves.length ? `${moves.length} played` : "Black opens"}</span>
           </div>
-          <div className="move-history-list">
+          <div className="move-history-list" ref={historyListRef}>
             {moves.length === 0 ? (
               <p className="muted">Your moves will appear here.</p>
             ) : (
@@ -675,7 +712,6 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
                 </div>
               ))
             )}
-            <div ref={historyEndRef} />
           </div>
         </div>
 
