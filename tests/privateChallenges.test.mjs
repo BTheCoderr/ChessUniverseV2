@@ -17,7 +17,7 @@ test("challenge links survive sign-in and route back to the online lobby", async
 
 test("private challenges stay out of public open tables and support sharing", async () => {
   const lobby = await source("src/components/OnlineLobby.tsx");
-  assert.match(lobby, /action: "create_private_challenge"/);
+  assert.match(lobby, /isPrivate \\? "create_private_challenge" : "create_game"/);
   assert.match(lobby, /game\.status === "waiting" && !game\.is_private/);
   assert.match(lobby, /navigator\.share/);
   assert.match(lobby, /navigator\.clipboard\.writeText/);
