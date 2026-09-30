@@ -18,6 +18,20 @@ import {
   type ReviewRecord,
 } from "./academyReviewState";
 
+export type ReviewLesson = {
+  id: string;
+  source: "Piece School" | "Opponent Response" | "Endgame" | "Piece Decision";
+  title: string;
+  concept: string;
+  fen: string;
+  expectedMove: string;
+  prompt: string;
+  why: string;
+  mistakeLesson: string;
+  takeaway: string;
+  orientation: "w" | "b";
+};
+
 export function reviewCatalog(): ReviewLesson[] {
   const pieceSchoolLessons: ReviewLesson[] = PIECE_SCHOOLS.flatMap((school) =>
     school.lessons.map((lesson) => ({
