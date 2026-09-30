@@ -16,18 +16,19 @@ const EMPTY_PROGRESS: AcademyCoreProgress = {
   universeIntroComplete: false,
 };
 
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set((value as unknown[]).filter((id): id is string => typeof id === "string"))];
+}
+
 export function loadAcademyCoreProgress(): AcademyCoreProgress {
   if (typeof window === "undefined") return { ...EMPTY_PROGRESS };
   try {
     const parsed = JSON.parse(window.localStorage.getItem(ACADEMY_PROGRESS_KEY) ?? "{}");
     return {
       pieceBasicsComplete: Boolean(parsed.pieceBasicsComplete),
-      pieceDecisionIds: Array.isArray(parsed.pieceDecisionIds)
-        ? [...new Set(parsed.pieceDecisionIds.filter((id: unknown): id is string => typeof id === "string"))]
-        : [],
-      openingIds: Array.isArray(parsed.openingIds)
-        ? [...new Set(parsed.openingIds.filter((id: unknown): id is string => typeof id === "string"))]
-        : [],
+      pieceDecisionIds: normalizeStringArray(parsed.pieceDecisionIds),
+      openingIds: normalizeStringArray(parsed.openingIds),
       strategyVisited: Boolean(parsed.strategyVisited),
       universeIntroComplete: Boolean(parsed.universeIntroComplete),
     };
