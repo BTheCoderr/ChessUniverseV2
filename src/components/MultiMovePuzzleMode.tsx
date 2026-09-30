@@ -7,6 +7,7 @@ import {
   multiMoveParts,
   normalizeMultiMoveProgress,
 } from "../lib/multiMovePuzzles";
+import { recordReviewAttempt } from "../lib/academyReview";
 
 function boardPieces(game: Chess) {
   return game.board().flatMap((rank, rankIndex) =>
@@ -118,13 +119,15 @@ export function MultiMovePuzzleMode() {
       const uci = `${made.from}${made.to}${made.promotion ?? ""}`;
 
       if (uci !== step.uci) {
+        recordReviewAttempt(`multi-${puzzle.id}-${stepIndex}`, false, uci);
         setSelected(null);
         setMessage(
-          `${made.san} is legal, but this sequence is testing the plan: ${step.label}. Look one move beyond your current idea.`
+          `${made.san} is legal, but it breaks the sequence's plan. This step is about: ${step.label}. Look one move beyond your current idea.`
         );
         return;
       }
 
+      recordReviewAttempt(`multi-${puzzle.id}-${stepIndex}`, true, uci);
       const nextStepIndex = stepIndex + 1;
       setGame(next);
       setSelected(null);
