@@ -4640,3 +4640,274 @@ code {
     justify-self: start;
   }
 }
+
+
+/* Academy Piece Schools + Multi-move Lab */
+.academy-tabs-expanded {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.piece-school,
+.response-trainer,
+.multi-move-lab {
+  display: grid;
+  gap: 18px;
+}
+
+.multi-move-lab {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.piece-school-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  align-items: end;
+  border: 1px solid #4c5c16;
+  border-radius: 16px;
+  background: #171f0e;
+  padding: 18px;
+}
+
+.piece-school-header h2 {
+  margin: 6px 0 8px;
+  font-size: clamp(26px, 4vw, 44px);
+  letter-spacing: -.03em;
+}
+
+.piece-school-header p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 760px;
+}
+
+.piece-school-score {
+  min-width: 132px;
+  display: grid;
+  justify-items: end;
+  border: 1px solid #596b20;
+  border-radius: 13px;
+  background: #10170b;
+  padding: 12px;
+}
+
+.piece-school-score strong {
+  color: var(--accent);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.piece-school-score strong span {
+  color: #829345;
+  font-size: 15px;
+}
+
+.piece-school-score small {
+  margin-top: 4px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.piece-school-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.piece-school-tabs button {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  grid-template-rows: auto auto;
+  gap: 2px 9px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #101516;
+  color: white;
+  text-align: left;
+  padding: 11px;
+}
+
+.piece-school-tabs button.active {
+  border-color: var(--accent);
+  background: #1a220e;
+}
+
+.piece-school-tabs button > span {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #4d5d20;
+  border-radius: 10px;
+  color: #e8ffb7;
+  font-size: 24px;
+  background: #17200e;
+}
+
+.piece-school-tabs strong {
+  font-size: 12px;
+}
+
+.piece-school-tabs small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.piece-school-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.piece-school-summary > div {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #101516;
+  padding: 12px 14px;
+}
+
+.piece-school-summary strong {
+  font-size: 12px;
+}
+
+.piece-school-summary span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.piece-school-lessons,
+.response-lessons,
+.multi-move-picker {
+  margin-bottom: 0;
+}
+
+.opponent-last-move {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #596b20;
+  border-radius: 12px;
+  background: #19210f;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.opponent-last-move strong {
+  color: var(--accent);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.opponent-last-move span {
+  color: #dbe4c7;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.academy-explanation.danger {
+  border-color: #6a4b2a;
+  background: #21170f;
+}
+
+.sequence-step {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 13px;
+  margin: 12px 0;
+  background: #101516;
+}
+
+.sequence-step.player {
+  border-color: #596b20;
+  background: #18200e;
+}
+
+.sequence-step.opponent {
+  border-color: #4d3d2b;
+  background: #1b1510;
+}
+
+.sequence-step span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.sequence-step.player span {
+  color: var(--accent);
+}
+
+.sequence-step strong {
+  font-size: 13px;
+}
+
+.sequence-roadmap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.sequence-roadmap span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #0f1314;
+  color: var(--muted);
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.sequence-roadmap span.done {
+  border-color: #3f4b1c;
+  color: #a8b77a;
+}
+
+.sequence-roadmap span.active {
+  border-color: var(--accent);
+  background: #1b230e;
+  color: var(--accent);
+}
+
+@media (max-width: 1050px) {
+  .academy-tabs-expanded {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .piece-school-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .academy-tabs-expanded,
+  .piece-school-tabs,
+  .piece-school-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .piece-school-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .piece-school-score {
+    width: 100%;
+    justify-items: start;
+  }
+
+  .piece-school-score small {
+    text-align: left;
+  }
+}
