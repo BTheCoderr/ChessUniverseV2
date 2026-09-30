@@ -23,9 +23,16 @@ test("profile identity comes from the profiles table before email fallback", asy
   assert.ok(emailFallbackIndex > usernameIndex);
 });
 
-test("online lobby restores active games for either participant", async () => {
+test("online lobby keeps personal live and completed games separate from public discovery", async () => {
   const lobby = await source("src/components/OnlineLobby.tsx");
-  assert.match(lobby, /\.in\("status", \["waiting", "active", "completed"\]\)/);
+  assert.match(lobby, /participantFilter/);
+  assert.match(lobby, /completedFilter/);
+  assert.match(lobby, /\.eq\("is_private", false\)/);
+  assert.match(lobby, /\.in\("status", \["waiting", "active"\]\)/);
+  assert.match(lobby, /\.eq\("status", "completed"\)/);
+  assert.match(lobby, /publicWaitingResult/);
+  assert.match(lobby, /myLiveResult/);
+  assert.match(lobby, /myCompletedResult/);
   assert.match(lobby, /game\.white_id === session\.user\.id \|\| game\.black_id === session\.user\.id/);
   assert.match(lobby, /\bResume\b/);
   assert.match(lobby, /Recent Classic games/);
