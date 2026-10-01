@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
+import { NETLIFY_FEEDBACK_FORM, submitNetlifyFeedback } from "../lib/netlifyFeedback";
 
 type Props = {
   userId?: string | null;
@@ -16,18 +17,6 @@ export function FeedbackPanel({ userId, appView, onBack, onSignIn }: Props) {
   const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
 
-  if (!userId || !supabase) {
-    return (
-      <section className="card feedback-page">
-        <button className="text-button back-link" onClick={onBack}>← Back</button>
-        <div className="eyebrow">BETA FEEDBACK</div>
-        <h1>Help us make it better.</h1>
-        <p>Sign in first so we can tie a bug report to the right beta session.</p>
-        <button className="primary-action" onClick={onSignIn}>Sign in</button>
-      </section>
-    );
-  }
-
   const client = supabase;
 
   const submit = async (event: React.FormEvent) => {
@@ -41,22 +30,41 @@ export function FeedbackPanel({ userId, appView, onBack, onSignIn }: Props) {
     setSending(true);
     setStatus("");
 
-    const { error } = await client.from("beta_feedback").insert({
-      user_id: userId,
-      category,
-      message: clean,
-      app_view: appView,
-      user_agent: navigator.userAgent.slice(0, 500),
-    });
+    let sentThroughAccount = false;
 
-    setSending(false);
-    if (error) {
-      setStatus(error.message);
-      return;
+    if (userId && client) {
+      const { error } = await client.from("beta_feedback").insert({
+        user_id: userId,
+        category,
+        message: clean,
+        app_view: appView,
+        user_agent: navigator.userAgent.slice(0, 500),
+      });
+      sentThroughAccount = !error;
     }
 
+    if (!sentThroughAccount) {
+      try {
+        await submitNetlifyFeedback({
+          category,
+          message: clean,
+          appView,
+          userAgent: navigator.userAgent.slice(0, 500),
+        });
+      } catch (error) {
+        setSending(false);
+        setStatus(error instanceof Error ? error.message : "Could not send feedback.");
+        return;
+      }
+    }
+
+    setSending(false);
     setMessage("");
-    setStatus("Sent. Thank you — this is exactly what the beta is for.");
+    setStatus(
+      sentThroughAccount
+        ? "Sent. Thank you — this report is attached to your beta account."
+        : "Sent through the public feedback channel. Thank you — this is exactly what the beta is for."
+    );
   };
 
   return (
@@ -65,11 +73,32 @@ export function FeedbackPanel({ userId, appView, onBack, onSignIn }: Props) {
       <div className="eyebrow">BETA FEEDBACK</div>
       <h1>Help us break it.</h1>
       <p>Tell us what broke, felt confusing, or would make Chess Universe better.</p>
+      {!userId ? (
+        <div className="feedback-public-note">
+          <strong>No sign-in required.</strong>
+          <span>Your report will use the public Netlify feedback channel. Sign in only if you want the report tied to your beta account.</span>
+          <button className="text-button" type="button" onClick={onSignIn}>Sign in instead</button>
+        </div>
+      ) : null}
 
-      <form className="feedback-form" onSubmit={submit}>
+      <form
+        className="feedback-form"
+        name={NETLIFY_FEEDBACK_FORM}
+        method="POST"
+        data-netlify="true"
+        netlify-honeypot="bot-field"
+        onSubmit={submit}
+      >
+        <input type="hidden" name="form-name" value={NETLIFY_FEEDBACK_FORM} />
+        <p className="visually-hidden" aria-hidden="true">
+          <label>
+            Leave this field empty
+            <input name="bot-field" tabIndex={-1} autoComplete="off" />
+          </label>
+        </p>
         <label>
           What kind of feedback?
-          <select value={category} onChange={(event) => setCategory(event.target.value as Category)}>
+          <select name="category" value={category} onChange={(event) => setCategory(event.target.value as Category)}>
             <option value="bug">Something broke</option>
             <option value="confusing">Something was confusing</option>
             <option value="idea">I have an idea</option>
@@ -80,6 +109,7 @@ export function FeedbackPanel({ userId, appView, onBack, onSignIn }: Props) {
         <label>
           What happened?
           <textarea
+            name="message"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             minLength={10}
@@ -89,6 +119,9 @@ export function FeedbackPanel({ userId, appView, onBack, onSignIn }: Props) {
             required
           />
         </label>
+
+        <input type="hidden" name="app_view" value={appView} />
+        <input type="hidden" name="user_agent" value={typeof navigator === "undefined" ? "" : navigator.userAgent.slice(0, 500)} />
 
         <button className="primary-action" type="submit" disabled={sending}>
           {sending ? "Sending…" : "Send feedback"}
