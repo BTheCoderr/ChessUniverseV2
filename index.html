@@ -12,6 +12,20 @@
     <title>Chess Universe</title>
   </head>
   <body>
+    <form
+      name="chess-universe-feedback"
+      method="POST"
+      data-netlify="true"
+      netlify-honeypot="bot-field"
+      hidden
+    >
+      <input type="hidden" name="form-name" value="chess-universe-feedback" />
+      <input name="bot-field" />
+      <input name="category" />
+      <textarea name="message"></textarea>
+      <input name="app_view" />
+      <input name="user_agent" />
+    </form>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
