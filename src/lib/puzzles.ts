@@ -1,4 +1,4 @@
-import { Chess, type Color, type Square } from "chess.js";
+import { Chess, type Color, type Move, type Square } from "chess.js";
 
 export const PUZZLE_PROGRESS_KEY = "chess-universe-puzzles-v1";
 
@@ -26,6 +26,7 @@ export type Puzzle = {
   explanation: string;
   opponentIdea: string;
   takeaway: string;
+  mistakeLesson: string;
   expectsMate?: boolean;
 };
 
@@ -43,6 +44,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     opponentIdea: "Black's only hope before this position would have been to keep checking distance or trade queens before the king was boxed in.",
     takeaway: "A queen mates best when the king or another piece protects the queen's checking square.",
     expectsMate: true,
+    mistakeLesson: "A quiet move gives Black another turn and loses the forced mate. When the king is boxed in, check forcing moves before improving anything else.",
   },
   {
     id: "queen-mate-black",
@@ -57,6 +59,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     opponentIdea: "White needed more space around the king before the mating net was complete.",
     takeaway: "Solve tactics from both colors. The pattern matters more than which side owns the pieces.",
     expectsMate: true,
+    mistakeLesson: "Black has mate now. Any slower queen move gives White a chance to escape the mating net, so calculate checks before making a non-forcing move.",
   },
   {
     id: "win-the-queen",
@@ -70,6 +73,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "Bxd5 simply captures the undefended queen. Tactics begin with checking whether an enemy piece is actually protected.",
     opponentIdea: "Black should have moved or defended the queen before making another plan.",
     takeaway: "Before calculating something fancy, scan for loose pieces.",
+    mistakeLesson: "The queen on d5 is hanging right now. A move that does not capture it gives Black a chance to save the most valuable piece on the board.",
   },
   {
     id: "block-the-rook",
@@ -83,6 +87,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "Be2 blocks the rook's line from e8 to e1. Defense is often about changing a line, not running with the king.",
     opponentIdea: "Black's rook wants to stay on the open e-file and keep the king tied down.",
     takeaway: "When checked by a sliding piece, remember all three answers: move the king, capture the attacker, or block the line.",
+    mistakeLesson: "White is in check, so the move must answer the rook's e-file attack immediately. A move that does not block, capture, or move the king cannot solve the position.",
   },
   {
     id: "promotion",
@@ -96,6 +101,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "a8=Q turns the pawn into a queen. Passed pawns become tactical threats when they get this close.",
     opponentIdea: "Black needed to get the king in front of the pawn earlier.",
     takeaway: "A passed pawn on the seventh rank can be worth more than its normal pawn value.",
+    mistakeLesson: "The pawn is one step from promotion. Any move that delays a8=Q wastes the immediate chance to turn a pawn into a decisive material advantage.",
   },
   {
     id: "queen-pressure",
@@ -109,6 +115,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "Qh5 coordinates queen and bishop. The queen is strongest when she arrives where another piece already supports the attack.",
     opponentIdea: "Black should look for development, queen harassment, or a defensive pawn move that breaks the battery.",
     takeaway: "Queen activity is about coordination, not simply moving the queen closer to the king.",
+    mistakeLesson: "The lesson is coordination: the queen belongs on h5 because the bishop already points toward f7. A different queen move may be legal but does not build the same battery.",
   },
   {
     id: "rook-open-file",
@@ -122,6 +129,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "Re1 activates the rook immediately. A rook trapped behind pawns may be worth five points on paper and almost nothing in practice.",
     opponentIdea: "Black should contest the e-file or move the king before the rook controls the position.",
     takeaway: "When your rook feels useless, search for an open or half-open file.",
+    mistakeLesson: "The rook is passive on a1. A move that keeps it away from the open e-file misses the chance to activate it with tempo against the king.",
   },
   {
     id: "knight-outpost",
@@ -135,6 +143,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "Nd5 creates a strong outpost. A knight can outperform a bishop when it owns a stable central square and the bishop has no useful targets.",
     opponentIdea: "Black should trade the knight, challenge its support, or change the pawn structure before the outpost becomes permanent.",
     takeaway: "Piece value depends on squares. A great knight can be worth more than a bad bishop.",
+    mistakeLesson: "The point is to reach d5, a stable central outpost. Other legal knight moves give up the square quality that makes the knight hard to challenge.",
   },
   {
     id: "open-for-bishops",
@@ -148,6 +157,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "d4 opens lines. Two bishops often become a long-term advantage when the board opens because together they control both color complexes.",
     opponentIdea: "The knights want a closed center and stable outposts where bishop range matters less.",
     takeaway: "Bishop pair versus knight pair is about the position, not a universal rule.",
+    mistakeLesson: "Keeping the center closed favors the knights. The bishop pair needs open lines, so a move that does not challenge the center misses the strategic reason for the position.",
   },
   {
     id: "free-the-bishop",
@@ -161,20 +171,22 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "d4 clears the c1 bishop's diagonal. A bad bishop is often bad because its own pawns are in its way.",
     opponentIdea: "Black would like to close the center again and keep the bishop restricted.",
     takeaway: "Improve the board around a piece instead of forcing the piece to move through a bad position.",
+    mistakeLesson: "The bishop is not the real problem—the pawn structure is. Moving the bishop around without playing d4 leaves the diagonal blocked by your own pawn.",
   },
   {
     id: "rook-wins-queen",
-    title: "Rook Takes the Prize",
+    title: "Save the Rook",
     level: "Starter",
-    theme: "Rook",
-    fen: "6k1/8/8/8/8/8/3q4/3R2K1 w - - 0 1",
-    solution: "d1d2",
-    goal: "White to move. Take the loose queen with the rook.",
-    hint: "The queen is directly above the rook.",
-    explanation: "Rxd2 wins the queen. Rooks punish pieces that sit unprotected on open files.",
-    opponentIdea: "Black should never leave the queen lined up with an enemy rook without protection or a tactical reason.",
-    takeaway: "Open files are not only positional assets — they create immediate tactical captures.",
-  },
+    theme: "Defense",
+    fen: "r6k/8/8/3Q4/8/8/8/6K1 b - - 0 1",
+    solution: "a8b8",
+    goal: "Black to move. White's queen attacks your rook on a8. Save the rook before looking for counterplay.",
+    hint: "Step off the d5-c6-b7-a8 diagonal onto a square the queen does not control.",
+    explanation: "Rb8 moves the rook off the queen's diagonal and keeps the material balance intact. This is a defensive win: first remove the immediate threat.",
+    opponentIdea: "White's queen on d5 attacks a8. If Black ignores the threat, Qxa8 wins the rook.",
+    takeaway: "Defense is a move too. Before attacking, scan which of your pieces are under direct attack and solve the most urgent threat.",
+    mistakeLesson: "White's queen is already attacking the rook on a8. Any move that leaves the rook on that diagonal—or moves it onto another square the queen can immediately capture—loses material.",
+  }
   {
     id: "knight-wins-queen",
     title: "Knight Finds the Queen",
@@ -187,6 +199,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "Nxe5 wins the queen. Knights are dangerous because their attack pattern is easy to overlook and cannot be blocked.",
     opponentIdea: "Black should track every knight jump before placing a valuable piece on a forkable or capturable square.",
     takeaway: "When a knight is nearby, scan all eight possible jumps — not just the squares on a straight line.",
+    mistakeLesson: "The queen on e5 is available to the knight right now. A move that does not take it gives Black a chance to move the queen and the tactic disappears.",
   },
   {
     id: "back-rank-rook-mate",
@@ -201,6 +214,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     opponentIdea: "Black needed luft — an escape square such as ...h6 or ...g6 — before allowing a rook onto the back rank.",
     takeaway: "Before attacking the king, count its escape squares. A strong back-rank pattern often begins with a king trapped by its own pawns.",
     expectsMate: true,
+    mistakeLesson: "The king has no flight square and mate is available immediately. A slower rook move gives Black time to create luft or defend the back rank.",
   },
   {
     id: "queen-rook-fork",
@@ -214,6 +228,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "Qd5+ checks the king along d5-e6-f7-g8 and simultaneously attacks the rook on a8 along d5-c6-b7-a8.",
     opponentIdea: "Black must answer the check first, which gives White time to win the rook next.",
     takeaway: "Forks are about move priority: when one target is the king, the opponent must answer the check before saving the second target.",
+    mistakeLesson: "The strength of Qd5+ is that the check forces Black to respond before saving the rook. A move without that forcing check loses the move-order advantage.",
   },
   {
     id: "discovered-rook-attack",
@@ -227,8 +242,55 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     explanation: "dxe5 removes the knight and clears the d-file. The rook on d1 now attacks the queen on d8, creating two gains with one pawn move.",
     opponentIdea: "Black must react to the newly opened rook line and move the queen before White wins even more material.",
     takeaway: "A discovered attack happens when one piece moves away and reveals the line of another piece. Always ask what your move uncovers behind it.",
+    mistakeLesson: "The pawn move must both capture the knight and clear the d-file. A move that leaves the d-file blocked fails to reveal the rook's attack on the queen.",
   },
 ];
+
+const PIECE_NAMES: Record<string, string> = {
+  p: "pawn",
+  n: "knight",
+  b: "bishop",
+  r: "rook",
+  q: "queen",
+  k: "king",
+};
+
+export function explainWrongPuzzleMove(
+  puzzle: Puzzle,
+  before: Chess,
+  after: Chess,
+  made: Move
+) {
+  const movedType = made.promotion ?? made.piece;
+  const captureReply = after
+    .moves({ verbose: true })
+    .find((reply) => reply.to === made.to && reply.captured === movedType);
+
+  if (captureReply) {
+    return `${made.san} is legal, but ${captureReply.san} can immediately take your ${PIECE_NAMES[movedType] ?? "piece"} on ${made.to}. ${puzzle.mistakeLesson}`;
+  }
+
+  try {
+    const solutionPosition = new Chess(before.fen());
+    const solutionMove = solutionPosition.move({
+      from: puzzle.solution.slice(0, 2),
+      to: puzzle.solution.slice(2, 4),
+      ...(puzzle.solution[4] ? { promotion: puzzle.solution[4] } : {}),
+    });
+
+    if (puzzle.expectsMate && solutionPosition.isCheckmate()) {
+      return `${made.san} is legal, but it gives up a forced mate. ${puzzle.mistakeLesson}`;
+    }
+
+    if (solutionMove.captured && !made.captured) {
+      return `${made.san} is legal, but it misses the immediate chance to win the ${PIECE_NAMES[solutionMove.captured] ?? "piece"} on ${solutionMove.to}. ${puzzle.mistakeLesson}`;
+    }
+  } catch {
+    // Curated solutions are validated in the puzzle test suite.
+  }
+
+  return `${made.san} is legal, but it does not solve the position's main problem. ${puzzle.mistakeLesson}`;
+}
 
 export function puzzlePosition(puzzle: Puzzle) {
   return new Chess(puzzle.fen);
