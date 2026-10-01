@@ -23,6 +23,29 @@ function boardPieces(game: Chess) {
   );
 }
 
+function pieceName(type: string) {
+  if (type === "p") return "pawn";
+  if (type === "n") return "knight";
+  if (type === "b") return "bishop";
+  if (type === "r") return "rook";
+  if (type === "q") return "queen";
+  if (type === "k") return "king";
+  return "piece";
+}
+
+function explainWrongSequenceMove(gameAfterMove: Chess, made: ReturnType<Chess["move"]>, mistakeLesson?: string) {
+  const movedType = made.promotion ?? made.piece;
+  const captureReply = gameAfterMove
+    .moves({ verbose: true })
+    .find((reply) => reply.to === made.to && reply.captured === movedType);
+
+  const consequence = captureReply
+    ? `${captureReply.san} can immediately take your ${pieceName(movedType)} on ${made.to}.`
+    : mistakeLesson ?? "That move does not carry out this step's plan.";
+
+  return `${made.san} is legal, but it is not the training move. ${consequence}`;
+}
+
 function loadProgress() {
   try {
     const raw = window.localStorage.getItem(MULTI_MOVE_PROGRESS_KEY);
@@ -121,9 +144,7 @@ export function MultiMovePuzzleMode() {
       if (uci !== step.uci) {
         recordReviewAttempt(`multi-${puzzle.id}-${stepIndex}`, false, uci);
         setSelected(null);
-        setMessage(
-          `${made.san} is legal, but it breaks the sequence's plan. This step is about: ${step.label}. Look one move beyond your current idea.`
-        );
+        setMessage(explainWrongSequenceMove(next, made, step.mistakeLesson));
         return;
       }
 

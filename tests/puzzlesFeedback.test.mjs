@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   OFFLINE_PUZZLES,
+  explainWrongPuzzleMove,
   normalizePuzzleProgress,
   puzzleMoveUci,
   puzzlePosition,
@@ -26,10 +27,39 @@ test("offline puzzle pack contains valid one-move solutions", () => {
     assert.ok(move, `${puzzle.title} solution is legal`);
     assert.equal(puzzleMoveUci(move.from, move.to, move.promotion), puzzle.solution);
 
+    assert.ok(puzzle.mistakeLesson.length > 35, `${puzzle.title} explains wrong moves`);
+
     if (puzzle.expectsMate) {
       assert.equal(game.isCheckmate(), true, `${puzzle.title} ends in mate`);
     }
   }
+});
+
+
+test("rook and queen lesson is Black defense and does not hang the rook", () => {
+  const puzzle = OFFLINE_PUZZLES.find((item) => item.id === "rook-wins-queen");
+  assert.ok(puzzle);
+  assert.equal(puzzle.theme, "Defense");
+
+  const game = puzzlePosition(puzzle);
+  assert.equal(game.turn(), "b");
+
+  const correct = game.move({ from: "a8", to: "b8" });
+  assert.ok(correct);
+
+  const canCaptureRook = game
+    .moves({ verbose: true })
+    .some((move) => move.to === "b8" && move.captured === "r");
+  assert.equal(canCaptureRook, false);
+
+  const beforeWrong = puzzlePosition(puzzle);
+  const afterWrong = puzzlePosition(puzzle);
+  const wrong = afterWrong.move({ from: "a8", to: "d8" });
+  assert.ok(wrong);
+
+  const feedback = explainWrongPuzzleMove(puzzle, beforeWrong, afterWrong, wrong);
+  assert.match(feedback, /immediately take your rook/i);
+  assert.match(feedback, /queen/i);
 });
 
 test("puzzle progress keeps unique known puzzle ids only", () => {
