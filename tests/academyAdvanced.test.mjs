@@ -72,8 +72,12 @@ test("every multi-move puzzle is a fully legal alternating teaching line", () =>
       });
 
       assert.ok(move, `${puzzle.title}: ${step.uci} is legal`);
-      if (step.actor === "player") playerTurns += 1;
-      else opponentTurns += 1;
+      if (step.actor === "player") {
+        playerTurns += 1;
+        assert.ok(step.mistakeLesson?.length > 30, `${puzzle.title}: player step explains wrong moves`);
+      } else {
+        opponentTurns += 1;
+      }
       assert.ok(step.explanation.length > 25);
     }
 
