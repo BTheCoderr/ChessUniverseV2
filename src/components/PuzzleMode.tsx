@@ -5,6 +5,7 @@ import { MultiMovePuzzleMode } from "./MultiMovePuzzleMode";
 import {
   OFFLINE_PUZZLES,
   PUZZLE_PROGRESS_KEY,
+  explainWrongPuzzleMove,
   dailyPuzzleIndex,
   normalizePuzzleProgress,
   puzzleMoveUci,
@@ -157,9 +158,7 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
 
       if (!correct) {
         setSelected(null);
-        setMessage(
-          `${made.san} is legal, but it misses the best idea here. Ask what your opponent is threatening and which piece needs a better job.`
-        );
+        setMessage(explainWrongPuzzleMove(puzzle, game, next, made));
         return;
       }
 
