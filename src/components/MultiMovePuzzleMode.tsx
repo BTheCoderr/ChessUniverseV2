@@ -71,6 +71,7 @@ export function MultiMovePuzzleMode() {
   const [selected, setSelected] = useState<Square | null>(null);
   const [complete, setComplete] = useState(false);
   const [message, setMessage] = useState(puzzle.setup);
+  const [mistakeFeedback, setMistakeFeedback] = useState("");
   const [progress, setProgress] = useState(loadProgress);
 
   const step = puzzle.steps[stepIndex] ?? null;
@@ -83,6 +84,7 @@ export function MultiMovePuzzleMode() {
   const finishPuzzle = () => {
     setComplete(true);
     setSelected(null);
+    setMistakeFeedback("");
     setMessage(puzzle.takeaway);
     if (!progress.includes(puzzle.id)) {
       const next = [...progress, puzzle.id];
@@ -98,6 +100,7 @@ export function MultiMovePuzzleMode() {
     setStepIndex(0);
     setSelected(null);
     setComplete(false);
+    setMistakeFeedback("");
     setMessage(next.setup);
   };
 
@@ -121,6 +124,7 @@ export function MultiMovePuzzleMode() {
     const nextStepIndex = stepIndex + 1;
     setGame(next);
     setSelected(null);
+    setMistakeFeedback("");
 
     if (nextStepIndex >= puzzle.steps.length) {
       finishPuzzle();
@@ -144,10 +148,12 @@ export function MultiMovePuzzleMode() {
       if (uci !== step.uci) {
         recordReviewAttempt(`multi-${puzzle.id}-${stepIndex}`, false, uci);
         setSelected(null);
-        setMessage(explainWrongSequenceMove(next, made, step.mistakeLesson));
+        setMessage("Try another move — stay on this step.");
+        setMistakeFeedback(explainWrongSequenceMove(next, made, step.mistakeLesson));
         return;
       }
 
+      setMistakeFeedback("");
       recordReviewAttempt(`multi-${puzzle.id}-${stepIndex}`, true, uci);
       const nextStepIndex = stepIndex + 1;
       setGame(next);
@@ -167,7 +173,8 @@ export function MultiMovePuzzleMode() {
       );
     } catch {
       setSelected(null);
-      setMessage("That move is not legal in this position.");
+      setMessage("Try another move — stay on this step.");
+      setMistakeFeedback("That move is not legal in this position. Recheck the piece movement, blockers, and king safety before choosing again.");
     }
   };
 
@@ -252,6 +259,13 @@ export function MultiMovePuzzleMode() {
           ) : null}
 
           <p className={complete ? "tutorial-feedback success" : "tutorial-feedback"}>{message}</p>
+
+          {!complete && mistakeFeedback ? (
+            <div className="puzzle-mistake-card" role="alert">
+              <strong>Why that move does not work</strong>
+              <span>{mistakeFeedback}</span>
+            </div>
+          ) : null}
 
           {complete ? (
             <>
