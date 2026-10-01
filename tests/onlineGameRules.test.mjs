@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Chess } from "chess.js";
 import {
   BLACK_FIRST_FEN,
+  isThreefoldPosition,
   isUntimed,
   validateMoveTurn,
 } from "../supabase/functions/online-game/rules.mjs";
@@ -30,4 +31,28 @@ test("online turn gate rejects the wrong player", () => {
 test("zero-minute games are explicitly untimed", () => {
   assert.equal(isUntimed({ time_control_minutes: 0 }), true);
   assert.equal(isUntimed({ time_control_minutes: 10 }), false);
+});
+
+
+test("threefold detection uses persisted position history instead of the latest FEN alone", () => {
+  const chess = new Chess(BLACK_FIRST_FEN);
+  const positions = [chess.fen()];
+  const cycle = [
+    ["g8", "f6"],
+    ["g1", "f3"],
+    ["f6", "g8"],
+    ["f3", "g1"],
+  ];
+
+  for (const [from, to] of cycle) {
+    chess.move({ from, to });
+    positions.push(chess.fen());
+  }
+  assert.equal(isThreefoldPosition(positions), false);
+
+  for (const [from, to] of cycle) {
+    chess.move({ from, to });
+    positions.push(chess.fen());
+  }
+  assert.equal(isThreefoldPosition(positions), true);
 });
