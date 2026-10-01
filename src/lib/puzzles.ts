@@ -186,7 +186,7 @@ export const OFFLINE_PUZZLES: Puzzle[] = [
     opponentIdea: "White's queen on d5 attacks a8. If Black ignores the threat, Qxa8 wins the rook.",
     takeaway: "Defense is a move too. Before attacking, scan which of your pieces are under direct attack and solve the most urgent threat.",
     mistakeLesson: "White's queen is already attacking the rook on a8. Any move that leaves the rook on that diagonal—or moves it onto another square the queen can immediately capture—loses material.",
-  }
+  },
   {
     id: "knight-wins-queen",
     title: "Knight Finds the Queen",
