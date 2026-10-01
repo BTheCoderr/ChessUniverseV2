@@ -85,8 +85,6 @@ export function FeedbackPanel({ userId, appView, onBack, onSignIn }: Props) {
         className="feedback-form"
         name={NETLIFY_FEEDBACK_FORM}
         method="POST"
-        data-netlify="true"
-        netlify-honeypot="bot-field"
         onSubmit={submit}
       >
         <input type="hidden" name="form-name" value={NETLIFY_FEEDBACK_FORM} />
