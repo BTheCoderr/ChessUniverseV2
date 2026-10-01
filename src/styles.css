@@ -5779,3 +5779,25 @@ textarea:focus-visible {
     transition: none !important;
   }
 }
+
+
+/* Public beta feedback fallback */
+.feedback-public-note {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 18px;
+  border: 1px solid #4c5c16;
+  border-radius: 12px;
+  background: #1a210d;
+  padding: 12px 14px;
+}
+.feedback-public-note strong { color: var(--accent); }
+.feedback-public-note span {
+  color: #cbd4b8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.feedback-public-note .text-button {
+  justify-self: start;
+  padding-left: 0;
+}
