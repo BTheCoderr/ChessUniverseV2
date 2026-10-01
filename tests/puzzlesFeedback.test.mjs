@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   OFFLINE_PUZZLES,
   explainWrongPuzzleMove,
@@ -75,4 +76,17 @@ test("feedback settings default on and normalize explicit opt-outs", () => {
   assert.deepEqual(normalizeFeedbackSettings(null), { sound: true, haptics: true });
   assert.deepEqual(normalizeFeedbackSettings({ sound: false, haptics: true }), { sound: false, haptics: true });
   assert.deepEqual(normalizeFeedbackSettings({ sound: true, haptics: false }), { sound: true, haptics: false });
+});
+
+
+test("feedback is routed only through the Netlify form", () => {
+  const panel = readFileSync(new URL("../src/components/FeedbackPanel.tsx", import.meta.url), "utf8");
+  const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.match(panel, /submitNetlifyFeedback/);
+  assert.doesNotMatch(panel, /beta_feedback/);
+  assert.doesNotMatch(panel, /from\s+["']\.\.\/lib\/supabase["']/);
+  assert.match(index, /name="chess-universe-feedback"/);
+  assert.match(index, /data-netlify="true"/);
+  assert.match(index, /netlify-honeypot="bot-field"/);
 });

@@ -384,13 +384,8 @@ export default function App() {
 
           {view === "feedback" ? (
             <FeedbackPanel
-              userId={session?.user.id}
               appView={previousView}
               onBack={goBackFromUtility}
-              onSignIn={() => {
-                setPreviousView("feedback");
-                setView("account");
-              }}
             />
           ) : null}
 
