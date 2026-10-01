@@ -2,13 +2,21 @@ import type { Color, Square } from "chess.js";
 
 export const MULTI_MOVE_PROGRESS_KEY = "chess-universe-multi-move-v1";
 
-export type MultiMoveStep = {
-  actor: "player" | "opponent";
-  uci: string;
-  label: string;
-  explanation: string;
-  mistakeLesson?: string;
-};
+export type MultiMoveStep =
+  | {
+      actor: "player";
+      uci: string;
+      label: string;
+      explanation: string;
+      mistakeLesson: string;
+    }
+  | {
+      actor: "opponent";
+      uci: string;
+      label: string;
+      explanation: string;
+      mistakeLesson?: never;
+    };
 
 export type MultiMovePuzzle = {
   id: string;

@@ -5808,3 +5808,28 @@ textarea:focus-visible {
   justify-self: start;
   padding-left: 0;
 }
+
+
+/* Puzzle coaching: keep wrong-move explanations visually distinct from the prompt */
+.puzzle-mistake-card {
+  display: grid;
+  gap: 5px;
+  margin: 12px 0;
+  border: 1px solid #7a4d2d;
+  border-left: 4px solid #d47a3a;
+  border-radius: 12px;
+  background: #23170f;
+  padding: 12px 14px;
+}
+
+.puzzle-mistake-card strong {
+  color: #ffbf8a;
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+
+.puzzle-mistake-card span {
+  color: #f3ddcb;
+  font-size: 12px;
+  line-height: 1.5;
+}

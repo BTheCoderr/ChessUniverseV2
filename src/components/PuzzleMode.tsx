@@ -63,6 +63,7 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
   const [game, setGame] = useState(() => puzzlePosition(OFFLINE_PUZZLES[todayIndex]));
   const [selected, setSelected] = useState<Square | null>(null);
   const [message, setMessage] = useState(OFFLINE_PUZZLES[todayIndex].goal);
+  const [mistakeFeedback, setMistakeFeedback] = useState("");
   const [complete, setComplete] = useState(false);
   const [hintShown, setHintShown] = useState(false);
   const [progress, setProgress] = useState(loadProgress);
@@ -143,6 +144,7 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
     setGame(puzzlePosition(nextPuzzle));
     setSelected(null);
     setMessage(nextPuzzle.goal);
+    setMistakeFeedback("");
     setComplete(false);
     setHintShown(false);
   };
@@ -158,10 +160,12 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
 
       if (!correct) {
         setSelected(null);
-        setMessage(explainWrongPuzzleMove(puzzle, game, next, made));
+        setMessage("Try another move — the board has been reset to the same decision.");
+        setMistakeFeedback(explainWrongPuzzleMove(puzzle, game, next, made));
         return;
       }
 
+      setMistakeFeedback("");
       setGame(next);
       setSelected(null);
       setComplete(true);
@@ -172,7 +176,8 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
       setMessage(puzzle.explanation);
     } catch {
       setSelected(null);
-      setMessage("That move is not legal in this position.");
+      setMessage("Try another move — the board has been reset to the same decision.");
+      setMistakeFeedback("That move is not legal in this position. Recheck how the piece moves, whether the path is blocked, and whether your king would be left in check.");
     }
   };
 
@@ -280,6 +285,13 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
             <strong>What is the opponent trying to do?</strong>
             <span>{puzzle.opponentIdea}</span>
           </div>
+
+          {!complete && mistakeFeedback ? (
+            <div className="puzzle-mistake-card" role="alert">
+              <strong>Why that move does not work</strong>
+              <span>{mistakeFeedback}</span>
+            </div>
+          ) : null}
 
           {!complete ? (
             <>
