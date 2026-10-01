@@ -38,7 +38,7 @@ test("completed history survives account deletion while unfinished games are rem
   assert.match(migration, /game_moves_player_id_fkey[\s\S]*on delete set null/);
 });
 
-test("beta feedback is signed-in only and owner-scoped", async () => {
+test("beta feedback keeps owner-scoped Supabase storage plus a public Netlify fallback", async () => {
   const migration = await source("supabase/migrations/013_beta_readiness.sql");
   const panel = await source("src/components/FeedbackPanel.tsx");
   const types = await source("src/lib/database.types.ts");
@@ -48,7 +48,17 @@ test("beta feedback is signed-in only and owner-scoped", async () => {
   assert.match(migration, /grant insert on table public\.beta_feedback to authenticated/);
   assert.match(migration, /with check \(\(select auth\.uid\(\)\) = user_id\)/);
   assert.match(panel, /from\("beta_feedback"\)\.insert/);
+  assert.match(panel, /submitNetlifyFeedback/);
+  assert.match(panel, /No sign-in required/);
   assert.match(types, /beta_feedback:/);
+
+  const html = await source("index.html");
+  const netlifyFeedback = await source("src/lib/netlifyFeedback.ts");
+  assert.match(html, /name="chess-universe-feedback"/);
+  assert.match(html, /data-netlify="true"/);
+  assert.match(html, /netlify-honeypot="bot-field"/);
+  assert.match(netlifyFeedback, /form-name/);
+  assert.match(netlifyFeedback, /application\/x-www-form-urlencoded/);
 });
 
 test("lobby create and join guards stop one player from flooding the beta", async () => {
