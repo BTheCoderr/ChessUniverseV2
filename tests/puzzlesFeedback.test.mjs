@@ -53,7 +53,7 @@ test("rook and queen lesson is Black defense and does not hang the rook", () => 
   assert.equal(canCaptureRook, false);
 
   const beforeWrong = puzzlePosition(puzzle);
-  const afterWrong = new (beforeWrong.constructor)(beforeWrong.fen());
+  const afterWrong = puzzlePosition(puzzle);
   const wrong = afterWrong.move({ from: "a8", to: "d8" });
   assert.ok(wrong);
 
