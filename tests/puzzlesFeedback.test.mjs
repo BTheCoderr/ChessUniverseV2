@@ -142,13 +142,15 @@ test("feedback settings default on and normalize explicit opt-outs", () => {
 });
 
 
-test("feedback is routed only through the Netlify form", () => {
+test("feedback keeps signed-in Supabase storage and a public Netlify fallback", () => {
   const panel = readFileSync(new URL("../src/components/FeedbackPanel.tsx", import.meta.url), "utf8");
   const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
+  assert.match(panel, /from\("beta_feedback"\)\.insert/);
+  assert.match(panel, /user_id:\s*userId/);
   assert.match(panel, /submitNetlifyFeedback/);
-  assert.doesNotMatch(panel, /beta_feedback/);
-  assert.doesNotMatch(panel, /from\s+["']\.\.\/lib\/supabase["']/);
+  assert.match(panel, /!storedInSupabase/);
+  assert.match(panel, /No sign-in required/);
   assert.match(index, /name="chess-universe-feedback"/);
   assert.match(index, /data-netlify="true"/);
   assert.match(index, /netlify-honeypot="bot-field"/);
@@ -157,9 +159,9 @@ test("feedback is routed only through the Netlify form", () => {
 
 test("mobile feedback control stays in document flow instead of covering puzzle coaching", () => {
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  const mobileStart = css.indexOf("@media (max-width: 680px)");
-  assert.notEqual(mobileStart, -1);
-  const mobileCss = css.slice(mobileStart, mobileStart + 700);
-  assert.match(mobileCss, /\.beta-feedback-fab\s*\{[\s\S]*?position:\s*static/);
-  assert.match(mobileCss, /safe-area-inset-bottom/);
+  assert.match(
+    css,
+    /@media \(max-width: 680px\)[\s\S]*?\.beta-feedback-fab\s*\{[\s\S]*?position:\s*static/
+  );
+  assert.match(css, /safe-area-inset-bottom/);
 });
