@@ -1,6 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { Chess } from "npm:chess.js@1.1.0";
-import { isUntimed, participantColor, validateMoveTurn } from "./rules.mjs";
+import {
+  isThreefoldPosition,
+  isUntimed,
+  participantColor,
+  startingFen,
+  validateMoveTurn,
+} from "./rules.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +19,7 @@ type GameRow = {
   white_id: string;
   variant: string;
   battle_formation_key: string | null;
+  tournament_match_id: string | null;
   black_id: string | null;
   status: "waiting" | "active" | "completed" | "cancelled";
   result: "white" | "black" | "draw" | null;
@@ -77,6 +84,34 @@ Deno.serve(async (req: Request) => {
   const userId = authData.user.id;
   const action = String(body.action ?? "");
 
+  const expireWaitingGames = async () => {
+    const { error } = await admin.rpc("expire_waiting_games_service", {
+      event_time: new Date().toISOString(),
+    });
+    return error;
+  };
+
+  if (action === "refresh_lobby") {
+    const cleanupError = await expireWaitingGames();
+    if (cleanupError) return response({ error: cleanupError.message }, 409);
+    return response({ ok: true });
+  }
+
+  if (
+    [
+      "create_game",
+      "create_private_challenge",
+      "join_game",
+      "create_rematch",
+      "inspect_challenge",
+      "challenge_rival",
+      "accept_rematch",
+    ].includes(action)
+  ) {
+    const cleanupError = await expireWaitingGames();
+    if (cleanupError) return response({ error: cleanupError.message }, 409);
+  }
+
   if (action === "create_game") {
     const variant = String(body.variant ?? "traditional");
     const minutes = Number(body.minutes ?? 0);
@@ -137,6 +172,20 @@ Deno.serve(async (req: Request) => {
 
     if (error) return response({ error: error.message }, 409);
     return response({ ok: true, gameId: data, private: true, variant });
+  }
+
+  if (action === "cancel_game") {
+    const gameId = String(body.gameId ?? "");
+    if (!gameId) return response({ error: "Game id is required" }, 400);
+
+    const { data, error } = await admin.rpc("cancel_waiting_game_service", {
+      target_game_id: gameId,
+      actor_id: userId,
+      event_time: new Date().toISOString(),
+    });
+
+    if (error) return response({ error: error.message }, 409);
+    return response({ ok: Boolean(data), gameId, status: "cancelled" });
   }
 
   if (action === "join_game") {
@@ -577,7 +626,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: gameData, error: gameError } = await admin
     .from("games")
-    .select("id,white_id,black_id,status,result,variant,battle_formation_key,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,last_move_at,draw_offer_by")
+    .select("id,white_id,black_id,status,result,variant,battle_formation_key,tournament_match_id,fen,current_turn,time_control_minutes,increment_seconds,white_time_ms,black_time_ms,last_move_at,draw_offer_by")
     .eq("id", gameId)
     .single();
 
@@ -607,8 +656,22 @@ Deno.serve(async (req: Request) => {
     if (error) throw error;
   };
 
+  const abortIfShort = async () => {
+    const { data, error } = await admin.rpc("abort_short_game_service", {
+      target_game_id: gameId,
+      actor_id: userId,
+      expected_fen: game.fen,
+      event_time: now.toISOString(),
+    });
+    if (error) throw error;
+    return Boolean(data);
+  };
+
   try {
     if (action === "resign") {
+      if (await abortIfShort()) {
+        return response({ ok: true, status: "cancelled", result: null, reason: "aborted_short_game" });
+      }
       await finish(actorColor === "w" ? "black" : "white", "resignation");
       return response({ ok: true, status: "completed" });
     }
@@ -617,6 +680,9 @@ Deno.serve(async (req: Request) => {
       if (untimed) return response({ error: "Untimed games do not expire" }, 409);
       const remaining = game.current_turn === "w" ? clocks.white : clocks.black;
       if (remaining > 0) return response({ error: "Clock has not expired" }, 409);
+      if (await abortIfShort()) {
+        return response({ ok: true, status: "cancelled", result: null, reason: "aborted_short_game" });
+      }
       await finish(game.current_turn === "w" ? "black" : "white", "timeout");
       return response({ ok: true, status: "completed" });
     }
@@ -654,6 +720,9 @@ Deno.serve(async (req: Request) => {
     if (!untimed) {
       const activeRemaining = actorColor === "w" ? clocks.white : clocks.black;
       if (activeRemaining <= 0) {
+        if (await abortIfShort()) {
+          return response({ ok: true, status: "cancelled", result: null, reason: "aborted_short_game" });
+        }
         await finish(actorColor === "w" ? "black" : "white", "timeout");
         return response({ error: "Time expired" }, 409);
       }
@@ -678,6 +747,21 @@ Deno.serve(async (req: Request) => {
       else clocks.black += game.increment_seconds * 1000;
     }
 
+    const nextFen = chess.fen();
+    const { data: historyRows, error: historyError } = await admin
+      .from("game_moves")
+      .select("fen_after")
+      .eq("game_id", gameId)
+      .order("ply", { ascending: true });
+
+    if (historyError) return response({ error: historyError.message }, 409);
+
+    const isThreefold = isThreefoldPosition([
+      startingFen(game),
+      ...((historyRows ?? []) as Array<{ fen_after: string }>).map((row) => row.fen_after),
+      nextFen,
+    ]);
+
     let nextStatus = "active";
     let nextResult: "white" | "black" | "draw" | null = null;
     let reason: string | null = null;
@@ -686,14 +770,14 @@ Deno.serve(async (req: Request) => {
       nextStatus = "completed";
       nextResult = actorColor === "w" ? "white" : "black";
       reason = "checkmate";
-    } else if (chess.isDraw()) {
+    } else if (chess.isDraw() || isThreefold) {
       nextStatus = "completed";
       nextResult = "draw";
       reason = chess.isStalemate()
         ? "stalemate"
         : chess.isInsufficientMaterial()
           ? "insufficient_material"
-          : chess.isThreefoldRepetition()
+          : isThreefold
             ? "threefold_repetition"
             : "draw";
     }
@@ -707,7 +791,7 @@ Deno.serve(async (req: Request) => {
       move_to: move.to,
       move_promotion: move.promotion ?? null,
       move_san: move.san,
-      next_fen: chess.fen(),
+      next_fen: nextFen,
       next_pgn: chess.pgn(),
       next_turn: chess.turn(),
       next_white_time_ms: Math.round(clocks.white),

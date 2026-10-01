@@ -69,10 +69,10 @@ type ChallengeInfo = {
 };
 
 const timeOptions = [
-  { minutes: 0, label: "Untimed", detail: "Leave and resume later" },
-  { minutes: 10, label: "10 min", detail: "Quick casual game" },
-  { minutes: 15, label: "15 min", detail: "More thinking time" },
-  { minutes: 30, label: "30 min", detail: "Relaxed timed game" },
+  { minutes: 0, label: "Untimed", detail: "Unrated casual · resumable" },
+  { minutes: 10, label: "10 min", detail: "Rated quick game" },
+  { minutes: 15, label: "15 min", detail: "Rated · more thinking time" },
+  { minutes: 30, label: "30 min", detail: "Rated · relaxed clock" },
 ];
 
 function timeLabel(minutes: number) {
@@ -182,6 +182,11 @@ export function OnlineLobby({
 
   const load = async () => {
     if (!client || !session) return;
+
+    const { error: cleanupError } = await client.functions.invoke("online-game", {
+      body: { action: "refresh_lobby" },
+    });
+    if (cleanupError) setMessage(cleanupError.message);
 
     const gameSelect = "id,white_id,black_id,status,result,result_reason,variant,battle_formation_key,time_control_minutes,created_at,ended_at,is_private,invited_user_id,rematch_of,white_rating_before,white_rating_after,black_rating_before,black_rating_after,battle_white_rating_before,battle_white_rating_after,battle_black_rating_before,battle_black_rating_after";
     const participantFilter =
@@ -524,6 +529,22 @@ export function OnlineLobby({
     }
   };
 
+  const cancelGame = async (gameId: string, dismissLinkedChallenge = false) => {
+    setMessage("");
+    const { error } = await client.functions.invoke("online-game", {
+      body: { action: "cancel_game", gameId },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    if (dismissLinkedChallenge) onChallengeHandled();
+    setMessage("Waiting game cancelled.");
+    await load();
+  };
+
   const shareChallenge = async (gameId: string) => {
     const allRows = [...incomingChallenges, ...myPrivateChallenges, ...activeGames, ...games, ...battleGames];
     const challenge = allRows.find((game) => game.id === gameId);
@@ -631,6 +652,7 @@ export function OnlineLobby({
               <>
                 <button className="primary-action compact" onClick={() => onOpenGame(challengeGameId)}>Open table</button>
                 <button className="secondary-action compact" onClick={() => void shareChallenge(challengeGameId)}>Share invite</button>
+                <button className="text-button" onClick={() => void cancelGame(challengeGameId, true)}>Cancel invite</button>
               </>
             ) : challengeInfo ? (
               <button className="primary-action compact" onClick={() => void joinGame(challengeGameId, true)}>
@@ -777,7 +799,10 @@ export function OnlineLobby({
                         <span>{stats?.rating ?? 1200} Battle rating · {timeLabel(game.time_control_minutes)}</span>
                       </div>
                       {game.white_id === session.user.id ? (
-                        <button className="secondary-action compact" onClick={() => onOpenGame(game.id)}>Open</button>
+                        <div className="inline-game-actions">
+                          <button className="secondary-action compact" onClick={() => onOpenGame(game.id)}>Open</button>
+                          <button className="text-button" onClick={() => void cancelGame(game.id)}>Cancel</button>
+                        </div>
                       ) : (
                         <button className="secondary-action compact" onClick={() => void joinGame(game.id)}>Join Battle</button>
                       )}
@@ -859,7 +884,7 @@ export function OnlineLobby({
 
       <section className="lobby-section create-table">
         <div className="section-heading">
-          <div><strong>Create a rated Classic game</strong><span>Pick the clock, then open a public table or send a private invite.</span></div>
+          <div><strong>Create a Classic game</strong><span>Untimed is casual and unrated. Timed games affect Classic Elo and Season standings.</span></div>
         </div>
 
         <div className="time-control-grid" role="group" aria-label="Classic time control">
@@ -884,7 +909,7 @@ export function OnlineLobby({
             Private Classic challenge
           </button>
         </div>
-        <p className="muted">Classic games affect all-time Elo and Season standings. Battle games do not.</p>
+        <p className="muted">Untimed Classic is unrated. Timed Classic affects all-time Elo and Season standings. Battle uses separate Battle Elo.</p>
       </section>
 
       {myPrivateChallenges.length > 0 ? (
@@ -908,6 +933,7 @@ export function OnlineLobby({
                 <div className="inline-game-actions">
                   <button className="secondary-action compact" onClick={() => void shareChallenge(game.id)}>Share</button>
                   <button className="primary-action compact" onClick={() => onOpenGame(game.id)}>Open</button>
+                  <button className="text-button" onClick={() => void cancelGame(game.id)}>Cancel</button>
                 </div>
               </div>
             ))}
@@ -931,7 +957,10 @@ export function OnlineLobby({
                   <span>{creator?.rating ?? "—"} rating · {game.id.slice(0, 8)}</span>
                 </div>
                 {game.white_id === session.user.id ? (
-                  <button className="secondary-action compact" onClick={() => onOpenGame(game.id)}>Open table</button>
+                  <div className="inline-game-actions">
+                    <button className="secondary-action compact" onClick={() => onOpenGame(game.id)}>Open table</button>
+                    <button className="text-button" onClick={() => void cancelGame(game.id)}>Cancel</button>
+                  </div>
                 ) : (
                   <button className="secondary-action compact" onClick={() => void joinGame(game.id)}>Join</button>
                 )}

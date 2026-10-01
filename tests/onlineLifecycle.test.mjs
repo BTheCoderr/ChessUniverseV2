@@ -60,3 +60,27 @@ test("online board supports drag attempts without sending client-computed state"
   assert.doesNotMatch(payload, /fen\s*:/i);
   assert.doesNotMatch(payload, /position\s*:/i);
 });
+
+
+test("online beta housekeeping prevents stale tables and throwaway rating games", async () => {
+  const migration = await source("supabase/migrations/022_online_beta_housekeeping.sql");
+  assert.match(migration, /expire_waiting_games_service/);
+  assert.match(migration, /interval '30 minutes'/);
+  assert.match(migration, /interval '72 hours'/);
+  assert.match(migration, /cancel_waiting_game_service/);
+  assert.match(migration, /abort_short_game_service/);
+  assert.match(migration, /competitive_ply_count<4/);
+  assert.match(migration, /game_row\.time_control_minutes=0/);
+  assert.match(migration, /perform 1 from public\.profiles where id=actor_id for update/);
+
+  const edge = await source("supabase/functions/online-game/index.ts");
+  assert.match(edge, /action === "refresh_lobby"/);
+  assert.match(edge, /action === "cancel_game"/);
+  assert.match(edge, /abort_short_game_service/);
+  assert.match(edge, /isThreefoldPosition/);
+
+  const lobby = await source("src/components/OnlineLobby.tsx");
+  assert.match(lobby, /action: "cancel_game"/);
+  assert.match(lobby, /Unrated casual · resumable/);
+  assert.match(lobby, /Untimed is casual and unrated/);
+});

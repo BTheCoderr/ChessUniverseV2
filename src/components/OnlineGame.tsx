@@ -412,7 +412,11 @@ export function OnlineGame({
       : gameRow.status === "completed"
         ? `${resultText ?? "Game over"}${gameRow.result_reason ? ` · ${gameRow.result_reason.replaceAll("_", " ")}` : ""}`
         : gameRow.status === "cancelled"
-          ? "Game cancelled"
+          ? gameRow.result_reason === "aborted_short_game"
+            ? "Game aborted · fewer than 4 plies"
+            : gameRow.result_reason === "expired"
+              ? "Waiting game expired"
+              : "Game cancelled"
           : isMyTurn
             ? "Your move"
             : "Opponent's move";
@@ -786,7 +790,7 @@ export function OnlineGame({
             disabled={saving}
             onClick={() => void invokeGameAction({ action: "resign", gameId })}
           >
-            Resign game
+            {moves.length < 4 && !gameRow.tournament_match_id ? "Abort game" : "Resign game"}
           </button>
         ) : null}
 
@@ -794,8 +798,8 @@ export function OnlineGame({
           Moves, results, and draw agreements are validated by the trusted game service before the database accepts them.
           {isBattle ? " Battle results update only Battle rating and Battle stats." : ""}
           {gameRow.time_control_minutes === 0
-            ? " Untimed games do not expire from a chess clock."
-            : " Timed games keep running after they begin, so reconnect instead of expecting a pause."}
+            ? " Untimed games are casual and unrated, and they do not expire from a chess clock."
+            : " Timed games are rated after 4 plies and keep running after they begin, so reconnect instead of expecting a pause."}
         </p>
       </aside>
     </section>
