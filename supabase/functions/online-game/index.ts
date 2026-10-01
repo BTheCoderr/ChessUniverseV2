@@ -1,6 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { Chess } from "npm:chess.js@1.1.0";
-import { isUntimed, participantColor, validateMoveTurn } from "./rules.mjs";
+import {
+  isThreefoldPosition,
+  isUntimed,
+  participantColor,
+  startingFen,
+  validateMoveTurn,
+} from "./rules.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,27 +35,6 @@ type GameRow = {
 
 const response = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders });
-
-const TRADITIONAL_START_FEN =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
-
-const BATTLE_START_FENS: Record<string, string> = {
-  classic: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b - - 0 1",
-  cavalry: "rnnqkbbr/pppppppp/8/8/8/8/PPPPPPPP/RNNQKBBR b - - 0 1",
-  fortress: "rbnqknbr/pppppppp/8/8/8/8/PPPPPPPP/RBNQKNBR b - - 0 1",
-  crest_guard: "nrbqkbrn/pppppppp/8/8/8/8/PPPPPPPP/NRBQKBRN b - - 0 1",
-  crown_wall: "qrbnknbr/pppppppp/8/8/8/8/PPPPPPPP/QRBNKNBR b - - 0 1",
-  master_grid: "bnrqkrnb/pppppppp/8/8/8/8/PPPPPPPP/BNRQKRNB b - - 0 1",
-};
-
-function startingFen(game: GameRow) {
-  if (game.variant !== "battle") return TRADITIONAL_START_FEN;
-  return BATTLE_START_FENS[game.battle_formation_key ?? ""] ?? game.fen;
-}
-
-function positionKey(fen: string) {
-  return fen.trim().split(/\s+/).slice(0, 4).join(" ");
-}
 
 function clocksAt(game: GameRow, nowMs: number) {
   if (isUntimed(game)) return { white: 0, black: 0 };
@@ -771,13 +756,11 @@ Deno.serve(async (req: Request) => {
 
     if (historyError) return response({ error: historyError.message }, 409);
 
-    const nextPosition = positionKey(nextFen);
-    const repeatedPositions = [
+    const isThreefold = isThreefoldPosition([
       startingFen(game),
       ...((historyRows ?? []) as Array<{ fen_after: string }>).map((row) => row.fen_after),
       nextFen,
-    ].filter((fen) => positionKey(fen) === nextPosition).length;
-    const isThreefold = repeatedPositions >= 3;
+    ]);
 
     let nextStatus = "active";
     let nextResult: "white" | "black" | "draw" | null = null;
