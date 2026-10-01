@@ -90,3 +90,13 @@ test("feedback is routed only through the Netlify form", () => {
   assert.match(index, /data-netlify="true"/);
   assert.match(index, /netlify-honeypot="bot-field"/);
 });
+
+
+test("mobile feedback control stays in document flow instead of covering puzzle coaching", () => {
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  const mobileStart = css.indexOf("@media (max-width: 680px)");
+  assert.notEqual(mobileStart, -1);
+  const mobileCss = css.slice(mobileStart, mobileStart + 700);
+  assert.match(mobileCss, /\.beta-feedback-fab\s*\{[\s\S]*?position:\s*static/);
+  assert.match(mobileCss, /safe-area-inset-bottom/);
+});

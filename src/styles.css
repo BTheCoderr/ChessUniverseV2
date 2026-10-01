@@ -2428,8 +2428,15 @@ code {
   }
 
   .beta-feedback-fab {
-    right: 12px;
-    bottom: 12px;
+    position: static;
+    display: block;
+    width: fit-content;
+    margin: 18px 16px 0 auto;
+  }
+
+  .site-footer {
+    margin-bottom: 0;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
 }
 
