@@ -64,3 +64,18 @@ test("Traditional, Evolving Queens, and Magic Horse remain separate app views", 
   assert.match(app, /<MagicHorseGame \/>/);
   assert.match(app, /<OnlineGame\b/);
 });
+
+test("release config pins Node and sends baseline browser security headers", async () => {
+  const netlify = await source("netlify.toml");
+  const workflow = await source(".github/workflows/ci.yml");
+  const nvmrc = (await source(".nvmrc")).trim();
+
+  assert.equal(nvmrc, "24");
+  assert.match(netlify, /NODE_VERSION = "24"/);
+  assert.match(workflow, /node-version: 24/);
+  assert.match(netlify, /X-Content-Type-Options = "nosniff"/);
+  assert.match(netlify, /X-Frame-Options = "DENY"/);
+  assert.match(netlify, /Referrer-Policy = "strict-origin-when-cross-origin"/);
+  assert.match(netlify, /Permissions-Policy = "camera=\(\), microphone=\(\), geolocation=\(\)"/);
+  assert.match(netlify, /Strict-Transport-Security = "max-age=31536000"/);
+});
