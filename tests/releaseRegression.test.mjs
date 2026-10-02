@@ -59,7 +59,7 @@ test("browser online move payload sends coordinates, not a computed board positi
 
 test("Traditional, Evolving Queens, and Magic Horse remain separate app views", async () => {
   const app = await source("src/App.tsx");
-  assert.ok(app.includes("<LocalGame onOpenLibrary="));
+  assert.match(app, /<LocalGame[\s\S]*?onOpenLibrary=/);
   assert.match(app, /<EvolvingQueensGame \/>/);
   assert.match(app, /<MagicHorseGame \/>/);
   assert.match(app, /<OnlineGame\b/);

@@ -38,19 +38,24 @@ test("completed history survives account deletion while unfinished games are rem
   assert.match(migration, /game_moves_player_id_fkey[\s\S]*on delete set null/);
 });
 
-test("beta feedback keeps owner-scoped Supabase storage plus a public Netlify fallback", async () => {
+test("beta feedback routes through the public Netlify form while legacy storage stays owner-scoped", async () => {
   const migration = await source("supabase/migrations/013_beta_readiness.sql");
   const panel = await source("src/components/FeedbackPanel.tsx");
   const types = await source("src/lib/database.types.ts");
 
+  // Keep the historical table locked down even though the beta UI no longer writes to it.
   assert.match(migration, /create table if not exists public\.beta_feedback/);
   assert.match(migration, /alter table public\.beta_feedback enable row level security/);
   assert.match(migration, /grant insert on table public\.beta_feedback to authenticated/);
   assert.match(migration, /with check \(\(select auth\.uid\(\)\) = user_id\)/);
-  assert.match(panel, /from\("beta_feedback"\)\.insert/);
+  assert.match(types, /beta_feedback:/);
+
+  // Current product behavior: every report goes directly through Netlify Forms.
   assert.match(panel, /submitNetlifyFeedback/);
   assert.match(panel, /No sign-in required/);
-  assert.match(types, /beta_feedback:/);
+  assert.match(panel, /Every report goes directly through the Chess Universe Netlify form/);
+  assert.doesNotMatch(panel, /from\("beta_feedback"\)/);
+  assert.doesNotMatch(panel, /\.\.\/lib\/supabase/);
 
   const html = await source("index.html");
   const netlifyFeedback = await source("src/lib/netlifyFeedback.ts");
