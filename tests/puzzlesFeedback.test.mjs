@@ -142,15 +142,16 @@ test("feedback settings default on and normalize explicit opt-outs", () => {
 });
 
 
-test("feedback keeps signed-in Supabase storage and a public Netlify fallback", () => {
+test("feedback routes every report directly through Netlify Forms", () => {
   const panel = readFileSync(new URL("../src/components/FeedbackPanel.tsx", import.meta.url), "utf8");
   const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
-  assert.match(panel, /from\("beta_feedback"\)\.insert/);
-  assert.match(panel, /user_id:\s*userId/);
   assert.match(panel, /submitNetlifyFeedback/);
-  assert.match(panel, /!storedInSupabase/);
   assert.match(panel, /No sign-in required/);
+  assert.match(panel, /Every report goes directly through the Chess Universe Netlify form/);
+  assert.doesNotMatch(panel, /beta_feedback/);
+  assert.doesNotMatch(panel, /from\("beta_feedback"\)/);
+  assert.doesNotMatch(panel, /\.\/\.\.\/lib\/supabase|\.\.\/lib\/supabase/);
   assert.match(index, /name="chess-universe-feedback"/);
   assert.match(index, /data-netlify="true"/);
   assert.match(index, /netlify-honeypot="bot-field"/);

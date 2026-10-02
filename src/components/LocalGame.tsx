@@ -2,7 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import { getComputerMove, type Difficulty } from "../lib/stockfish";
-import { makeLocalGameId, saveGameToLibrary } from "../lib/gameLibrary";
+import { makeLocalGameId, saveGameToLibrary, type StoredGame } from "../lib/gameLibrary";
+import { reviewStoredMove, type ReviewedMove } from "../lib/gameReview";
+import {
+  coachHeadline,
+  summarizeCoachReviews,
+  type TrainingMoment,
+} from "../lib/postGameCoach";
 import { supabase } from "../lib/supabase";
 import type { Json } from "../lib/database.types";
 import { loadFeedbackSettings, normalizeFeedbackSettings, playChessFeedback, saveFeedbackSettings } from "../lib/feedback";
@@ -155,9 +161,13 @@ function loadSavedPractice(): SavedPractice & { game: Chess } {
   }
 }
 
-type LocalGameProps = { onOpenLibrary?: () => void; userId?: string | null };
+type LocalGameProps = {
+  onOpenLibrary?: (gameId?: string) => void;
+  onTrainMoment?: (moment: TrainingMoment) => void;
+  userId?: string | null;
+};
 
-export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
+export function LocalGame({ onOpenLibrary, onTrainMoment, userId }: LocalGameProps) {
   const initial = useRef(loadSavedPractice()).current;
   const [game, setGame] = useState(initial.game);
   const [gameId, setGameId] = useState(initial.gameId);
@@ -178,6 +188,9 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
   const gameToken = useRef(0);
   const clocksRef = useRef(clocks);
   const historyListRef = useRef<HTMLDivElement | null>(null);
+  const [postGameReviews, setPostGameReviews] = useState<ReviewedMove[]>([]);
+  const [postGameReviewStatus, setPostGameReviewStatus] = useState("");
+  const postGameReviewToken = useRef(0);
 
   const pieces = useMemo(() => boardPieces(game), [game]);
   const legalTargets = useMemo(() => {
@@ -193,6 +206,30 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
     : game.isGameOver()
       ? statusTextFor(game)
       : null;
+
+  const completedGame = useMemo<StoredGame | null>(() => {
+    if (!resultText || moves.length === 0) return null;
+    return {
+      id: gameId,
+      completedAt: new Date().toISOString(),
+      mode,
+      difficulty,
+      timeControlMinutes,
+      result: resultText,
+      moves: moves.map(({ from, to, promotion, san, color }) => ({
+        from,
+        to,
+        promotion,
+        san,
+        color,
+      })),
+    };
+  }, [difficulty, gameId, mode, moves, resultText, timeControlMinutes]);
+
+  const postGameSummary = useMemo(
+    () => summarizeCoachReviews(postGameReviews, mode === "ai" ? "b" : null),
+    [mode, postGameReviews]
+  );
 
   useEffect(() => {
     clocksRef.current = clocks;
@@ -246,26 +283,9 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
   }, [gameId, mode, difficulty, timeControlMinutes, learningHelp, moves, clocks, paused, timedOutColor]);
 
   useEffect(() => {
-    if (!resultText || moves.length === 0) return;
+    if (!completedGame) return;
 
-    const completedAt = new Date().toISOString();
-    const storedGame = {
-      id: gameId,
-      completedAt,
-      mode,
-      difficulty,
-      timeControlMinutes,
-      result: resultText,
-      moves: moves.map(({ from, to, promotion, san, color }) => ({
-        from,
-        to,
-        promotion,
-        san,
-        color,
-      })),
-    };
-
-    saveGameToLibrary(storedGame);
+    saveGameToLibrary(completedGame);
 
     if (userId && supabase) {
       void supabase
@@ -273,19 +293,59 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
         .upsert(
           {
             user_id: userId,
-            local_id: storedGame.id,
-            completed_at: storedGame.completedAt,
-            mode: storedGame.mode,
-            difficulty: storedGame.difficulty,
-            time_control_minutes: storedGame.timeControlMinutes,
-            result: storedGame.result,
-            moves: storedGame.moves as unknown as Json,
-            updated_at: completedAt,
+            local_id: completedGame.id,
+            completed_at: completedGame.completedAt,
+            mode: completedGame.mode,
+            difficulty: completedGame.difficulty,
+            time_control_minutes: completedGame.timeControlMinutes,
+            result: completedGame.result,
+            moves: completedGame.moves as unknown as Json,
+            updated_at: completedGame.completedAt,
           },
           { onConflict: "user_id,local_id" }
         );
     }
-  }, [gameId, resultText, moves, mode, difficulty, timeControlMinutes, userId]);
+  }, [completedGame, userId]);
+
+  useEffect(() => {
+    if (!completedGame) {
+      postGameReviewToken.current += 1;
+      setPostGameReviews([]);
+      setPostGameReviewStatus("");
+      return;
+    }
+
+    const token = ++postGameReviewToken.current;
+    const reviewIndexes = completedGame.moves
+      .map((move, index) => ({ move, index }))
+      .filter(({ move }) => mode !== "ai" || move.color === "b")
+      .map(({ index }) => index);
+
+    setPostGameReviews([]);
+    setPostGameReviewStatus("Finding the turning point…");
+
+    void (async () => {
+      const nextReviews: ReviewedMove[] = [];
+      for (let offset = 0; offset < reviewIndexes.length; offset += 1) {
+        const index = reviewIndexes[offset];
+        const review = await reviewStoredMove(completedGame, index, 4);
+        if (token !== postGameReviewToken.current) return;
+        nextReviews.push(review);
+        setPostGameReviewStatus(`Reviewing ${offset + 1} / ${reviewIndexes.length}…`);
+      }
+
+      if (token !== postGameReviewToken.current) return;
+      setPostGameReviews(nextReviews);
+      setPostGameReviewStatus("Post-game coach ready.");
+    })().catch((error) => {
+      if (token !== postGameReviewToken.current) return;
+      setPostGameReviewStatus(error instanceof Error ? error.message : "Post-game review is unavailable.");
+    });
+
+    return () => {
+      postGameReviewToken.current += 1;
+    };
+  }, [completedGame, mode]);
 
   useEffect(() => {
     const historyList = historyListRef.current;
@@ -458,6 +518,9 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
   };
 
   const startNewGame = (minutes = timeControlMinutes) => {
+    postGameReviewToken.current += 1;
+    setPostGameReviews([]);
+    setPostGameReviewStatus("");
     gameToken.current += 1;
     const next = newUniverseGame();
     const nextClocks = initialClocks(minutes);
@@ -593,8 +656,58 @@ export function LocalGame({ onOpenLibrary, userId }: LocalGameProps) {
               <strong>{resultText}</strong>
               <span>{mode === "ai" ? "This game was saved locally. Review it with Stockfish or run it back." : "This game was saved locally. Replay or review it anytime."}</span>
             </div>
-            {onOpenLibrary ? (
-              <button className="secondary-action review-saved-game" onClick={onOpenLibrary}>
+            {postGameSummary.turningPoint ? (
+              <div className="post-game-coach">
+                <div className="post-game-coach-heading">
+                  <div>
+                    <div className="eyebrow">POST-GAME COACH</div>
+                    <strong>{coachHeadline(postGameSummary)}</strong>
+                  </div>
+                  <b className={`grade-pill large ${postGameSummary.turningPoint.grade.toLowerCase()}`}>
+                    {postGameSummary.turningPoint.grade}
+                  </b>
+                </div>
+                <div className="post-game-coach-grid">
+                  <div>
+                    <span>Turning point</span>
+                    <strong>Move {postGameSummary.turningPoint.index + 1} · {postGameSummary.turningPoint.san}</strong>
+                  </div>
+                  <div>
+                    <span>Better move</span>
+                    <strong>{postGameSummary.turningPoint.bestSan}</strong>
+                  </div>
+                </div>
+                <p>{postGameSummary.turningPoint.explanation}</p>
+                <div className="review-teaching-card">
+                  <strong>What changed?</strong>
+                  <span>{postGameSummary.turningPoint.reviewCue}</span>
+                </div>
+                <div className="post-game-coach-stats">
+                  <span>{postGameSummary.inaccuracies} inaccuracies</span>
+                  <span>{postGameSummary.mistakes} mistakes</span>
+                  <span>{postGameSummary.blunders} blunders</span>
+                </div>
+                <div className="post-game-coach-actions">
+                  {onTrainMoment ? (
+                    <button
+                      className="primary-action"
+                      onClick={() => onTrainMoment({ gameId, review: postGameSummary.turningPoint! })}
+                    >
+                      Train this mistake
+                    </button>
+                  ) : null}
+                  {onOpenLibrary ? (
+                    <button className="secondary-action" onClick={() => onOpenLibrary(gameId)}>
+                      Full game review
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : postGameReviewStatus ? (
+              <div className="post-game-coach loading" role="status">{postGameReviewStatus}</div>
+            ) : null}
+            {onOpenLibrary && !postGameSummary.turningPoint ? (
+              <button className="secondary-action review-saved-game" onClick={() => onOpenLibrary(gameId)}>
                 Review saved game
               </button>
             ) : null}

@@ -429,11 +429,15 @@ export function OnlineGame({
   const invokeGameAction = async (body: Record<string, unknown>) => {
     setSaving(true);
     setMessage("");
-    const { error } = await client.functions.invoke("online-game", { body });
-    if (error) setMessage(error.message);
-    await load();
-    await loadMoves();
-    setSaving(false);
+    try {
+      const { error } = await client.functions.invoke("online-game", { body });
+      if (error) setMessage(error.message);
+      await Promise.all([load(), loadMoves()]);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The online table could not update.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const openRematch = async () => {
@@ -441,26 +445,29 @@ export function OnlineGame({
 
     setSaving(true);
     setMessage("");
+    let nextGameId: string | null = null;
 
-    const action = gameRow.rematch_game_id ? "accept_rematch" : "create_rematch";
-    const { data, error } = await client.functions.invoke("online-game", {
-      body: { action, gameId },
-    });
+    try {
+      const action = gameRow.rematch_game_id ? "accept_rematch" : "create_rematch";
+      const { data, error } = await client.functions.invoke("online-game", {
+        body: { action, gameId },
+      });
 
-    if (error) {
-      setMessage(error.message);
+      if (error) {
+        setMessage(error.message);
+        await load();
+        return;
+      }
+
+      if (data?.gameId) nextGameId = String(data.gameId);
+      else setMessage("The rematch could not be opened.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The rematch could not be opened.");
+    } finally {
       setSaving(false);
-      await load();
-      return;
     }
 
-    if (data?.gameId) {
-      onOpenGame(String(data.gameId));
-      return;
-    }
-
-    setMessage("The rematch could not be opened.");
-    setSaving(false);
+    if (nextGameId) onOpenGame(nextGameId);
   };
 
   const attemptMove = async (from: Square, to: Square) => {

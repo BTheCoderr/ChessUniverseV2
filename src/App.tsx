@@ -18,6 +18,7 @@ import { PuzzleMode } from "./components/PuzzleMode";
 import { UniverseHub } from "./components/UniverseHub";
 import { clearLocalPlayerData, prepareLocalDataForUser } from "./lib/localPlayerData";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
+import type { TrainingMoment } from "./lib/postGameCoach";
 
 type View =
   | "home"
@@ -67,6 +68,8 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
   );
+  const [libraryGameId, setLibraryGameId] = useState<string | null>(null);
+  const [trainingMoment, setTrainingMoment] = useState<TrainingMoment | null>(null);
 
   const navigate = (next: View) => {
     if (view !== "feedback" && view !== "privacy" && view !== "terms") {
@@ -165,6 +168,24 @@ export default function App() {
     setView(previousView === "feedback" || previousView === "privacy" || previousView === "terms" ? "home" : previousView);
   };
 
+  const openLibrary = (gameId: string | null = null) => {
+    setLibraryGameId(gameId);
+    setTrainingMoment(null);
+    navigate("library");
+  };
+
+  const trainSavedMoment = (moment: TrainingMoment) => {
+    setLibraryGameId(moment.gameId);
+    setTrainingMoment(moment);
+    navigate("library");
+  };
+
+  const leaveLibrary = () => {
+    setLibraryGameId(null);
+    setTrainingMoment(null);
+    navigate("play");
+  };
+
   return (
     <div className="site-shell">
         <header className="topbar">
@@ -260,15 +281,25 @@ export default function App() {
                   <button className="secondary-action compact" onClick={() => navigate("learn")}>Learn</button>
                   <button className="secondary-action compact" onClick={() => navigate("history")}>Legends</button>
                   <button className="secondary-action compact" onClick={() => navigate("puzzles")}>Puzzles</button>
-                  <button className="secondary-action compact" onClick={() => navigate("library")}>My Games</button>
+                  <button className="secondary-action compact" onClick={() => openLibrary()}>My Games</button>
                 </div>
               </div>
-              <LocalGame onOpenLibrary={() => navigate("library")} userId={session?.user.id} />
+              <LocalGame
+                onOpenLibrary={(gameId) => openLibrary(gameId ?? null)}
+                onTrainMoment={trainSavedMoment}
+                userId={session?.user.id}
+              />
             </>
           ) : null}
 
           {view === "library" ? (
-            <GameLibrary onBack={() => navigate("play")} onPractice={() => navigate("play")} userId={session?.user.id} />
+            <GameLibrary
+              onBack={leaveLibrary}
+              onPractice={leaveLibrary}
+              userId={session?.user.id}
+              initialGameId={libraryGameId}
+              trainingMoment={trainingMoment}
+            />
           ) : null}
 
           {view === "puzzles" ? (
@@ -383,11 +414,7 @@ export default function App() {
           ) : null}
 
           {view === "feedback" ? (
-            <FeedbackPanel
-              userId={session?.user.id}
-              appView={previousView}
-              onBack={goBackFromUtility}
-            />
+            <FeedbackPanel appView={previousView} onBack={goBackFromUtility} />
           ) : null}
 
           {view === "privacy" ? <LegalPage kind="privacy" onBack={goBackFromUtility} /> : null}

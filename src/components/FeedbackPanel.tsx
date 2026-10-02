@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { NETLIFY_FEEDBACK_FORM, submitNetlifyFeedback } from "../lib/netlifyFeedback";
-import { supabase } from "../lib/supabase";
 
 type Props = {
-  userId?: string | null;
   appView: string;
   onBack: () => void;
 };
 
 type Category = "bug" | "idea" | "confusing" | "other";
 
-export function FeedbackPanel({ userId, appView, onBack }: Props) {
+export function FeedbackPanel({ appView, onBack }: Props) {
   const [category, setCategory] = useState<Category>("bug");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("");
@@ -28,42 +26,20 @@ export function FeedbackPanel({ userId, appView, onBack }: Props) {
     setSending(true);
     setStatus("");
 
-    let storedInSupabase = false;
-
-    if (userId && supabase) {
-      const { error } = await supabase.from("beta_feedback").insert({
-        user_id: userId,
+    try {
+      await submitNetlifyFeedback({
         category,
         message: clean,
-        app_view: appView,
-        user_agent: navigator.userAgent.slice(0, 500),
+        appView,
+        userAgent: navigator.userAgent.slice(0, 500),
       });
-
-      storedInSupabase = !error;
+      setMessage("");
+      setStatus("Sent through Netlify Forms. Thank you — this is exactly what the beta is for.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not send feedback.");
+    } finally {
+      setSending(false);
     }
-
-    if (!storedInSupabase) {
-      try {
-        await submitNetlifyFeedback({
-          category,
-          message: clean,
-          appView,
-          userAgent: navigator.userAgent.slice(0, 500),
-        });
-      } catch (error) {
-        setSending(false);
-        setStatus(error instanceof Error ? error.message : "Could not send feedback.");
-        return;
-      }
-    }
-
-    setSending(false);
-    setMessage("");
-    setStatus(
-      storedInSupabase
-        ? "Sent. Thank you — this report is tied to your signed-in beta session."
-        : "Sent through the public Netlify fallback. Thank you — this is exactly what the beta is for."
-    );
   };
 
   return (
@@ -75,9 +51,7 @@ export function FeedbackPanel({ userId, appView, onBack }: Props) {
 
       <div className="feedback-public-note">
         <strong>No sign-in required.</strong>
-        <span>
-          Signed-in reports stay linked to the beta session in Supabase. Signed-out reports — or reports sent while Supabase is unavailable — go through the public Netlify fallback.
-        </span>
+        <span>Every report goes directly through the Chess Universe Netlify form.</span>
       </div>
 
       <form

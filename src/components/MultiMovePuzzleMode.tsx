@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { ChessBoard } from "./ChessBoard";
 import {
@@ -104,37 +104,36 @@ export function MultiMovePuzzleMode() {
     setMessage(next.setup);
   };
 
-  useEffect(() => {
+  const playOpponentResponse = () => {
     if (complete || !step || step.actor !== "opponent") return;
 
     const next = new Chess(game.fen());
     const parts = multiMoveParts(step.uci);
 
     try {
-      next.move({
+      const made = next.move({
         from: parts.from,
         to: parts.to,
         ...(parts.promotion ? { promotion: parts.promotion } : {}),
       });
+
+      const nextStepIndex = stepIndex + 1;
+      setGame(next);
+      setSelected(null);
+      setMistakeFeedback("");
+  
+      if (nextStepIndex >= puzzle.steps.length) {
+        finishPuzzle();
+        return;
+      }
+
+      const upcoming = puzzle.steps[nextStepIndex];
+      setStepIndex(nextStepIndex);
+        setMessage(`Opponent played ${made.san}: ${step.explanation} Your turn: ${upcoming.label}.`);
     } catch {
       setMessage("This training sequence could not continue because the scripted opponent move was invalid.");
-      return;
     }
-
-    const nextStepIndex = stepIndex + 1;
-    setGame(next);
-    setSelected(null);
-    setMistakeFeedback("");
-
-    if (nextStepIndex >= puzzle.steps.length) {
-      finishPuzzle();
-      return;
-    }
-
-    const upcoming = puzzle.steps[nextStepIndex];
-    setStepIndex(nextStepIndex);
-    setMessage(`Opponent: ${step.label}. ${step.explanation} Your turn: ${upcoming.label}.`);
-  }, [complete, game, puzzle, step, stepIndex]);
+  };
 
   const attemptMove = (from: Square, to: Square) => {
     if (complete || !step || step.actor !== "player") return;
@@ -148,7 +147,7 @@ export function MultiMovePuzzleMode() {
       if (uci !== step.uci) {
         recordReviewAttempt(`multi-${puzzle.id}-${stepIndex}`, false, uci);
         setSelected(null);
-        setMessage("Try another move — stay on this step.");
+        setMessage("Try another move — stay on this step and solve the position's main problem.");
         setMistakeFeedback(explainWrongSequenceMove(next, made, step.mistakeLesson));
         return;
       }
@@ -166,9 +165,9 @@ export function MultiMovePuzzleMode() {
 
       const upcoming = puzzle.steps[nextStepIndex];
       setStepIndex(nextStepIndex);
-      setMessage(
+        setMessage(
         upcoming.actor === "opponent"
-          ? `Correct: ${step.explanation} Now predict what the opponent is about to do.`
+          ? `Correct: ${step.explanation} Before revealing the response, predict what the opponent should do next.`
           : `Correct: ${step.explanation} Next: ${upcoming.label}.`
       );
     } catch {
@@ -202,8 +201,8 @@ export function MultiMovePuzzleMode() {
           <div className="eyebrow">MULTI-MOVE LAB</div>
           <h2>Think past the first move.</h2>
           <p>
-            Make your move, watch the opponent's best teaching response, then solve the next decision.
-            These sequences train plans, combinations, and both sides of the position.
+            Make your move, predict the opponent's response, then reveal it and solve the next decision.
+            The pause matters: the goal is to learn the plan, not watch a scripted animation.
           </p>
         </div>
         <div className="piece-school-score">
@@ -219,7 +218,7 @@ export function MultiMovePuzzleMode() {
             className={index === puzzleIndex ? "active" : ""}
             onClick={() => resetPuzzle(index)}
           >
-            <span>{progress.includes(item.id) ? "MASTERED" : item.theme}</span>
+            <span>{progress.includes(item.id) ? "MASTERED" : `${item.level} · ${item.theme}`}</span>
             <strong>{item.title}</strong>
             <small>{item.goal}</small>
           </button>
@@ -240,6 +239,10 @@ export function MultiMovePuzzleMode() {
         </div>
 
         <aside className="game-panel tutorial-panel">
+          <div className="puzzle-side-row">
+            <span className="puzzle-side-chip">{puzzle.playerColor === "b" ? "YOU ARE BLACK" : "YOU ARE WHITE"}</span>
+            <span className="puzzle-level-chip">{puzzle.level}</span>
+          </div>
           <div className="eyebrow">
             {puzzle.theme.toUpperCase()} · STEP {Math.min(stepIndex + 1, puzzle.steps.length)}/{puzzle.steps.length}
           </div>
@@ -253,8 +256,25 @@ export function MultiMovePuzzleMode() {
 
           {step && !complete ? (
             <div className={step.actor === "opponent" ? "sequence-step opponent" : "sequence-step player"}>
-              <span>{step.actor === "player" ? "YOUR MOVE" : "OPPONENT RESPONSE"}</span>
+              <span>{step.actor === "player" ? "YOUR MOVE" : "PREDICT THEIR RESPONSE"}</span>
               <strong>{step.label}</strong>
+            </div>
+          ) : null}
+
+          {step?.actor === "player" && !complete ? (
+            <div className="puzzle-scan-card">
+              <strong>Before you move</strong>
+              <span>{step.question}</span>
+            </div>
+          ) : null}
+
+          {step?.actor === "opponent" && !complete ? (
+            <div className="sequence-predict-card">
+              <strong>Do not reveal it yet.</strong>
+              <span>Look at the board and decide what you think the opponent should do. Then reveal the response and compare your idea.</span>
+              <button className="primary-action" onClick={playOpponentResponse}>
+                Reveal opponent response
+              </button>
             </div>
           ) : null}
 

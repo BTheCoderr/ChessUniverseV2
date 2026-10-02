@@ -19,11 +19,14 @@ import {
 import { getComputerMove } from "../lib/stockfish";
 import { supabase } from "../lib/supabase";
 import type { Json } from "../lib/database.types";
+import type { TrainingMoment } from "../lib/postGameCoach";
 
 type Props = {
   onBack: () => void;
   onPractice: () => void;
   userId?: string | null;
+  initialGameId?: string | null;
+  trainingMoment?: TrainingMoment | null;
 };
 
 function boardPieces(game: Chess) {
@@ -64,22 +67,35 @@ function gradeClass(grade: ReviewedMove["grade"]) {
   return grade.toLowerCase().replaceAll(" ", "-");
 }
 
-export function GameLibrary({ onBack, onPractice, userId }: Props) {
+export function GameLibrary({ onBack, onPractice, userId, initialGameId, trainingMoment }: Props) {
   const initialGames = useMemo(() => loadGameLibrary(), []);
+  const initialTarget = initialGames.find((game) => game.id === initialGameId) ?? initialGames[0] ?? null;
+  const initialTraining = trainingMoment?.gameId === initialTarget?.id ? trainingMoment : null;
+  const initialTrainingPosition = initialTraining && initialTarget
+    ? buildUniversePosition(initialTarget.moves, initialTraining.review.index)
+    : null;
   const [games, setGames] = useState(initialGames);
-  const [selectedId, setSelectedId] = useState<string | null>(initialGames[0]?.id ?? null);
-  const [ply, setPly] = useState(initialGames[0]?.moves.length ?? 0);
-  const [reviews, setReviews] = useState<Record<number, ReviewedMove>>({});
+  const [selectedId, setSelectedId] = useState<string | null>(initialTarget?.id ?? null);
+  const [ply, setPly] = useState(
+    initialTraining ? initialTraining.review.index + 1 : initialTarget?.moves.length ?? 0
+  );
+  const [reviews, setReviews] = useState<Record<number, ReviewedMove>>(
+    initialTraining ? { [initialTraining.review.index]: initialTraining.review as ReviewedMove } : {}
+  );
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState("");
   const analysisToken = useRef(0);
 
-  const [tryFen, setTryFen] = useState<string | null>(null);
-  const [tryStartFen, setTryStartFen] = useState<string | null>(null);
-  const [tryHero, setTryHero] = useState<Color>("b");
+  const [tryFen, setTryFen] = useState<string | null>(initialTrainingPosition?.fen() ?? null);
+  const [tryStartFen, setTryStartFen] = useState<string | null>(initialTrainingPosition?.fen() ?? null);
+  const [tryHero, setTryHero] = useState<Color>(initialTrainingPosition?.turn() ?? "b");
   const [trySelected, setTrySelected] = useState<Square | null>(null);
   const [tryThinking, setTryThinking] = useState(false);
-  const [tryMessage, setTryMessage] = useState("");
+  const [tryMessage, setTryMessage] = useState(
+    initialTraining
+      ? `Training move ${initialTraining.review.index + 1}. Stockfish preferred ${initialTraining.review.bestSan}. Find a better move.`
+      : ""
+  );
   const [tryMoves, setTryMoves] = useState<string[]>([]);
   const tryToken = useRef(0);
 

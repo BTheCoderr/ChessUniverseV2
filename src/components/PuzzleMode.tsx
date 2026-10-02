@@ -4,19 +4,37 @@ import { ChessBoard } from "./ChessBoard";
 import { MultiMovePuzzleMode } from "./MultiMovePuzzleMode";
 import {
   OFFLINE_PUZZLES,
+  PUZZLE_LEVELS,
   PUZZLE_PROGRESS_KEY,
   explainWrongPuzzleMove,
   dailyPuzzleIndex,
   normalizePuzzleProgress,
+  puzzleDifficultyRank,
   puzzleMoveUci,
   puzzleOrientation,
   puzzlePosition,
+  puzzleScanPrompt,
+  puzzleSideLabel,
+  type PuzzleLevel,
   type PuzzleTheme,
 } from "../lib/puzzles";
 import { loadFeedbackSettings, playChessFeedback } from "../lib/feedback";
 import { mergePuzzleProgress } from "../lib/progressMerge";
 import { supabase } from "../lib/supabase";
 import type { Json } from "../lib/database.types";
+import {
+  PUZZLE_MASTERY_KEY,
+  PUZZLE_STREAK_KEY,
+  firstTryRate,
+  masteryStatus,
+  normalizePuzzleMastery,
+  normalizePuzzleStreak,
+  recordPuzzleSolve,
+  updatePuzzleSession,
+  updatePuzzleStreak,
+  type PuzzleMasteryStatus,
+  type PuzzleSessionStats,
+} from "../lib/puzzleMastery";
 
 type Props = {
   onBack: () => void;
@@ -48,6 +66,28 @@ function loadProgress() {
   }
 }
 
+function loadMastery() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PUZZLE_MASTERY_KEY);
+    return raw ? normalizePuzzleMastery(JSON.parse(raw)) : {};
+  } catch {
+    return {};
+  }
+}
+
+function loadStreak() {
+  if (typeof window === "undefined") return normalizePuzzleStreak(null);
+  try {
+    const raw = window.localStorage.getItem(PUZZLE_STREAK_KEY);
+    return raw ? normalizePuzzleStreak(JSON.parse(raw)) : normalizePuzzleStreak(null);
+  } catch {
+    return normalizePuzzleStreak(null);
+  }
+}
+
+const EMPTY_SESSION: PuzzleSessionStats = { solved: 0, firstTry: 0, hints: 0, misses: 0 };
+
 function todayLabel() {
   return new Date().toLocaleDateString([], {
     weekday: "long",
@@ -66,9 +106,16 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
   const [mistakeFeedback, setMistakeFeedback] = useState("");
   const [complete, setComplete] = useState(false);
   const [hintShown, setHintShown] = useState(false);
+  const [threatRevealed, setThreatRevealed] = useState(false);
+  const [attempts, setAttempts] = useState(0);
   const [progress, setProgress] = useState(loadProgress);
+  const [mastery, setMastery] = useState(loadMastery);
+  const [streak, setStreak] = useState(loadStreak);
+  const [sessionStats, setSessionStats] = useState<PuzzleSessionStats>(EMPTY_SESSION);
   const [cloudReady, setCloudReady] = useState(false);
   const [theme, setTheme] = useState<"All" | PuzzleTheme>("All");
+  const [level, setLevel] = useState<"All" | PuzzleLevel>("All");
+  const [statusFilter, setStatusFilter] = useState<"All" | PuzzleMasteryStatus>("All");
 
   const pieces = useMemo(() => boardPieces(game), [game]);
   const legalTargets = useMemo(() => {
@@ -84,9 +131,24 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
   const visiblePuzzles = useMemo(
     () =>
       OFFLINE_PUZZLES.map((item, puzzleIndex) => ({ item, puzzleIndex }))
-        .filter(({ item }) => theme === "All" || item.theme === theme),
-    [theme]
+        .filter(({ item }) => theme === "All" || item.theme === theme)
+        .filter(({ item }) => level === "All" || item.level === level)
+        .filter(({ item }) => statusFilter === "All" || masteryStatus(mastery[item.id]) === statusFilter)
+        .sort((a, b) => puzzleDifficultyRank(a.item.level) - puzzleDifficultyRank(b.item.level) || a.puzzleIndex - b.puzzleIndex),
+    [level, mastery, statusFilter, theme]
   );
+
+  const masteryCounts = useMemo(() => {
+    const counts = { mastered: 0, review: 0, learning: 0, fresh: 0 };
+    for (const item of OFFLINE_PUZZLES) {
+      const status = masteryStatus(mastery[item.id]);
+      if (status === "mastered") counts.mastered += 1;
+      else if (status === "needs-review") counts.review += 1;
+      else if (status === "learning") counts.learning += 1;
+      else counts.fresh += 1;
+    }
+    return counts;
+  }, [mastery]);
 
   useEffect(() => {
     try {
@@ -95,6 +157,15 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
       // Puzzle progress remains usable for this session.
     }
   }, [progress]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PUZZLE_MASTERY_KEY, JSON.stringify(mastery));
+      window.localStorage.setItem(PUZZLE_STREAK_KEY, JSON.stringify(streak));
+    } catch {
+      // Mastery and streaks still work in memory when storage is unavailable.
+    }
+  }, [mastery, streak]);
 
   useEffect(() => {
     if (!userId || !supabase) {
@@ -147,6 +218,8 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
     setMistakeFeedback("");
     setComplete(false);
     setHintShown(false);
+    setThreatRevealed(false);
+    setAttempts(0);
   };
 
   const attemptMove = (from: Square, to: Square) => {
@@ -159,8 +232,10 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
       const correct = uci === puzzle.solution;
 
       if (!correct) {
+        const nextAttempts = attempts + 1;
+        setAttempts(nextAttempts);
         setSelected(null);
-        setMessage("Try another move — the board has been reset to the same decision.");
+        setMessage(`Try another move — attempt ${nextAttempts}. The board is reset to the same decision.`);
         setMistakeFeedback(explainWrongPuzzleMove(puzzle, game, next, made));
         return;
       }
@@ -169,14 +244,21 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
       setGame(next);
       setSelected(null);
       setComplete(true);
+      setThreatRevealed(true);
       setProgress((current) => current.includes(puzzle.id) ? current : [...current, puzzle.id]);
+      const solveResult = { wrongAttempts: attempts, hintUsed: hintShown };
+      setMastery((current) => recordPuzzleSolve(current, puzzle.id, solveResult));
+      setStreak((current) => updatePuzzleStreak(current));
+      setSessionStats((current) => updatePuzzleSession(current, solveResult));
 
       const kind = next.isCheckmate() ? "mate" : next.inCheck() ? "check" : made.captured ? "capture" : "move";
       playChessFeedback(kind, loadFeedbackSettings());
       setMessage(puzzle.explanation);
     } catch {
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
       setSelected(null);
-      setMessage("Try another move — the board has been reset to the same decision.");
+      setMessage(`Try another move — attempt ${nextAttempts}. The board is reset to the same decision.`);
       setMistakeFeedback("That move is not legal in this position. Recheck how the piece moves, whether the path is blocked, and whether your king would be left in check.");
     }
   };
@@ -199,7 +281,43 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
   };
 
   const nextPuzzle = () => {
+    if (visiblePuzzles.length > 1) {
+      const position = visiblePuzzles.findIndex(({ puzzleIndex }) => puzzleIndex === index);
+      const nextVisible = visiblePuzzles[(position + 1 + visiblePuzzles.length) % visiblePuzzles.length];
+      resetPuzzle(nextVisible.puzzleIndex);
+      return;
+    }
     resetPuzzle((index + 1) % OFFLINE_PUZZLES.length);
+  };
+
+  const chooseTheme = (nextTheme: "All" | PuzzleTheme) => {
+    setTheme(nextTheme);
+    const match = OFFLINE_PUZZLES.findIndex((item) =>
+      (nextTheme === "All" || item.theme === nextTheme) &&
+      (level === "All" || item.level === level) &&
+      (statusFilter === "All" || masteryStatus(mastery[item.id]) === statusFilter)
+    );
+    if (match >= 0) resetPuzzle(match);
+  };
+
+  const chooseLevel = (nextLevel: "All" | PuzzleLevel) => {
+    setLevel(nextLevel);
+    const match = OFFLINE_PUZZLES.findIndex((item) =>
+      (theme === "All" || item.theme === theme) &&
+      (nextLevel === "All" || item.level === nextLevel) &&
+      (statusFilter === "All" || masteryStatus(mastery[item.id]) === statusFilter)
+    );
+    if (match >= 0) resetPuzzle(match);
+  };
+
+  const chooseStatus = (nextStatus: "All" | PuzzleMasteryStatus) => {
+    setStatusFilter(nextStatus);
+    const match = OFFLINE_PUZZLES.findIndex((item) =>
+      (theme === "All" || item.theme === theme) &&
+      (level === "All" || item.level === level) &&
+      (nextStatus === "All" || masteryStatus(mastery[item.id]) === nextStatus)
+    );
+    if (match >= 0) resetPuzzle(match);
   };
 
   return (
@@ -211,14 +329,20 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
           <div className="eyebrow">TACTICS LAB · OFFLINE</div>
           <h1>Do not just find a move. Understand the position.</h1>
           <p>
-            Daily queen, rook, bishop, knight, defense, strategy, and mating challenges.
-            Solve from both colors, then learn what your opponent wanted and the pattern you should remember.
+            Work from Starter through Advanced, solve from both colors, and learn why the wrong move fails before moving on.
           </p>
         </div>
         <div className="puzzle-score">
           <strong>{progress.length}<span>/{OFFLINE_PUZZLES.length}</span></strong>
           <small>solved</small>
         </div>
+      </div>
+
+      <div className="puzzle-progress-strip" aria-label="Puzzle training progress">
+        <div><strong>{streak.current}</strong><span>day streak</span><small>Best {streak.best}</small></div>
+        <div><strong>{masteryCounts.mastered}</strong><span>mastered</span><small>{masteryCounts.learning} learning</small></div>
+        <div><strong>{masteryCounts.review}</strong><span>needs review</span><small>{masteryCounts.fresh} new</small></div>
+        <div><strong>{firstTryRate(sessionStats)}%</strong><span>first try</span><small>{sessionStats.solved} this session</small></div>
       </div>
 
       <button className={index === todayIndex ? "daily-puzzle-card active" : "daily-puzzle-card"} onClick={() => resetPuzzle(todayIndex)}>
@@ -230,33 +354,75 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
         <em>{OFFLINE_PUZZLES[todayIndex].theme} · {OFFLINE_PUZZLES[todayIndex].level}</em>
       </button>
 
-      <div className="puzzle-theme-filter" aria-label="Puzzle themes">
-        {themes.map((item) => (
-          <button
-            key={item}
-            className={theme === item ? "active" : ""}
-            onClick={() => setTheme(item)}
-          >
-            {item}
-          </button>
-        ))}
+      <div className="puzzle-filter-stack">
+        <div className="puzzle-filter-label">Difficulty</div>
+        <div className="puzzle-theme-filter" aria-label="Puzzle difficulty">
+          {["All", ...PUZZLE_LEVELS].map((item) => (
+            <button
+              key={item}
+              className={level === item ? "active" : ""}
+              onClick={() => chooseLevel(item as "All" | PuzzleLevel)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+
+        <div className="puzzle-filter-label">Mastery</div>
+        <div className="puzzle-theme-filter" aria-label="Puzzle mastery">
+          {[
+            ["All", "All"],
+            ["needs-review", "Needs review"],
+            ["learning", "Learning"],
+            ["mastered", "Mastered"],
+            ["new", "New"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              className={statusFilter === value ? "active" : ""}
+              onClick={() => chooseStatus(value as "All" | PuzzleMasteryStatus)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="puzzle-filter-label">Theme</div>
+        <div className="puzzle-theme-filter" aria-label="Puzzle themes">
+          {themes.map((item) => (
+            <button
+              key={item}
+              className={theme === item ? "active" : ""}
+              onClick={() => chooseTheme(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="puzzle-picker">
-        {visiblePuzzles.map(({ item, puzzleIndex }) => (
-          <button
-            key={item.id}
-            className={puzzleIndex === index ? "active" : ""}
-            onClick={() => resetPuzzle(puzzleIndex)}
-          >
-            <span>{progress.includes(item.id) ? "✓" : puzzleIndex + 1}</span>
-            <strong>{item.title}</strong>
-            <small>{item.theme}</small>
-          </button>
-        ))}
+        {visiblePuzzles.length ? visiblePuzzles.map(({ item, puzzleIndex }) => {
+          const status = masteryStatus(mastery[item.id]);
+          const marker = status === "mastered" ? "★" : status === "needs-review" ? "↻" : progress.includes(item.id) ? "✓" : puzzleIndex + 1;
+          const statusLabel = status === "needs-review" ? "Review" : status === "mastered" ? "Mastered" : status === "learning" ? "Learning" : "New";
+          return (
+            <button
+              key={item.id}
+              className={puzzleIndex === index ? "active" : ""}
+              onClick={() => resetPuzzle(puzzleIndex)}
+            >
+              <span className={`mastery-mark ${status}`}>{marker}</span>
+              <strong>{item.title}</strong>
+              <small>{item.level} · {item.theme} · {statusLabel}</small>
+            </button>
+          );
+        }) : (
+          <div className="puzzle-filter-empty">No puzzles match this training filter yet.</div>
+        )}
       </div>
 
-      <div className="play-layout">
+      <div className="play-layout puzzle-play-layout">
         <div className="board-column">
           <div className="board-shell">
             <ChessBoard
@@ -272,19 +438,36 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
         </div>
 
         <aside className="game-panel puzzle-panel">
-          <div className="eyebrow">{puzzle.level} · {puzzle.theme.toUpperCase()}</div>
+          <div className="puzzle-side-row">
+            <span className="puzzle-side-chip">{puzzleSideLabel(puzzle).toUpperCase()}</span>
+            <span className="puzzle-level-chip">{puzzle.level}</span>
+          </div>
+          <div className="eyebrow">{puzzle.theme.toUpperCase()}</div>
           <h2>{puzzle.title}</h2>
           <p className={complete ? "puzzle-message success" : "puzzle-message"}>{message}</p>
+
+          <div className="puzzle-scan-card">
+            <strong>Scan first</strong>
+            <span>{puzzleScanPrompt(puzzle)}</span>
+          </div>
 
           <div className="puzzle-objective">
             <strong>Position question</strong>
             <span>{puzzle.goal}</span>
           </div>
 
-          <div className="academy-explanation">
-            <strong>What is the opponent trying to do?</strong>
-            <span>{puzzle.opponentIdea}</span>
-          </div>
+          {!complete && !threatRevealed ? (
+            <button className="secondary-action opponent-reveal" onClick={() => setThreatRevealed(true)}>
+              Reveal opponent threat
+            </button>
+          ) : null}
+
+          {threatRevealed ? (
+            <div className="academy-explanation">
+              <strong>What is the opponent trying to do?</strong>
+              <span>{puzzle.opponentIdea}</span>
+            </div>
+          ) : null}
 
           {!complete && mistakeFeedback ? (
             <div className="puzzle-mistake-card" role="alert">
@@ -310,6 +493,20 @@ export function PuzzleMode({ onBack, onPractice, userId }: Props) {
               <div className="academy-explanation takeaway">
                 <strong>Pattern to remember</strong>
                 <span>{puzzle.takeaway}</span>
+              </div>
+              <div className="puzzle-session-recap">
+                <strong>Session recap</strong>
+                <div>
+                  <span>{sessionStats.solved} solved</span>
+                  <span>{firstTryRate(sessionStats)}% first try</span>
+                  <span>{sessionStats.misses} misses</span>
+                  <span>{sessionStats.hints} hints</span>
+                </div>
+                {masteryCounts.review > 0 ? (
+                  <small>{masteryCounts.review} puzzle{masteryCounts.review === 1 ? "" : "s"} waiting in Needs review.</small>
+                ) : (
+                  <small>Nothing is due for review right now.</small>
+                )}
               </div>
               <button className="primary-action" onClick={nextPuzzle}>Next puzzle</button>
             </>
