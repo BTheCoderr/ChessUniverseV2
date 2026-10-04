@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./styles.css";
+import { configureNativeChrome } from "./lib/nativeRuntime";
+
+void configureNativeChrome();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
