@@ -1,4 +1,4 @@
-import { isNativeApp, nativeImpact } from "./nativeRuntime";
+import { isNativeApp, nativeImpact } from "./nativeRuntime.ts";
 
 export const FEEDBACK_SETTINGS_KEY = "chess-universe-feedback-v1";
 
