@@ -6093,3 +6093,162 @@ textarea:focus-visible {
 @media (max-width: 680px) {
   .puzzle-progress-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* Native mobile shell */
+.native-tab-bar {
+  display: none;
+}
+
+html.native-app,
+body.native-app {
+  min-height: 100%;
+  background: #0b0e0f;
+  overscroll-behavior-y: none;
+}
+
+body.native-app {
+  min-height: 100dvh;
+}
+
+.native-app .site-shell {
+  min-height: 100dvh;
+}
+
+.native-app .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: rgba(11, 14, 15, 0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.native-app .topbar nav {
+  display: none;
+}
+
+.native-app .topbar .brand {
+  min-height: 44px;
+}
+
+.native-app .page {
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+.native-app .site-footer {
+  display: none;
+}
+
+.native-app .native-tab-bar {
+  position: fixed;
+  z-index: 80;
+  left: 10px;
+  right: 10px;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  min-height: 62px;
+  padding: 6px;
+  border: 1px solid rgba(215, 255, 74, 0.18);
+  border-radius: 18px;
+  background: rgba(15, 20, 21, 0.96);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.native-app .native-tab-bar button {
+  min-width: 0;
+  min-height: 50px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #7e898d;
+}
+
+.native-app .native-tab-bar button > span {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.native-app .native-tab-bar button > small {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+
+.native-app .native-tab-bar button.active {
+  background: #20290f;
+  color: #d7ff4a;
+}
+
+.native-app .beta-feedback-fab {
+  bottom: calc(84px + env(safe-area-inset-bottom));
+}
+
+.native-app .hero {
+  min-height: auto;
+  padding-top: 18px;
+}
+
+.native-app .hero-piece {
+  pointer-events: none;
+}
+
+.native-app .board-shell,
+.native-app .tutorial-board {
+  width: 100%;
+  max-width: calc(100vw - max(24px, env(safe-area-inset-left) + env(safe-area-inset-right)));
+}
+
+.native-app button,
+.native-app input,
+.native-app select,
+.native-app textarea {
+  touch-action: manipulation;
+}
+
+.native-app .square {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 680px) {
+  .native-app .topbar {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .native-app .topbar .brand span:last-child {
+    font-size: 14px;
+  }
+
+  .native-app .hero-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .native-app .hero-actions .primary-action {
+    grid-column: 1 / -1;
+  }
+
+  .native-app .play-layout,
+  .native-app .learn-layout,
+  .native-app .history-replay-layout,
+  .native-app .library-layout {
+    gap: 12px;
+  }
+
+  .native-app .game-panel,
+  .native-app .tutorial-panel,
+  .native-app .puzzle-panel {
+    border-radius: 16px;
+  }
+}
