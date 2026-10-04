@@ -15,7 +15,8 @@
     "mobile:init:android": "npx cap add android",
     "mobile:assets": "npx @capacitor/assets generate --iconBackgroundColor '#d7ff4a' --iconBackgroundColorDark '#101314' --splashBackgroundColor '#0b0e0f' --splashBackgroundColorDark '#0b0e0f'",
     "mobile:open:ios": "npx cap open ios",
-    "mobile:open:android": "npx cap open android"
+    "mobile:open:android": "npx cap open android",
+    "mobile:configure": "node scripts/configure-native-projects.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
