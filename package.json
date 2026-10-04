@@ -10,13 +10,14 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
     "test": "node --test tests/*.test.mjs",
-    "mobile:sync": "npm run build && npx cap sync",
+    "mobile:sync": "npm run build:native && npx cap sync",
     "mobile:init:ios": "npx cap add ios --packagemanager SPM",
     "mobile:init:android": "npx cap add android",
     "mobile:assets": "npx @capacitor/assets generate --iconBackgroundColor '#d7ff4a' --iconBackgroundColorDark '#101314' --splashBackgroundColor '#0b0e0f' --splashBackgroundColorDark '#0b0e0f'",
     "mobile:open:ios": "npx cap open ios",
     "mobile:open:android": "npx cap open android",
-    "mobile:configure": "node scripts/configure-native-projects.mjs"
+    "mobile:configure": "node scripts/configure-native-projects.mjs",
+    "build:native": "tsc -b && vite build --mode native"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
