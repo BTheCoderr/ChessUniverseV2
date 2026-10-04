@@ -19,7 +19,8 @@ import { NativeTabBar } from "./components/NativeTabBar";
 import { UniverseHub } from "./components/UniverseHub";
 import { clearLocalPlayerData, prepareLocalDataForUser } from "./lib/localPlayerData";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
-import { challengeIdFromUrl, isNativeApp, registerNativeUrlListener } from "./lib/nativeRuntime";
+import { challengeIdFromUrl } from "./lib/nativeLinks";
+import { isNativeApp, registerNativeUrlListener } from "./lib/nativeRuntime";
 import type { TrainingMoment } from "./lib/postGameCoach";
 
 type View =
