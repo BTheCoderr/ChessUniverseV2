@@ -5,7 +5,7 @@ import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { SeasonProgression } from "./SeasonProgression";
 import { SeasonChampionship } from "./SeasonChampionship";
 import { ProfileTrophyCase } from "./ProfileTrophyCase";
-import { publicChallengeUrl } from "../lib/nativeRuntime";
+import { publicChallengeUrl } from "../lib/nativeLinks";
 
 type GameRow = {
   id: string;
