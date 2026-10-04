@@ -15,9 +15,11 @@ import { MagicHorseGame } from "./components/MagicHorseGame";
 import { OnlineGame } from "./components/OnlineGame";
 import { OnlineLobby } from "./components/OnlineLobby";
 import { PuzzleMode } from "./components/PuzzleMode";
+import { NativeTabBar } from "./components/NativeTabBar";
 import { UniverseHub } from "./components/UniverseHub";
 import { clearLocalPlayerData, prepareLocalDataForUser } from "./lib/localPlayerData";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
+import { challengeIdFromUrl, isNativeApp, registerNativeUrlListener } from "./lib/nativeRuntime";
 import type { TrainingMoment } from "./lib/postGameCoach";
 
 type View =
@@ -42,8 +44,7 @@ const CHALLENGE_PARAM = "challenge";
 
 function challengeFromUrl() {
   if (typeof window === "undefined") return null;
-  const value = new URLSearchParams(window.location.search).get(CHALLENGE_PARAM);
-  return value && /^[0-9a-f-]{36}$/i.test(value) ? value : null;
+  return challengeIdFromUrl(window.location.href);
 }
 
 function savedOnlineGame() {
@@ -87,6 +88,33 @@ export default function App() {
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let removeListener: (() => Promise<void>) | null = null;
+
+    void registerNativeUrlListener((url) => {
+      if (!active) return;
+      const challengeId = challengeIdFromUrl(url);
+      if (!challengeId) return;
+
+      setPendingChallengeId(challengeId);
+      setOnlineGameId(null);
+      setView("online");
+    }).then((listener) => {
+      if (!listener) return;
+      if (!active) {
+        void listener.remove();
+        return;
+      }
+      removeListener = () => listener.remove();
+    });
+
+    return () => {
+      active = false;
+      if (removeListener) void removeListener();
     };
   }, []);
 
@@ -425,6 +453,13 @@ export default function App() {
           <button className="beta-feedback-fab" onClick={() => navigate("feedback")}>
             Feedback
           </button>
+        ) : null}
+
+        {isNativeApp() ? (
+          <NativeTabBar
+            activeView={view}
+            onNavigate={(destination) => navigate(destination)}
+          />
         ) : null}
 
         <footer className="site-footer">
