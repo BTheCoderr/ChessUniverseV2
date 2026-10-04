@@ -1,3 +1,5 @@
+import { isNativeApp, nativeImpact } from "./nativeRuntime.ts";
+
 export const FEEDBACK_SETTINGS_KEY = "chess-universe-feedback-v1";
 
 export type FeedbackSettings = {
@@ -42,9 +44,13 @@ export function saveFeedbackSettings(settings: FeedbackSettings) {
 export function playChessFeedback(kind: FeedbackKind, settings: FeedbackSettings) {
   if (typeof window === "undefined") return;
 
-  if (settings.haptics && "vibrate" in navigator) {
-    const vibration = kind === "mate" ? [35, 35, 70] : kind === "check" ? [25, 25, 25] : kind === "capture" ? 28 : 14;
-    navigator.vibrate(vibration);
+  if (settings.haptics) {
+    if (isNativeApp()) {
+      nativeImpact(kind === "mate" ? "heavy" : kind === "check" || kind === "capture" ? "medium" : "light");
+    } else if ("vibrate" in navigator) {
+      const vibration = kind === "mate" ? [35, 35, 70] : kind === "check" ? [25, 25, 25] : kind === "capture" ? 28 : 14;
+      navigator.vibrate(vibration);
+    }
   }
 
   if (!settings.sound) return;

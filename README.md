@@ -1,9 +1,9 @@
 # Chess Universe
 
 <!-- repo-intro:start -->
-**Project snapshot:** Chess Universe is an offline-first chess PWA with a custom Black-moves-first ruleset, trusted real-time multiplayer, Seasons, Battle Chess progression, historical play, and player identity.
+**Project snapshot:** Chess Universe is an offline-first chess product for Web/PWA, iOS, and Android with a custom Black-moves-first ruleset, trusted real-time multiplayer, Seasons, Battle Chess progression, historical play, and player identity.
 
-**What it demonstrates:** React/TypeScript · Vite · Supabase/Postgres · Edge Functions · server-authoritative multiplayer.
+**What it demonstrates:** React/TypeScript · Vite · Capacitor 8 · Supabase/Postgres · Edge Functions · server-authoritative multiplayer.
 <!-- repo-intro:end -->
 
 [![CI](https://github.com/BTheCoderr/ChessUniverseV2/actions/workflows/ci.yml/badge.svg)](https://github.com/BTheCoderr/ChessUniverseV2/actions/workflows/ci.yml)
@@ -253,6 +253,32 @@ supabase/
 tests/               regression, security, gameplay and release tests
 scripts/             PWA/release verification
 ```
+
+## Native mobile
+
+The same React/Vite application is packaged for iOS and Android with **Capacitor 8**. Native mobile reuses the existing chess engine, Academy, puzzles, Stockfish, Supabase auth, and server-authoritative multiplayer rather than maintaining a second application codebase.
+
+Mobile-specific behavior includes:
+
+- safe-area handling for iPhone/Android system UI
+- native bottom-tab navigation
+- native haptic gameplay feedback
+- status-bar styling
+- custom challenge deep links
+- public HTTPS challenge links that still work for recipients without the app
+
+Initial platform commands:
+
+```bash
+npm install
+npm run mobile:init:ios
+npm run mobile:init:android
+npm run mobile:configure
+npm run mobile:assets
+npm run mobile:sync
+```
+
+See `mobile/README.md` for Xcode, Android Studio, signing, deep-link, and store-release steps.
 
 ## Local setup
 

@@ -23,7 +23,10 @@ test("private challenges stay out of public open tables and support sharing", as
   assert.match(lobby, /game\.status === "waiting" && !game\.is_private/);
   assert.match(lobby, /navigator\.share/);
   assert.match(lobby, /navigator\.clipboard\.writeText/);
-  assert.match(lobby, /url\.searchParams\.set\("challenge", gameId\)/);
+  assert.match(lobby, /publicChallengeUrl\(gameId\)/);
+  const links = await source("src/lib/nativeLinks.ts");
+  assert.match(links, /PUBLIC_APP_URL = "https:\/\/chessuniverse\.netlify\.app"/);
+  assert.match(links, /url\.searchParams\.set\("challenge", gameId\)/);
   assert.match(lobby, /Challenges for you/);
   assert.match(lobby, /My private invites/);
   assert.match(lobby, /challengeLookupError/);
