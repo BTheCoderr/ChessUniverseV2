@@ -42,7 +42,7 @@ export async function configureNativeChrome() {
   document.body.classList.add("native-app");
 
   try {
-    await StatusBar.setStyle({ style: Style.Dark });
+    await StatusBar.setStyle({ style: Style.Light });
   } catch {
     // Native chrome styling should never block app startup.
   }
