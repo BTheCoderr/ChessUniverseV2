@@ -3,6 +3,10 @@ import { Capacitor } from "@capacitor/core";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { StatusBar, Style } from "@capacitor/status-bar";
 
+export function isNativeApp() {
+  return Capacitor.isNativePlatform();
+}
+
 export async function configureNativeChrome() {
   if (!isNativeApp()) return;
 
