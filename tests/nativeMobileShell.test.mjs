@@ -54,6 +54,7 @@ test("package scripts can initialize, configure, sync, and open both native plat
   assert.match(pkg.devDependencies["@capacitor/cli"], /^\^8\./);
 
   for (const script of [
+    "build:native",
     "mobile:init:ios",
     "mobile:init:android",
     "mobile:configure",
@@ -86,6 +87,16 @@ test("native shell has safe areas, bottom tabs, deep links, and haptics", async 
   assert.match(tabs, /Learn/);
   assert.match(tabs, /Online/);
   assert.match(tabs, /Profile/);
+});
+
+test("native Vite build skips the browser PWA service worker", async () => {
+  const vite = await readFile(new URL("../vite.config.ts", import.meta.url), "utf8");
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+
+  assert.match(vite, /mode === "native"/);
+  assert.match(vite, /VitePWA/);
+  assert.match(pkg.scripts["build:native"], /vite build --mode native/);
+  assert.match(pkg.scripts["mobile:sync"], /build:native/);
 });
 
 test("native project configurator registers custom challenge URL schemes", async () => {
