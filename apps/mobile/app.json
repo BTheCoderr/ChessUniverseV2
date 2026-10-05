@@ -9,10 +9,15 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bthecoderr.chessuniverse"
+      "bundleIdentifier": "com.bthecoderr.chessuniverse",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.bthecoderr.chessuniverse"
+      "package": "com.bthecoderr.chessuniverse",
+      "versionCode": 1
     },
     "plugins": ["expo-router"],
     "experiments": {
