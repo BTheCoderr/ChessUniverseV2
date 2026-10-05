@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Chess Universe",
+    "slug": "chess-universe",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "chessuniverse",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bthecoderr.chessuniverse",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.bthecoderr.chessuniverse",
+      "versionCode": 1
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
