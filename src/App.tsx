@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { AboutPage } from "./components/AboutPage";
 import { AuthPanel } from "./components/AuthPanel";
 import { BattleChessGame } from "./components/BattleChessGame";
 import { FeedbackPanel } from "./components/FeedbackPanel";
@@ -16,8 +17,16 @@ import { OnlineGame } from "./components/OnlineGame";
 import { OnlineLobby } from "./components/OnlineLobby";
 import { PuzzleMode } from "./components/PuzzleMode";
 import { NativeTabBar } from "./components/NativeTabBar";
+import { SupportPage } from "./components/SupportPage";
 import { UniverseHub } from "./components/UniverseHub";
 import { clearLocalPlayerData, prepareLocalDataForUser } from "./lib/localPlayerData";
+import {
+  PUBLIC_PAGE_PATHS,
+  documentTitleFor,
+  isPublicPage,
+  publicPageFromPath,
+  type PublicPage,
+} from "./lib/publicPages";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import { challengeIdFromUrl } from "./lib/nativeLinks";
 import { isNativeApp, registerNativeUrlListener } from "./lib/nativeRuntime";
@@ -37,15 +46,23 @@ type View =
   | "online"
   | "account"
   | "feedback"
-  | "privacy"
-  | "terms";
+  | PublicPage;
 
 const ONLINE_GAME_KEY = "chess-universe-online-game";
 const CHALLENGE_PARAM = "challenge";
 
+function isUtilityView(view: View) {
+  return view === "feedback" || isPublicPage(view);
+}
+
 function challengeFromUrl() {
   if (typeof window === "undefined") return null;
   return challengeIdFromUrl(window.location.href);
+}
+
+function publicPageFromLocation() {
+  if (typeof window === "undefined") return null;
+  return publicPageFromPath(window.location.pathname);
 }
 
 function savedOnlineGame() {
@@ -62,8 +79,12 @@ export default function App() {
     initialChallenge ? null : savedOnlineGame()
   );
   const [pendingChallengeId, setPendingChallengeId] = useState<string | null>(initialChallenge);
-  const [view, setView] = useState<View>(() => (savedOnlineGame() || initialChallenge ? "online" : "home"));
+  const [view, setView] = useState<View>(() =>
+    publicPageFromLocation() ?? (savedOnlineGame() || initialChallenge ? "online" : "home")
+  );
   const [previousView, setPreviousView] = useState<View>("home");
+  const previousViewRef = useRef<View>("home");
+  previousViewRef.current = previousView;
   const [session, setSession] = useState<Session | null>(null);
   const [battleUnlockKeys, setBattleUnlockKeys] = useState<string[]>([]);
   const [recoveryMode, setRecoveryMode] = useState(false);
@@ -74,11 +95,51 @@ export default function App() {
   const [trainingMoment, setTrainingMoment] = useState<TrainingMoment | null>(null);
 
   const navigate = (next: View) => {
-    if (view !== "feedback" && view !== "privacy" && view !== "terms") {
+    if (!isUtilityView(view)) {
       setPreviousView(view);
     }
     setView(next);
+    if (isPublicPage(next)) window.scrollTo(0, 0);
   };
+
+  const followPageLink = (page: PublicPage) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    navigate(page);
+  };
+
+  useEffect(() => {
+    const page = isPublicPage(view) ? view : null;
+    document.title = documentTitleFor(page);
+
+    const path = page ? PUBLIC_PAGE_PATHS[page] : "/";
+    const onPublicPath = publicPageFromPath(window.location.pathname) !== null;
+    if (page ? publicPageFromPath(window.location.pathname) !== page : onPublicPath) {
+      try {
+        window.history.pushState({}, "", path);
+      } catch {
+        // Navigation still works in-app when history APIs are unavailable.
+      }
+    }
+  }, [view]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const page = publicPageFromPath(window.location.pathname);
+      if (page) {
+        setView(page);
+        return;
+      }
+      setView((current) => {
+        if (!isUtilityView(current)) return current;
+        const previous = previousViewRef.current;
+        return isUtilityView(previous) ? "home" : previous;
+      });
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -194,7 +255,7 @@ export default function App() {
   };
 
   const goBackFromUtility = () => {
-    setView(previousView === "feedback" || previousView === "privacy" || previousView === "terms" ? "home" : previousView);
+    setView(isUtilityView(previousView) ? "home" : previousView);
   };
 
   const openLibrary = (gameId: string | null = null) => {
@@ -446,8 +507,23 @@ export default function App() {
             <FeedbackPanel appView={previousView} onBack={goBackFromUtility} />
           ) : null}
 
-          {view === "privacy" ? <LegalPage kind="privacy" onBack={goBackFromUtility} /> : null}
-          {view === "terms" ? <LegalPage kind="terms" onBack={goBackFromUtility} /> : null}
+          {view === "privacy" ? <LegalPage kind="privacy" onBack={goBackFromUtility} onNavigate={navigate} /> : null}
+          {view === "terms" ? <LegalPage kind="terms" onBack={goBackFromUtility} onNavigate={navigate} /> : null}
+          {view === "support" ? (
+            <SupportPage
+              onBack={goBackFromUtility}
+              onNavigate={navigate}
+              onOpenFeedback={() => navigate("feedback")}
+              onOpenAccount={() => navigate("account")}
+            />
+          ) : null}
+          {view === "about" ? (
+            <AboutPage
+              onBack={goBackFromUtility}
+              onNavigate={navigate}
+              onPlay={() => navigate("play")}
+            />
+          ) : null}
         </main>
 
         {view !== "feedback" ? (
@@ -465,11 +541,13 @@ export default function App() {
 
         <footer className="site-footer">
           <span>Chess Universe Beta</span>
-          <div>
+          <nav aria-label="Chess Universe information">
+            <a href={PUBLIC_PAGE_PATHS.support} onClick={followPageLink("support")}>Support</a>
+            <a href={PUBLIC_PAGE_PATHS.privacy} onClick={followPageLink("privacy")}>Privacy Policy</a>
+            <a href={PUBLIC_PAGE_PATHS.about} onClick={followPageLink("about")}>About</a>
+            <a href={PUBLIC_PAGE_PATHS.terms} onClick={followPageLink("terms")}>Beta Terms</a>
             <button onClick={() => navigate("feedback")}>Feedback</button>
-            <button onClick={() => navigate("privacy")}>Privacy</button>
-            <button onClick={() => navigate("terms")}>Beta Terms</button>
-          </div>
+          </nav>
         </footer>
     </div>
   );
