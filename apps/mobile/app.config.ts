@@ -9,11 +9,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: "chessuniverse",
   userInterfaceStyle: "dark",
   newArchEnabled: true,
+  icon: "./assets/icon.png",
   ios: {
+    ...config.ios,
     supportsTablet: true,
     bundleIdentifier: "com.bthecoderr.chessuniverse",
   },
   android: {
+    ...config.android,
     package: "com.bthecoderr.chessuniverse",
   },
   plugins: ["expo-router"],
@@ -22,6 +25,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...config.extra,
     eas: process.env.EXPO_PUBLIC_EAS_PROJECT_ID
       ? { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID }
-      : undefined,
+      : config.extra?.eas,
   },
 });
