@@ -12,7 +12,7 @@ export function PublicPageHeader({ onBack, eyebrow, title, lede }: Props) {
       <div className="public-page-heading">
         <img
           className="public-emblem"
-          src="/brand/gold-knight-160.jpg"
+          src="/brand/knight-emblem-160.jpg"
           alt=""
           width={72}
           height={72}

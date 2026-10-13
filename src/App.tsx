@@ -280,7 +280,7 @@ export default function App() {
     <div className="site-shell">
         <header className="topbar">
           <button className="brand" onClick={() => navigate("home")}>
-            <span className="brand-mark">♞</span>
+            <img className="brand-mark" src="/brand/knight-emblem-160.jpg" alt="" width={36} height={36} />
             <span>Chess Universe</span>
           </button>
 

@@ -30,5 +30,6 @@ test("online and account surfaces are gated when the device is offline", async (
 test("the installable app exposes mobile PWA metadata", async () => {
   const html = await source("index.html");
   assert.match(html, /apple-mobile-web-app-capable/);
-  assert.match(html, /pwa-icon\.svg/);
+  assert.match(html, /rel="apple-touch-icon"[^>]*href="\/brand\/apple-touch-icon\.png"/);
+  assert.match(html, /property="og:image" content="https:\/\/chessuniverse\.netlify\.app\/brand\/og-image\.jpg"/);
 });

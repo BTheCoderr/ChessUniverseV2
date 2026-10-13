@@ -58,6 +58,15 @@ export function AboutPage({ onBack, onNavigate, onPlay }: Props) {
     <article className="about-page public-page">
       <button type="button" className="text-button back-link" onClick={onBack}>← Back</button>
 
+      <img
+        className="about-banner"
+        src="/brand/chess-universe-banner.jpg"
+        alt="Chess Universe. Play, learn, compete."
+        width={1024}
+        height={438}
+        decoding="async"
+      />
+
       <section className="about-hero card" aria-labelledby="about-title">
         <div className="about-hero-copy">
           <div className="eyebrow">ABOUT CHESS UNIVERSE</div>
@@ -76,16 +85,6 @@ export function AboutPage({ onBack, onNavigate, onPlay }: Props) {
               <span className="about-store-pending" role="note">iPhone app coming soon to the App Store</span>
             )}
           </div>
-        </div>
-        <div className="about-emblem-wrap" aria-hidden="true">
-          <img
-            className="about-emblem"
-            src="/brand/gold-knight-512.jpg"
-            alt=""
-            width={320}
-            height={320}
-            decoding="async"
-          />
         </div>
       </section>
 

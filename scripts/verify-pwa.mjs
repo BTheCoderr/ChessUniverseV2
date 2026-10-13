@@ -5,7 +5,9 @@ const required = [
   "dist/index.html",
   "dist/sw.js",
   "dist/manifest.webmanifest",
-  "dist/pwa-icon.svg",
+  "dist/brand/knight-icon-192.png",
+  "dist/brand/knight-icon-512.png",
+  "dist/brand/apple-touch-icon.png",
   "dist/stockfish.js",
   "dist/stockfish-nnue-16-single.wasm",
   "dist/images/pieces/bB.svg",
@@ -29,7 +31,7 @@ assert.equal(manifest.name, "Chess Universe");
 assert.equal(manifest.display, "standalone");
 assert.equal(manifest.start_url, "/");
 assert.ok(
-  manifest.icons?.some((icon) => icon.src === "/pwa-icon.svg"),
+  manifest.icons?.some((icon) => icon.src === "/brand/knight-icon-512.png" && icon.sizes === "512x512"),
   "PWA icon is missing from the web manifest"
 );
 

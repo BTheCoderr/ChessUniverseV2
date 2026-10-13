@@ -52,12 +52,11 @@ button { cursor: pointer; }
 .brand-mark {
   width: 36px;
   height: 36px;
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: var(--accent-ink);
+  display: block;
+  flex: none;
+  object-fit: cover;
   border-radius: 10px;
-  font-size: 22px;
+  box-shadow: 0 0 0 1px rgba(215, 255, 74, .3), 0 4px 16px rgba(215, 255, 74, .14);
 }
 
 nav { display: flex; gap: 4px; }
@@ -2341,7 +2340,7 @@ code {
   height: 72px;
   flex: none;
   border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(222, 170, 60, .18), 0 0 0 1px rgba(232, 190, 92, .28);
+  box-shadow: 0 10px 30px rgba(215, 255, 74, .18), 0 0 0 1px rgba(215, 255, 74, .28);
 }
 
 .public-page h1 {
@@ -2401,7 +2400,7 @@ code {
 
 .policy-summary {
   border-color: rgba(215, 255, 74, .35);
-  background: linear-gradient(135deg, rgba(215, 255, 74, .07), rgba(222, 170, 60, .05));
+  background: linear-gradient(135deg, rgba(215, 255, 74, .07), rgba(215, 255, 74, .05));
 }
 
 .policy-toc ol {
@@ -2438,8 +2437,8 @@ code {
   align-items: center;
   gap: 18px;
   flex-wrap: wrap;
-  border-color: rgba(232, 190, 92, .4);
-  background: linear-gradient(135deg, rgba(222, 170, 60, .1), rgba(16, 21, 22, .9) 60%);
+  border-color: rgba(215, 255, 74, .4);
+  background: linear-gradient(135deg, rgba(215, 255, 74, .1), rgba(16, 21, 22, .9) 60%);
 }
 
 .support-contact h2 {
@@ -2570,16 +2569,24 @@ code {
   margin-bottom: 8px;
 }
 
+.about-banner {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1024 / 438;
+  object-fit: cover;
+  border-radius: 28px;
+  border: 1px solid rgba(215, 255, 74, .2);
+  box-shadow: 0 24px 70px rgba(215, 255, 74, .1);
+  margin-bottom: 16px;
+}
+
 .about-hero {
   max-width: none;
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(220px, .75fr);
-  gap: 28px;
-  align-items: center;
-  border: 1px solid rgba(232, 190, 92, .25);
+  border: 1px solid rgba(215, 255, 74, .18);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 80% 40%, rgba(222, 170, 60, .16), transparent 55%),
+    radial-gradient(circle at 90% 0%, rgba(215, 255, 74, .1), transparent 50%),
     #0f1314;
 }
 
@@ -2604,24 +2611,12 @@ code {
 }
 
 .about-store-pending {
-  border: 1px dashed rgba(232, 190, 92, .55);
-  color: #f1d48a;
+  border: 1px dashed rgba(215, 255, 74, .55);
+  color: var(--accent);
   border-radius: 12px;
   padding: 11px 16px;
   font-size: 14px;
   font-weight: 800;
-}
-
-.about-emblem-wrap {
-  display: grid;
-  place-items: center;
-}
-
-.about-emblem {
-  width: min(320px, 100%);
-  height: auto;
-  border-radius: 28%;
-  box-shadow: 0 24px 70px rgba(222, 170, 60, .22), 0 0 0 1px rgba(232, 190, 92, .3);
 }
 
 .about-section {
@@ -2681,16 +2676,8 @@ code {
 }
 
 @media (max-width: 760px) {
-  .about-hero {
-    grid-template-columns: 1fr;
-  }
-
-  .about-emblem-wrap {
-    order: -1;
-  }
-
-  .about-emblem {
-    width: 180px;
+  .about-banner {
+    border-radius: 18px;
   }
 
   .public-page-heading {
