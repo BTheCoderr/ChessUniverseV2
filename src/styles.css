@@ -133,12 +133,58 @@ nav button:hover, nav button.active { color: white; background: #1d2324; }
 .secondary-action { background: #1b2122; color: white; border-color: #30393a; }
 .compact { min-height: 38px; padding: 0 14px; }
 
-.hero-piece {
-  font-size: clamp(180px, 28vw, 410px);
-  color: #242d27;
+.hero-highlight { color: var(--accent); }
+
+.hero-brand-art {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  padding: clamp(26px, 5vw, 48px) 22px;
+  min-height: 490px;
+  overflow: hidden;
+  border: 1px solid rgba(215, 255, 74, .20);
+  background: radial-gradient(circle at 48% 36%, rgba(215,255,74,.16), rgba(19,27,23,.95) 58%, #111617 100%);
+  border-radius: 28px;
+}
+
+.hero-art-halo {
+  position: absolute;
+  inset: 10% 5%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(215,255,74,.18), transparent 65%);
+  filter: blur(18px);
+}
+
+.hero-knight {
+  display: block;
+  width: min(100%, 360px);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 26%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(215,255,74,.4), 0 24px 75px rgba(0,0,0,.35);
+}
+
+.hero-art-caption {
+  display: grid;
   text-align: center;
-  filter: drop-shadow(0 20px 80px rgba(215,255,74,.08));
-  user-select: none;
+  gap: 5px;
+}
+
+.hero-art-caption span {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: .24em;
+  font-weight: 900;
+}
+
+.hero-art-caption strong {
+  color: #f5f7f0;
+  font-size: 16px;
+  letter-spacing: .03em;
 }
 
 .feature-grid {
@@ -356,7 +402,8 @@ code {
   .brand { flex: none; }
   .page { width: min(100% - 20px, 720px); padding-top: 26px; }
   .hero { grid-template-columns: 1fr; min-height: auto; }
-  .hero-piece { display: none; }
+  .hero-brand-art { min-height: 340px; padding: 28px 16px; gap: 10px; }
+  .hero-knight { width: min(58vw, 250px); }
   .feature-grid { grid-template-columns: 1fr; }
   .play-layout, .horse-layout { grid-template-columns: 1fr; gap: 14px; }
   .game-panel { position: static; }
