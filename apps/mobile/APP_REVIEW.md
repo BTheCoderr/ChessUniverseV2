@@ -14,7 +14,7 @@ Submitted build: 0.1.0 (2), rejection dated October 30, 2026
 - Online: Classic and Battle Chess with game creation, private invites, timed/untimed games, rematches, resignations and draws. Requires a Chess Universe account and configured Supabase services.
 - My Games: signed-in game history and replay.
 - Accounts: email registration, login, sign-out, website-handled email verification and password recovery, and in-app permanent deletion.
-- Safety controls: reporting/blocking are proposed separately and must not be claimed to Apple until the database migration and client changes are merged and tested.
+- Safety controls: report and block an actual opponent in the native online match screen. Database migration 023 was installed November 16, 2026; still requires full two-device and physical-iPhone QA before App Review claims.
 
 Do **not** copy features from the web's promotional metadata into App Review notes unless the native app really implements them.
 
@@ -28,7 +28,7 @@ Do **not** copy features from the web's promotional metadata into App Review not
 
 ## Before the next submission
 
-- [ ] Resolve and validate the separately proposed player-safety migration before declaring online moderation features ready.
+- [x] Migration 023 installed and catalog/RLS/trigger checks passed on November 16, 2026. Native UI still needs device QA.
 - [ ] Verify the `online-game` and `delete-account` Edge Functions are deployed and healthy; source code alone is not proof.
 - [ ] Verify the Supabase allowed redirect URL includes `https://chessuniverse.netlify.app`.
 - [ ] Confirm the public privacy, support and terms URLs are live on the deployed site and are listed accurately in App Store Connect.
@@ -37,8 +37,8 @@ Do **not** copy features from the web's promotional metadata into App Review not
 - [ ] Install the new build on supported physical iPhones and an iPad (iPad support is enabled).
 - [ ] Test guest Practice, Puzzles, Academy and Legends, plus online gameplay with two real test accounts.
 - [ ] Test registration/confirmation, login/logout, reset-password links and account deletion on a *disposable* test account.
-- [ ] Once player-safety controls are actually shipped, test report/block with two disposable accounts and verify database rows and moderator review.
-- [ ] Capture a real physical-device screen recording starting at app launch, demonstrating the typical flow, registration/login, and in-app account deletion. Include report/block only after those features ship and pass backend tests.
+- [ ] Test report/block in the latest signed iOS build using two disposable accounts, verify database rows and ensure reports are reviewed.
+- [ ] Capture a real physical-device screen recording starting at app launch, demonstrating the typical flow, registration/login, in-app deletion, and validated report/block UI.
 - [ ] Provide working reviewer credentials for all needed roles and make sure backend access is available.
 - [ ] Verify native App Store screenshots show actual app use, and the App Privacy questionnaire reflects all collected data.
 - [ ] Explain all regional variations (or confirm none after verification), and list any applicable protected content rights.
@@ -53,7 +53,7 @@ To review:
 2. Select Account and sign in with the demo account shown below.
 3. Open Online to create or join a game. A second demo account/device is needed to demonstrate live two-player play.
 4. Open Account and select Delete my account to initiate permanent account deletion with confirmation (use a disposable review account, never the main demo account).
-5. If report/block has been deployed and verified, additionally show those controls in an active online match. Do not claim they exist before the backend rollout.
+5. In an active online match, show Report player and Block player only after those controls pass physical-device QA.
 
 Recording: [attach physical-device recording].
 Demo accounts: [supply real active credentials privately in App Store Connect].
