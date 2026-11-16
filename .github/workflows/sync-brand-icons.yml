@@ -3,7 +3,7 @@ name: Sync Chess Universe icon family
 on:
   push:
     branches:
-      - fix/favicon-as-single-brand-source-20261116
+      - main
     paths:
       - ".github/workflows/sync-brand-icons.yml"
       - "scripts/sync-brand-icons.py"
