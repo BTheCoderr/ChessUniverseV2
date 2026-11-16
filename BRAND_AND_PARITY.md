@@ -1,0 +1,76 @@
+# Chess Universe — brand and feature-parity review
+
+## Existing website
+
+The existing website is a full React/Vite product at
+https://chessuniverse.netlify.app/ (configured through `netlify.toml`).
+The iOS Expo client in `apps/mobile/` uses the same Supabase account and
+shared online multiplayer backend. The native client is not a WebView.
+
+The site is hosted separately from this repository's source changes: a GitHub
+commit alone is not proof of a completed Netlify production deploy.
+
+## Original identity — keep, do not redesign
+
+The established brand is the lime **knight emblem** on an ink-dark foundation.
+The website's header and hero use existing knight emblem assets
+(`public/brand/knight-emblem-160.jpg` and `knight-emblem-512.jpg`).
+The native header uses the existing `apps/mobile/assets/logo-mark.png`.
+Do not substitute generic chess-piece glyphs for the primary brand identity,
+and do not introduce an unrelated logo.
+
+| Token | Value | Usage |
+| --- | --- | --- |
+| Lime | `#d7ff4a` | primary CTA, highlighted titles, knight accent |
+| Ink | `#0b0e0f` | page background, dark logo mark |
+| Surface | `#151a1b` | panels and feature cards |
+| Light text | `#f5f7f0` | prominent labels and headlines |
+| Muted | `#9ca7a3` | supporting descriptions |
+
+The website uses CSS variables in `src/styles.css`. Native brand tokens are
+in `apps/mobile/lib/theme.ts`. Verify assets visually on devices before
+publishing; a file path and code colors alone cannot guarantee image parity.
+
+The homepage headline is **Classic strategy. New worlds.** on both platforms.
+The ruleset's differentiator is **Black moving first**. Traditional historical
+games remain White-first where labeled.
+
+## Feature parity — validated from source, not devices
+
+| Capability | Web | Expo native | State |
+| --- | --- | --- | --- |
+| Black-first universe practice | Yes | Updated in this change | Device QA needed |
+| Local two-player practice | Yes | Added here | Device QA needed |
+| Timed practice and move undo | Yes | Present | Device QA needed |
+| Stockfish opponent and analysis | Yes | No; native lightweight AI | Not at parity |
+| Academy placement, adaptive review, endgames | Yes | Native lessons/progress only | Not at parity |
+| Puzzles with move feedback | Yes | Present, smaller curated set | Partial |
+| Legends with replay | Yes | Present | Partial (no Rewrite History) |
+| Online Classic and Battle | Yes | Present | Two-device QA needed |
+| Profile and account sync | Yes | Present | QA needed |
+| Seasons, trophies, Championships, rivalries | Yes | Some in game data, no full mobile UI | Not at parity |
+| Magic Horse and Evolving Queens | Yes | Not exposed in native client | Not at parity |
+| Local saved practice and post-game analysis | Yes | Not fully ported | Not at parity |
+| Account deletion | Yes | Merged from PR #49 | Destructive QA needed |
+
+Do not describe the iOS app as having the full web feature set in App Store
+metadata until all relevant features actually ship in a new build.
+
+## Pre-release checks
+
+1. Run `npm test && npm run typecheck && npm run build` from the repository root.
+2. Run `npm ci && npm test && npm run typecheck` in `apps/mobile`.
+3. Check website and native logo visually on actual screen sizes.
+4. Confirm Black moves first on both Practice routes; confirm legal-move
+   selection, computer response, clock controls and undo in untimed play.
+5. Follow `apps/mobile/APP_REVIEW_QA.md` using disposable test accounts.
+6. Do not merge unrelated UGC/regulatory migrations without migration review.
+7. Upload a new signed iOS build and record Apple's required physical-device
+   walkthrough — existing rejected build 0.1.0 (2) does not contain updates.
+
+### Remaining port order
+
+Stockfish on native (or accurately labeled equivalent), local saved games and
+review, Academy placement/adaptive training, alternate-world modes, and richer
+competition/progression screens. Each needs code, test coverage and a real-device
+pass rather than a marketing claim.
