@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - run: python3 -m pip install --break-system-packages Pillow==11.3.0
+      - run: python3 scripts/sync-brand-icons.py --check
       - run: npm install
       - run: npm test
       - run: npm run typecheck

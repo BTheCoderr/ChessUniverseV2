@@ -6,10 +6,13 @@
     "orientation": "portrait",
     "scheme": "chessuniverse",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b0e0f",
+    "primaryColor": "#d7ff4a",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
+      "icon": "./assets/icon.png",
       "bundleIdentifier": "com.bthecoderr.chessuniverse",
       "buildNumber": "1",
       "infoPlist": {

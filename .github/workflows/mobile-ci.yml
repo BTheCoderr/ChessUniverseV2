@@ -26,6 +26,10 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
+      - run: python3 -m pip install --break-system-packages Pillow==11.3.0
+        working-directory: .
+      - run: python3 scripts/sync-brand-icons.py --check
+        working-directory: .
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
