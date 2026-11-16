@@ -1,6 +1,10 @@
 # Chess Universe player-safety rollout (migration 023)
 
-This change is **not deployed**. Never assume a passing GitHub typecheck means the database is ready.
+**Production migration applied and verified on November 16, 2026.** Supabase project `msmftyqdjzegcgbwrwvy` now records `20261116211449 player_safety`. The matching native client is a separate GitHub code change and still requires physical-device QA before a TestFlight/App Store release.
+
+A full schema dry-run in a rolled-back transaction passed first, followed by a successful migration application and the SQL catalog checks. In separate rolled-back production transactions, an authenticated test role was able to report an actual opponent and block a player, while duplicate and spoofed submissions were rejected; the blocking trigger rejected a new pairing involving blocked players. Post-check counts remained 4 games, 0 reports, and 0 blocks.
+
+**Remaining release work:** arrange a monitored moderator-review process; test a complete two-device online game using disposable accounts; test report/block in the actual native build; verify account flows and App Review materials. No Supabase paid branch, separate staging copy, EAS build, or production user account deletion was performed. The procedure below is retained for future environments and incident response.
 
 ## Verified source-side assumptions
 
@@ -8,7 +12,7 @@ This change is **not deployed**. Never assume a passing GitHub typecheck means t
 - The `games` table exists in repository migrations and has `white_id`, `black_id`, and `invited_user_id` (migration 014).
 - Current `join_waiting_game_service` (migration 022) sets `black_id` and `invited_user_id`. Migration 023 intercepts new blocked pairings with a trigger.
 - The proposed native match UI submits reports for its current opponent and lets a user block that same opponent.
-- The database management connection repeatedly timed out while attempting **read-only SQL and migration history** on November 16, 2026. This means the live schema and its migration history **are not verified**. The Supabase control plane reporting `ACTIVE_HEALTHY` is not proof of working Postgres connections.
+- Earlier database queries timed out, but SQL Editor and connector access subsequently recovered on November 16, 2026. The full existing migration list and live game schema were verified before applying migration 023.
 
 ## What migration 023 grants
 
@@ -18,7 +22,7 @@ This change is **not deployed**. Never assume a passing GitHub typecheck means t
 - **Matches**: a database trigger rejects new pairings or private invitations where either participant has blocked the other. It does not terminate matches already in progress.
 - **No change** to the chess rules, existing rating calculation, user login, or account deletion procedure.
 
-## Required sequence (do not skip)
+## Procedure for subsequent environments (retain all checks)
 
 1. Restore database connectivity. In the Supabase Dashboard for Chess Universe, open **Database → SQL Editor** and try a read-only query:
    ```sql
@@ -61,4 +65,4 @@ This deliberately preserves moderation data; it also temporarily stops server-si
 
 ## Verification gaps
 
-No live Postgres schema, migration state, RLS impersonation, staging environment, production apply, two-account gameplay or physical-device verification has been completed by this repository-only change. They must be performed before calling the feature production-ready.
+Production schema, migration history, rollback rehearsal, RLS impersonation, trigger and catalog checks have now been verified. Dedicated staging, two-device gameplay, full report/block UI and physical-device verification are still outstanding; do not call the iOS release App Review-ready yet.
