@@ -18,3 +18,10 @@ export async function writeJson<T>(key: string, value: T) {
 export async function removeStored(key: string) {
   await AsyncStorage.removeItem(`${PREFIX}${key}`);
 }
+
+/** Clear app-owned local game and learning data after confirmed account deletion. */
+export async function clearStoredData() {
+  const keys = await AsyncStorage.getAllKeys();
+  const appKeys = keys.filter((key) => key.startsWith(PREFIX));
+  if (appKeys.length > 0) await AsyncStorage.multiRemove(appKeys);
+}
