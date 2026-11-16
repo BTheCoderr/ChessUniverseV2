@@ -20,7 +20,7 @@ Chess Universe lets players practice chess, solve puzzles with explanations, com
 - Online Classic and Battle Chess games, private invites, clocks, draws, resignation and rematches.
 - Signed-in My Games history and replay.
 - Email authentication, account deletion, privacy and support links.
-- Player safety controls are being prepared; do not describe them as shipped before backend rollout and device testing.
+- Native in-match player report/block controls now have matching database support. Do not advertise them as verified iOS features until physical-device QA succeeds.
 
 ## Do not claim for the native app until ported and tested
 - Stockfish-powered native Practice.
