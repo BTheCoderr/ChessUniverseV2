@@ -1,33 +1,39 @@
-# Chess Universe — Store Metadata Draft
+# Chess Universe — iOS Store Metadata Draft
 
 ## Name
 Chess Universe
 
-## Subtitle / short description
+## Subtitle
 Classic strategy. New worlds.
 
 ## Category
 Games → Board
 
-## Positioning
-Chess Universe is a chess learning and competition app built around a Black-moves-first universe. Practice against Stockfish, follow a guided Chess Academy, solve tactics, replay legendary games, explore alternate chess worlds, and compete online.
+## Native app positioning
+Chess Universe lets players practice chess, solve puzzles with explanations, complete Chess Academy lessons, replay famous historical games, and play online Classic or Battle Chess. Offline learning and practice work without an account. An account enables online matches and saved shared game history.
 
-## Feature bullets
-- Black moves first in the main Chess Universe ruleset
-- Stockfish Practice with multiple difficulties
-- Guided Chess Academy with placement and adaptive review
-- Daily, themed, and multi-move puzzles
-- Legends and Rewrite History positions
-- Online Classic and Battle Chess
-- Separate ratings, Seasons, Championships, achievements, titles, and rivalries
-- Local-first offline learning and practice
+## Features actually present in the Expo iOS source
+- Native chess Practice against a paced local opponent with difficulty choices (not the website Stockfish engine).
+- Tactics puzzles with interactive move input and explanations.
+- Chess Academy lessons with completion tracking and account sync.
+- Famous historical game replays and study notes in Legends.
+- Online Classic and Battle Chess games, private invites, clocks, draws, resignation and rematches.
+- Signed-in My Games history and replay.
+- Email authentication, account deletion, privacy and support links.
+- Player reporting/blocking controls (available once backend migration 023 is deployed).
 
-## Privacy notes
-- Local learning/practice progress can remain on device
-- Signed-in shared progress and competitive state use Supabase
-- Multiplayer moves/results are validated server-side
-- Feedback is submitted through Netlify Forms
-- No real-money wagering or betting
+## Do not claim for the native app until ported and tested
+- Stockfish-powered native Practice.
+- Full web Academy adaptive placement and all web-only learning features.
+- Every web-only mode, Season, tournament and rewards screen.
+- A custom Black-moves-first rule in every native game: native Practice currently plays standard White-first chess.
 
-## App review note
-Chess Universe intentionally uses a custom Black-moves-first ruleset in its primary universe. Traditional historical games/opening instruction can still use standard White-first chess where explicitly labeled.
+## Privacy and services
+- Device-only progress is stored locally; signing in enables synchronized progress.
+- Signed-in online play uses Supabase, and browser email recovery and legal pages use the Chess Universe website.
+- No in-app purchases, paid content, or real-money wagering are shown in the audited native source.
+- Describe user accounts, game history and any identifiers accurately in App Store Connect App Privacy.
+- Upload screenshots of the native app actually in use.
+
+## Review notes
+See `apps/mobile/APP_REVIEW.md` for a truthful demo flow, supporting services and manual release checklist. Verify the release build and backend before using this metadata.

@@ -18,7 +18,7 @@ export const PUBLIC_PAGE_PATHS: Record<PublicPage, string> = {
 const PAGE_TITLES: Record<PublicPage, string> = {
   support: "Support · Chess Universe",
   privacy: "Privacy Policy · Chess Universe",
-  terms: "Beta Terms · Chess Universe",
+  terms: "Terms of Use · Chess Universe",
   about: "About · Chess Universe",
 };
 
