@@ -4,6 +4,7 @@ import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "r
 import { Chess, type Color, type PieceSymbol, type Square } from "chess.js";
 import { aiLevels, chooseAiMove, type AiLevel } from "@/lib/ai";
 import { clockPresets, formatClock } from "@/lib/clock";
+import { createUniverseGame, replayUniverseMoves } from "@/lib/chess";
 
 const glyphs: Record<Color, Record<PieceSymbol,string>>={w:{k:"♔",q:"♕",r:"♖",b:"♗",n:"♘",p:"♙"},b:{k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"}};
 const whiteFiles=["a","b","c","d","e","f","g","h"] as const;
@@ -11,27 +12,22 @@ const blackFiles=["h","g","f","e","d","c","b","a"] as const;
 type Promotion={from:Square;to:Square}|null;
 type PracticeMode="ai"|"local";
 
-// Chess Universe is the alternate Black-moves-first ruleset on every platform.
-function newUniverseGame(){
- const game=new Chess();
- game.load(game.fen().replace(" w "," b "));
- return game;
-}
+
 
 export function PracticeGame(){
  const {width}=useWindowDimensions();const size=Math.min(width-28,520);
- const [game,setGame]=useState(newUniverseGame);const [mode,setMode]=useState<PracticeMode>("ai");const [selected,setSelected]=useState<Square|null>(null);const [level,setLevel]=useState<AiLevel>("beginner");const [thinking,setThinking]=useState(false);const [flipped,setFlipped]=useState(true);const [promotion,setPromotion]=useState<Promotion>(null);
+ const [game,setGame]=useState(createUniverseGame);const [mode,setMode]=useState<PracticeMode>("ai");const [selected,setSelected]=useState<Square|null>(null);const [level,setLevel]=useState<AiLevel>("beginner");const [thinking,setThinking]=useState(false);const [flipped,setFlipped]=useState(true);const [promotion,setPromotion]=useState<Promotion>(null);
  const [clockIndex,setClockIndex]=useState(0);const preset=clockPresets[clockIndex];const [whiteTime,setWhiteTime]=useState(preset.seconds);const [blackTime,setBlackTime]=useState(preset.seconds);const aiTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const targets=useMemo(()=>selected?new Set(game.moves({square:selected,verbose:true}).map(m=>m.to)):new Set<Square>(),[game,selected]);const current=aiLevels.find(x=>x.id===level)!;
- const reset=()=>{if(aiTimer.current)clearTimeout(aiTimer.current);setThinking(false);setSelected(null);setPromotion(null);setGame(newUniverseGame());setWhiteTime(preset.seconds);setBlackTime(preset.seconds);};
+ const reset=()=>{if(aiTimer.current)clearTimeout(aiTimer.current);setThinking(false);setSelected(null);setPromotion(null);setGame(createUniverseGame());setWhiteTime(preset.seconds);setBlackTime(preset.seconds);};
  useEffect(()=>()=>{if(aiTimer.current)clearTimeout(aiTimer.current)},[]);
  useEffect(()=>{if(!preset.seconds||game.isGameOver())return;const id=setInterval(()=>{if(game.turn()==="w")setWhiteTime(t=>Math.max(0,t-1));else setBlackTime(t=>Math.max(0,t-1));},1000);return()=>clearInterval(id)},[game,thinking,preset.seconds]);
  useEffect(()=>{if((whiteTime===0||blackTime===0)&&preset.seconds){if(aiTimer.current)clearTimeout(aiTimer.current);setThinking(false)}},[whiteTime,blackTime,preset.seconds]);
- const clone=(g:Chess)=>{const n=newUniverseGame();g.history({verbose:true}).forEach(m=>n.move({from:m.from,to:m.to,promotion:m.promotion}));return n};
+ const clone=(g:Chess)=>replayUniverseMoves(g.history({verbose:true}));
  const playAi=(position:Chess)=>{if(position.isGameOver()||(preset.seconds>0&&whiteTime===0))return;setThinking(true);aiTimer.current=setTimeout(()=>{const next=clone(position);const move=chooseAiMove(next,level);if(move){next.move(move);if(preset.increment)setWhiteTime(t=>t+preset.increment)}setGame(next);setThinking(false);void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)},current.delay)};
  const finishPlayerMove=(from:Square,to:Square,piece:"q"|"r"|"b"|"n"="q")=>{const next=clone(game);try{const mover=game.turn();next.move({from,to,promotion:piece});if(preset.increment){if(mover==="w")setWhiteTime(t=>t+preset.increment);else setBlackTime(t=>t+preset.increment)}setGame(next);setSelected(null);setPromotion(null);void Haptics.selectionAsync();if(mode==="ai"&&mover==="b")playAi(next)}catch{setSelected(null);setPromotion(null)}};
  const tap=(sq:Square)=>{if(thinking||game.isGameOver()||(mode==="ai"&&game.turn()!=="b")||(preset.seconds>0&&(game.turn()==="w"?whiteTime:blackTime)===0))return;const playerColor=mode==="ai"?"b":game.turn();const piece=game.get(sq);if(!selected){if(piece?.color===playerColor)setSelected(sq);return}if(piece?.color===playerColor){setSelected(sq);return}if(!targets.has(sq)){setSelected(null);return}const moving=game.get(selected);if(moving?.type==="p"&&(sq.endsWith(moving.color==="w"?"8":"1"))){setPromotion({from:selected,to:sq});return}finishPlayerMove(selected,sq)};
- const undoRound=()=>{const plies=mode==="local"?1:(thinking?1:2);if(game.history().length<plies)return;if(aiTimer.current)clearTimeout(aiTimer.current);setThinking(false);const moves=game.history({verbose:true}).slice(0,-plies);const next=newUniverseGame();moves.forEach(m=>next.move({from:m.from,to:m.to,promotion:m.promotion}));setGame(next);setSelected(null)};
+ const undoRound=()=>{const plies=mode==="local"?1:(thinking?1:2);if(game.history().length<plies)return;if(aiTimer.current)clearTimeout(aiTimer.current);setThinking(false);const moves=game.history({verbose:true}).slice(0,-plies);const next=replayUniverseMoves(moves);setGame(next);setSelected(null)};
  const files=flipped?blackFiles:whiteFiles;const ranks=flipped?[1,2,3,4,5,6,7,8]:[8,7,6,5,4,3,2,1];const history=game.history({verbose:true});const last=history.at(-1);
  const timeout=preset.seconds&&(whiteTime===0||blackTime===0);const status=timeout?(whiteTime===0?"Time — Black wins":"Time — White wins"):game.isCheckmate()?`Checkmate — ${game.turn()==="w"?"Black":"White"} wins`:game.isDraw()?"Draw":thinking?`${current.label} is thinking…`:`${game.turn()==="b"?"Black":"White"} to move${game.inCheck()?" — check":""}`;
  return <View>
@@ -41,11 +37,11 @@ export function PracticeGame(){
    <Pressable style={[styles.modeButton,mode==="local"&&styles.modeActive]} onPress={()=>{setMode("local");reset()}}><Text style={[styles.modeText,mode==="local"&&styles.modeTextActive]}>TWO PLAYERS</Text></Pressable>
   </View>
   {mode==="ai"&&<><Text style={styles.label}>AI LEVEL</Text><View style={styles.levels}>{aiLevels.map(item=><Pressable key={item.id} onPress={()=>{setLevel(item.id);reset()}} style={[styles.level,item.id===level&&styles.levelActive]}><Text style={[styles.levelText,item.id===level&&styles.levelTextActive]}>{item.label}</Text></Pressable>)}</View><Text style={styles.description}>{current.description}</Text></>}
-  <View style={styles.optionRow}><View style={styles.clockChoices}>{clockPresets.map((c,i)=><Pressable key={c.label} onPress={()=>{if(aiTimer.current)clearTimeout(aiTimer.current);setThinking(false);setClockIndex(i);setWhiteTime(c.seconds);setBlackTime(c.seconds);setGame(newUniverseGame());setSelected(null)}} style={[styles.clockChoice,i===clockIndex&&styles.clockActive]}><Text style={[styles.clockChoiceText,i===clockIndex&&styles.clockActiveText]}>{c.label}</Text></Pressable>)}</View><Pressable onPress={()=>setFlipped(v=>!v)} style={styles.flip}><Text style={styles.flipText}>↻ Flip</Text></Pressable></View>
+  <View style={styles.optionRow}><View style={styles.clockChoices}>{clockPresets.map((c,i)=><Pressable key={c.label} onPress={()=>{if(aiTimer.current)clearTimeout(aiTimer.current);setThinking(false);setClockIndex(i);setWhiteTime(c.seconds);setBlackTime(c.seconds);setGame(createUniverseGame());setSelected(null)}} style={[styles.clockChoice,i===clockIndex&&styles.clockActive]}><Text style={[styles.clockChoiceText,i===clockIndex&&styles.clockActiveText]}>{c.label}</Text></Pressable>)}</View><Pressable onPress={()=>setFlipped(v=>!v)} style={styles.flip}><Text style={styles.flipText}>↻ Flip</Text></Pressable></View>
   {!!preset.seconds&&<View style={styles.clocks}><View style={[styles.clock,game.turn()==="b"&&styles.clockTurn]}><Text style={styles.clockName}>BLACK</Text><Text style={styles.clockTime}>{formatClock(blackTime)}</Text></View><View style={[styles.clock,game.turn()==="w"&&styles.clockTurn]}><Text style={styles.clockName}>WHITE</Text><Text style={styles.clockTime}>{formatClock(whiteTime)}</Text></View></View>}
   <View style={[styles.board,{width:size,height:size}]}>{ranks.flatMap((rank,row)=>files.map((file,col)=>{const sq=`${file}${rank}` as Square;const piece=game.get(sq);const dark=(row+col)%2===1;const target=targets.has(sq);const lastSquare=last&&(last.from===sq||last.to===sq);const checked=game.inCheck()&&piece?.type==="k"&&piece.color===game.turn();return <Pressable key={sq} onPress={()=>tap(sq)} style={[styles.square,{width:size/8,height:size/8},dark?styles.dark:styles.light,lastSquare&&styles.last,checked&&styles.check,selected===sq&&styles.active]}>{target&&<View style={styles.target}/>} {piece&&<Text style={[styles.piece,{fontSize:size/11.5}]}>{glyphs[piece.color][piece.type]}</Text>}</Pressable>}))}</View>
   <View style={styles.footer}><Text style={styles.status}>{status}</Text><View style={styles.actions}><Pressable onPress={undoRound}><Text style={styles.action}>{mode==="local"?"Undo move":"Undo round"}</Text></Pressable><Pressable onPress={reset}><Text style={styles.action}>New</Text></Pressable></View></View>
-  <Modal visible={!!promotion} transparent animationType="fade"><View style={styles.modalBackdrop}><View style={styles.promoCard}><Text style={styles.promoTitle}>Promote pawn</Text><View style={styles.promoRow}>{(["q","r","b","n"] as const).map(p=><Pressable key={p} style={styles.promoPiece} onPress={()=>promotion&&finishPlayerMove(promotion.from,promotion.to,p)}><Text style={styles.promoGlyph}>{glyphs.w[p]}</Text></Pressable>)}</View><Pressable onPress={()=>setPromotion(null)}><Text style={styles.cancel}>Cancel</Text></Pressable></View></View></Modal>
+  <Modal visible={!!promotion} transparent animationType="fade"><View style={styles.modalBackdrop}><View style={styles.promoCard}><Text style={styles.promoTitle}>Promote pawn</Text><View style={styles.promoRow}>{(["q","r","b","n"] as const).map(p=><Pressable key={p} style={styles.promoPiece} onPress={()=>promotion&&finishPlayerMove(promotion.from,promotion.to,p)}><Text style={styles.promoGlyph}>{glyphs[game.turn()][p]}</Text></Pressable>)}</View><Pressable onPress={()=>setPromotion(null)}><Text style={styles.cancel}>Cancel</Text></Pressable></View></View></Modal>
  </View>
 }
 const styles=StyleSheet.create({modeRow:{flexDirection:"row",gap:8,marginTop:9,marginBottom:16},
