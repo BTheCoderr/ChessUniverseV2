@@ -30,14 +30,19 @@ const deleteAccount=async()=>{
   let localCleanupFailed=false;
   try{await clearStoredData()}catch{localCleanupFailed=true}
 
-  // A local sign-out also clears the persisted Supabase auth session, without
-  // requiring a second API call after the user's server-side identity is gone.
+  // Local sign-out clears the stored session even if Supabase cannot revoke
+  // the deleted user's refresh token. Verify local state, not the network error.
+  let localSessionCleared=false;
   try{
-    const {error}=await client.auth.signOut({scope:"local"});
-    if(error)throw error;
+    await client.auth.signOut({scope:"local"});
+    const {data:{session:storedSession}}=await client.auth.getSession();
+    localSessionCleared=!storedSession;
   }catch{
+    // Account deletion already succeeded on the server; don't retry deletion.
+  }
+  if(!localSessionCleared){
     setBusy(false);
-    Alert.alert("Account deleted","Your account was deleted, but the device could not clear its login session. Please remove and reinstall the app before another person uses this device.");
+    Alert.alert("Account deleted","Your account was deleted, but the app could not confirm that its saved login was cleared. Please remove and reinstall the app before another person uses this device.");
     return;
   }
 
