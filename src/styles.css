@@ -4,11 +4,11 @@
   background: #0b0e0f;
   font-synthesis: none;
   --ink: #0b0e0f;
-  --panel: #14191a;
+  --panel: #151a1b;
   --line: #2a3334;
-  --muted: #9aa5a6;
+  --muted: #9ca7a3;
   --accent: #d7ff4a;
-  --accent-ink: #111507;
+  --accent-ink: #0b0e0f;
 }
 
 * { box-sizing: border-box; }
@@ -163,8 +163,8 @@ nav button:hover, nav button.active { color: white; background: #1d2324; }
   width: min(100%, 360px);
   height: auto;
   aspect-ratio: 1;
-  border-radius: 26%;
-  object-fit: cover;
+  border-radius: 24px;
+  object-fit: contain;
   box-shadow: 0 0 0 1px rgba(215,255,74,.4), 0 24px 75px rgba(0,0,0,.35);
 }
 
