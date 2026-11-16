@@ -75,7 +75,8 @@ create or replace function private.reject_blocked_matchup()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 begin
-  if new.white_id is null then return new; end if;
+  -- Archived games and cancellations must never be affected by future blocks.
+  if new.status not in ('waiting', 'active') or new.white_id is null then return new; end if;
   if new.black_id is not null and exists (
     select 1 from public.player_blocks b
     where (b.blocker_id = new.white_id and b.blocked_id = new.black_id)
