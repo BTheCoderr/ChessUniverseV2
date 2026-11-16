@@ -38,7 +38,7 @@ Do **not** copy features from the web's promotional metadata into App Review not
 - [ ] Test guest Practice, Puzzles, Academy and Legends, plus online gameplay with two real test accounts.
 - [ ] Test registration/confirmation, login/logout, reset-password links and account deletion on a *disposable* test account.
 - [ ] Once player-safety controls are actually shipped, test report/block with two disposable accounts and verify database rows and moderator review.
-- [ ] Capture a real physical-device screen recording starting at app launch, demonstrating the typical flow, registration/login, in-app account deletion, and report/block controls.
+- [ ] Capture a real physical-device screen recording starting at app launch, demonstrating the typical flow, registration/login, and in-app account deletion. Include report/block only after those features ship and pass backend tests.
 - [ ] Provide working reviewer credentials for all needed roles and make sure backend access is available.
 - [ ] Verify native App Store screenshots show actual app use, and the App Privacy questionnaire reflects all collected data.
 - [ ] Explain all regional variations (or confirm none after verification), and list any applicable protected content rights.
@@ -52,8 +52,8 @@ To review:
 1. Open the app and select Practice, Puzzles, Academy or Legends without signing in.
 2. Select Account and sign in with the demo account shown below.
 3. Open Online to create or join a game. A second demo account/device is needed to demonstrate live two-player play.
-4. In an active online match, use Report player and Block player to test the safety controls.
-5. Open Account and select Delete my account to initiate permanent account deletion with confirmation (use a disposable review account).
+4. Open Account and select Delete my account to initiate permanent account deletion with confirmation (use a disposable review account, never the main demo account).
+5. If report/block has been deployed and verified, additionally show those controls in an active online match. Do not claim they exist before the backend rollout.
 
 Recording: [attach physical-device recording].
 Demo accounts: [supply real active credentials privately in App Store Connect].
