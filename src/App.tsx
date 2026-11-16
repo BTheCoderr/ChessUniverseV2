@@ -319,7 +319,7 @@ export default function App() {
               <section className="hero">
                 <div className="hero-copy">
                   <div className="eyebrow">CHESS, EVOLVED · BETA</div>
-                  <h1>Classic strategy. New worlds.</h1>
+                  <h1>Classic strategy. <span className="hero-highlight">New worlds.</span></h1>
                   <p>
                     Play Chess Universe with Black moving first, challenge the computer, then unlock
                     Chess Universe variants and live competition.
@@ -353,7 +353,20 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="hero-piece">♛</div>
+                <div className="hero-brand-art">
+                  <div className="hero-art-halo" aria-hidden="true" />
+                  <img
+                    className="hero-knight"
+                    src="/brand/knight-emblem-512.jpg"
+                    alt="Chess Universe lime knight emblem"
+                    width={360}
+                    height={360}
+                  />
+                  <div className="hero-art-caption">
+                    <span>CHESS UNIVERSE</span>
+                    <strong>Play · Learn · Compete</strong>
+                  </div>
+                </div>
               </section>
               <InstallApp />
               <FirstRunOnboarding onChoose={(destination) => navigate(destination)} />
