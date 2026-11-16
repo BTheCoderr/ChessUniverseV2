@@ -85,8 +85,8 @@ export function LegalPage({ kind, onBack, onNavigate }: Props) {
 
           <h2>Accounts</h2>
           <p>
-            Keep your account credentials private. You may delete your account from the Profile
-            screen if you no longer want to use the service.
+            Keep your account credentials private. You may delete your account from Profile
+            on the website or Account in the iOS app if you no longer want to use the service.
           </p>
 
           <h2>Privacy and help</h2>
