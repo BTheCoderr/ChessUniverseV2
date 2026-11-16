@@ -12,7 +12,7 @@ Usage:
 import argparse
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageStat
 
 ROOT = Path(__file__).resolve().parent.parent
 MASTER = ROOT / "public/brand/knight-icon-512.png"
@@ -48,6 +48,22 @@ def main():
     group.add_argument("--check", action="store_true")
     opts = parser.parse_args()
     master = canonical_master()
+    # Protect the user's existing favicon from being replaced by a different logo.
+    # Minor anti-aliasing differences between 64px and 512px exports are expected.
+    current_favicon = ROOT / "public/brand/favicon-64.png"
+    if opts.write and current_favicon.exists():
+        with Image.open(current_favicon) as old:
+            old_rgba = old.convert("RGBA")
+            canvas = Image.new("RGBA", old_rgba.size, LIME + (255,))
+            canvas.alpha_composite(old_rgba)
+            prior = canvas.convert("RGB")
+        if prior.size != (64, 64):
+            raise SystemExit("Existing favicon has unexpected dimensions")
+        difference = ImageChops.difference(prior, expected(master, 64))
+        mean_difference = sum(ImageStat.Stat(difference).mean) / 3.0
+        print(f"Original favicon vs high-resolution knight: mean RGB diff {mean_difference:.1f}")
+        if mean_difference > 45.0:
+            raise SystemExit("Existing favicon differs materially from the 512px icon; do not overwrite it")
     mismatches = []
     for dest, size in TARGETS.items():
         path = ROOT / dest
