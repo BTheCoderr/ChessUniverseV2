@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
         name: "Chess Universe",
         short_name: "Chess Universe",
         description: "Learn, practice, relive legendary games, explore chess variants, and play online.",
-        theme_color: "#101314",
+        theme_color: "#0b0e0f",
         background_color: "#0b0e0f",
         display: "standalone",
         start_url: "/",
