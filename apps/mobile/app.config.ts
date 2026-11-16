@@ -8,11 +8,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   scheme: "chessuniverse",
   userInterfaceStyle: "dark",
+  backgroundColor: "#0b0e0f",
+  primaryColor: "#d7ff4a",
   newArchEnabled: true,
   icon: "./assets/icon.png",
   ios: {
     ...config.ios,
     supportsTablet: true,
+    icon: "./assets/icon.png",
     bundleIdentifier: "com.bthecoderr.chessuniverse",
   },
   android: {
