@@ -45,17 +45,17 @@ export function LegalPage({ kind, onBack, onNavigate }: Props) {
       <article className="legal-page public-page card">
         <PublicPageHeader
           onBack={onBack}
-          eyebrow="CHESS UNIVERSE BETA"
-          title="Beta Terms"
-          lede="The ground rules for playing Chess Universe while it is in beta."
+          eyebrow="CHESS UNIVERSE"
+          title="Terms of Use"
+          lede="Ground rules for using Chess Universe."
         />
         <p className="legal-updated">Effective September 29, 2026</p>
 
         <div className="legal-copy">
-          <h2>Beta access</h2>
+          <h2>Using Chess Universe</h2>
           <p>
-            Chess Universe is pre-release software. Features may change, break, reset, or be removed
-            while the product is being tested.
+            Chess Universe offers chess learning and online play. Features and availability may change
+            as the service develops.
           </p>
 
           <h2>Fair play</h2>
@@ -66,14 +66,14 @@ export function LegalPage({ kind, onBack, onNavigate }: Props) {
 
           <h2>No real-money wagering</h2>
           <p>
-            Chess Universe beta does not provide real-money wagering. Do not use the service to
+            Chess Universe does not provide real-money wagering. Do not use the service to
             arrange or operate gambling activity.
           </p>
 
           <h2>Availability</h2>
           <p>
-            The beta is provided as available without a promise of uninterrupted service or
-            permanent preservation of beta data. Offline features may continue to work even when
+            The service is provided as available without a promise of uninterrupted service or
+            permanent preservation of locally or remotely stored data. Offline features may continue to work even when
             online services are unavailable.
           </p>
 
@@ -85,8 +85,8 @@ export function LegalPage({ kind, onBack, onNavigate }: Props) {
 
           <h2>Accounts</h2>
           <p>
-            Keep your account credentials private. You may delete your account from the Profile
-            screen if you no longer want to participate in the beta.
+            Keep your account credentials private. You may delete your account from Profile
+            on the website or Account in the iOS app if you no longer want to use the service.
           </p>
 
           <h2>Privacy and help</h2>
@@ -117,7 +117,7 @@ export function LegalPage({ kind, onBack, onNavigate }: Props) {
           <li>You can play Practice, Puzzles, Chess Academy and Legends without an account.</li>
           <li>An account stores your email, username, online games, rating and synced progress.</li>
           <li>We do not sell your data, show ads, or use third-party analytics or advertising trackers.</li>
-          <li>You can delete your account and synced progress from the Profile screen.</li>
+          <li>You can delete your account and synced progress from the Profile (web) or Account (mobile) screen.</li>
         </ul>
       </div>
 
@@ -198,7 +198,7 @@ export function LegalPage({ kind, onBack, onNavigate }: Props) {
             browser’s local storage. The iOS app keeps Academy and Puzzle progress in the app’s local
             storage on your iPhone. When you sign out on the website, Chess Universe removes your
             player-specific data, such as saved games and puzzle progress, from that browser.
-            On iOS, local progress stays on the device until you delete the app.
+            On iOS, local progress remains on the device unless you delete your account in the app or remove the app.
           </p>
         </PolicySection>
 
@@ -288,7 +288,7 @@ export function LegalPage({ kind, onBack, onNavigate }: Props) {
           </p>
           <p>
             Data stored only on your device is removed by signing out on the website, clearing your
-            browser’s site data, or deleting the iOS app. You can also request deletion by emailing{" "}
+            browser’s site data, deleting your account in the iOS app, or deleting the iOS app. You can also request deletion by emailing{" "}
             <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from the address on your account.
             For step-by-step help, see{" "}
             <a
