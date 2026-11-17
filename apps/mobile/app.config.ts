@@ -8,8 +8,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   scheme: "chessuniverse",
   userInterfaceStyle: "dark",
-  backgroundColor: "#0b0e0f",
-  primaryColor: "#d7ff4a",
+  backgroundColor: "#08152D",
+  primaryColor: "#F2C064",
   newArchEnabled: true,
   icon: "./assets/icon.png",
   ios: {
