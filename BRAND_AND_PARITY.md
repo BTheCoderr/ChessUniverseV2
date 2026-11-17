@@ -26,16 +26,27 @@ now styled in `apps/mobile/lib/theme.ts` around that reference:
 | Navy chess square | `#526E8D` | alternating board squares |
 | Ivory chess square | `#E8DCC4` | alternating board squares |
 
-**Asset caveat:** This task updates the native interface colors, *not the
-source bitmap icon*. The previous favicon-based asset-sync process still uses
-a lime artwork master. It does not match the gold iPhone reference and must be
-replaced before a new TestFlight build so the installed gold icon is not
-unintentionally replaced by lime. The website remains on the previous CSS
-palette until a separate deliberate branding update.
+**Web and native color parity:** The website CSS in `src/styles.css`,
+browser theme and PWA manifest now use the same midnight-navy, gold, ivory,
+blue-slate and board tokens as `apps/mobile/lib/theme.ts`. The
+`tests/webGoldBrand.test.mjs` CI test protects parity.
 
-## Previous favicon-derived identity (historical)
+**Logo asset still pending:** This update changes the colors, **not** the
+source bitmap icon. The repository's favicon and iOS `icon.png` are still
+derived from an older lime-artwork master, **not** the gold cosmic knight
+currently visible in the user's installed app. The user will supply the
+original gold-knight PNG/JPG. When received, replace the 512px canonical master
+with a suitable 512×512 gold image, change `scripts/sync-brand-icons.py`
+to use a navy (not lime) backing color and adjust its stale-favicon safeguard,
+then regenerate all native/web assets (1024px opaque iOS icon, PNG favicon,
+PWA icons, Apple touch icon and in-app image). Update the OG social-sharing
+image separately. Run tests and visually verify before the next EAS build.
 
-**The website favicon's knight icon family is the source of truth.**
+Never run the legacy lime asset sync and claim that the gold icon shipped.
+
+## Previous favicon-derived identity (historical, superseded by gold reference)
+
+**Historical setup (not the final gold logo):**
 The high-resolution master is `public/brand/knight-icon-512.png`. Its actual
 browser favicon is `public/brand/favicon-64.png`. The website header uses the
 64px favicon, the website hero uses the high-resolution icon, and the iOS app
