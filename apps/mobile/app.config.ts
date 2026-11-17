@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Chess Universe",
   slug: "chess-universe",
-  version: "0.1.0",
+  version: "1.0",
   orientation: "portrait",
   scheme: "chessuniverse",
   userInterfaceStyle: "dark",
