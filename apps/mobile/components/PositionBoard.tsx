@@ -47,4 +47,4 @@ export function PositionBoard({ fen, expectedMove, onCorrect, onWrong, locked = 
   }))}</View>;
 }
 
-const styles = StyleSheet.create({ board: { flexDirection: "row", flexWrap: "wrap", borderRadius: 14, overflow: "hidden", alignSelf: "center" }, square: { alignItems: "center", justifyContent: "center" }, light: { backgroundColor: "#d9ded5" }, dark: { backgroundColor: "#65736b" }, active: { backgroundColor: "#d7ff4a" }, target: { position: "absolute", width: 13, height: 13, borderRadius: 8, backgroundColor: "#0b0e0f66" }, piece: { color: "#0b0e0f", textAlign: "center" } });
+const styles = StyleSheet.create({ board: { flexDirection: "row", flexWrap: "wrap", borderRadius: 14, overflow: "hidden", alignSelf: "center" }, square: { alignItems: "center", justifyContent: "center" }, light: { backgroundColor: "#E8DCC4" }, dark: { backgroundColor: "#526E8D" }, active: { backgroundColor: "#F2C064" }, target: { position: "absolute", width: 13, height: 13, borderRadius: 8, backgroundColor: "#08152D66" }, piece: { color: "#08152D", textAlign: "center" } });
