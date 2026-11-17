@@ -1,13 +1,10 @@
 import * as Haptics from "expo-haptics";
+import { ChessPiece, NATIVE_CHESS_PIECE_RATIO } from "@/components/ChessPiece";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { Chess, type Color, type PieceSymbol, type Square } from "chess.js";
+import { Chess, type Square } from "chess.js";
 import { gameStatus, legalMoves, playMove } from "@/lib/chess";
 
-const glyphs: Record<Color, Record<PieceSymbol, string>> = {
-  w: { k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙" },
-  b: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
-};
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
 
 export function ChessBoard() {
@@ -76,7 +73,7 @@ export function ChessBoard() {
           return (
             <Pressable key={square} onPress={() => tap(square)} style={[styles.square, { width: size / 8, height: size / 8 }, dark ? styles.dark : styles.light, active && styles.active]}>
               {target && <View style={styles.target} />}
-              {piece && <Text style={[styles.piece, { fontSize: size / 11.5 }]}>{glyphs[piece.color][piece.type]}</Text>}
+              {piece && <ChessPiece piece={piece} size={(size / 8) * NATIVE_CHESS_PIECE_RATIO} />}
             </Pressable>
           );
         }))}
@@ -90,7 +87,7 @@ export function ChessBoard() {
         </View>
       </View>
 
-      {!!captured.length && <Text style={styles.captures}>Captured  {captured.map((m) => m.captured ? glyphs[m.color === "w" ? "b" : "w"][m.captured] : "").join(" ")}</Text>}
+      {!!captured.length && <View style={styles.captures}><Text style={styles.capturesLabel}>Captured</Text>{captured.filter((m) => m.captured).map((m, i) => <ChessPiece key={`${m.from}-${m.to}-${i}`} piece={{ color: m.color === "w" ? "b" : "w", type: m.captured! }} size={25} />)}</View>}
 
       {!!history.length && (
         <View style={styles.historyPanel}>
@@ -117,7 +114,8 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: 16 },
   action: { color: "#F2C064", fontSize: 14, fontWeight: "800" },
   disabled: { opacity: 0.3 },
-  captures: { color: "#A6B7CB", fontSize: 18, marginTop: 12 },
+  captures: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 12 },
+  capturesLabel: { color: "#A6B7CB", fontSize: 14, marginRight: 8 },
   historyPanel: { backgroundColor: "#11233F", borderRadius: 14, padding: 12, marginTop: 12 },
   historyLabel: { color: "#91A6C1", fontSize: 10, fontWeight: "900", letterSpacing: 1.6 },
   historyScroll: { gap: 10, paddingTop: 7, paddingRight: 10 },
