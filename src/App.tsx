@@ -280,7 +280,7 @@ export default function App() {
     <div className="site-shell">
         <header className="topbar">
           <button className="brand" onClick={() => navigate("home")}>
-            <img className="brand-mark" src="/brand/favicon-64.png" alt="" width={36} height={36} />
+            <img className="brand-mark" src="/brand/favicon-64.png?v=gold-knight-20261116" alt="" width={36} height={36} />
             <span>Chess Universe</span>
           </button>
 
@@ -357,8 +357,8 @@ export default function App() {
                   <div className="hero-art-halo" aria-hidden="true" />
                   <img
                     className="hero-knight"
-                    src="/brand/knight-icon-512.png"
-                    alt="Chess Universe favicon knight icon"
+                    src="/brand/knight-icon-512.png?v=gold-knight-20261116"
+                    alt="Chess Universe golden cosmic knight logo"
                     width={360}
                     height={360}
                   />
