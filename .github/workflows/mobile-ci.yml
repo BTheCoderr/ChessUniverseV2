@@ -30,6 +30,8 @@ jobs:
         working-directory: .
       - run: python3 scripts/sync-brand-icons.py --check
         working-directory: .
+      - run: node scripts/sync-mobile-chess-pieces.mjs --check
+        working-directory: .
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
