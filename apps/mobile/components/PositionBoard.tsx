@@ -1,12 +1,9 @@
 import * as Haptics from "expo-haptics";
+import { ChessPiece, NATIVE_CHESS_PIECE_RATIO } from "@/components/ChessPiece";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { Chess, type Color, type PieceSymbol, type Square } from "chess.js";
+import { Chess, type Square } from "chess.js";
 
-const glyphs: Record<Color, Record<PieceSymbol, string>> = {
-  w: { k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙" },
-  b: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
-};
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
 
 type Props = { fen: string; expectedMove: string; onCorrect: () => void; onWrong: () => void; locked?: boolean };
@@ -42,7 +39,7 @@ export function PositionBoard({ fen, expectedMove, onCorrect, onWrong, locked = 
     const target = targets.has(square);
     return <Pressable key={square} onPress={() => tap(square)} style={[styles.square, { width: size / 8, height: size / 8 }, dark ? styles.dark : styles.light, selected === square && styles.active]}>
       {target && <View style={styles.target} />}
-      {piece && <Text style={[styles.piece, { fontSize: size / 11.5 }]}>{glyphs[piece.color][piece.type]}</Text>}
+      {piece && <ChessPiece piece={piece} size={(size / 8) * NATIVE_CHESS_PIECE_RATIO} />}
     </Pressable>;
   }))}</View>;
 }
