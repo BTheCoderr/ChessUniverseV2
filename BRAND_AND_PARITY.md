@@ -10,7 +10,30 @@ shared online multiplayer backend. The native client is not a WebView.
 The site is hosted separately from this repository's source changes: a GitHub
 commit alone is not proof of a completed Netlify production deploy.
 
-## Original identity — keep, do not redesign
+## Native visual refresh — gold knight and cosmic navy (November 16, 2026)
+
+The user confirmed that the installed iPhone icon shows a **metallic gold knight
+with orbit rings and a midnight-blue starfield**. The native iOS interface is
+now styled in `apps/mobile/lib/theme.ts` around that reference:
+
+| Native token | Color | Purpose |
+| --- | --- | --- |
+| Midnight navy | `#08152D` | page background and status bar |
+| Cosmic panel | `#11233F` | cards and surfaces |
+| Metallic gold | `#F2C064` | buttons, focus rings and highlights |
+| Warm ivory | `#F9F3E8` | headlines and body text |
+| Slate blue | `#A6B7CB` | supporting text |
+| Navy chess square | `#526E8D` | alternating board squares |
+| Ivory chess square | `#E8DCC4` | alternating board squares |
+
+**Asset caveat:** This task updates the native interface colors, *not the
+source bitmap icon*. The previous favicon-based asset-sync process still uses
+a lime artwork master. It does not match the gold iPhone reference and must be
+replaced before a new TestFlight build so the installed gold icon is not
+unintentionally replaced by lime. The website remains on the previous CSS
+palette until a separate deliberate branding update.
+
+## Previous favicon-derived identity (historical)
 
 **The website favicon's knight icon family is the source of truth.**
 The high-resolution master is `public/brand/knight-icon-512.png`. Its actual

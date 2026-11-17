@@ -1,11 +1,23 @@
+/**
+ * Chess Universe's gold knight / cosmic navy identity.
+ * The screenshot of the installed app icon is the visual source of truth:
+ * metallic gold highlights, midnight-blue space, and warm ivory type.
+ *
+ * Native screens should use these tokens instead of lime/charcoal literals.
+ */
 export const theme = {
-  background: "#0b0e0f",
-  surface: "#151a1b",
-  surfaceBorder: "#263031",
-  text: "#f5f7f0",
-  muted: "#9ca7a3",
-  accent: "#d7ff4a",
-  // The same ink and lime used in the website favicon / native app icon.
-  faviconBackground: "#d7ff4a",
-  faviconForeground: "#0b0e0f",
+  background: "#08152D",
+  surface: "#11233F",
+  surfaceElevated: "#182C4A",
+  surfaceBorder: "#2F4563",
+  text: "#F9F3E8",
+  muted: "#A6B7CB",
+  accent: "#F2C064",
+  accentBright: "#FFDA8B",
+  accentDeep: "#BD8535",
+  accentInk: "#08152D",
+  boardLight: "#E8DCC4",
+  boardDark: "#526E8D",
+  danger: "#FF9B98",
+  glow: "#F2C06466",
 } as const;
