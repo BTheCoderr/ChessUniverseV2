@@ -42,5 +42,9 @@ jobs:
             echo "All icons already match."
           else
             git commit -m "Sync website and iOS icons from original gold cosmic knight"
+            # The source branch may advance while this asset job runs.
+            # Preserve newer code commits and rebase only the generated assets.
+            git fetch origin "${BRANCH_NAME}"
+            git rebase "origin/${BRANCH_NAME}"
             git push origin "HEAD:${BRANCH_NAME}"
           fi
