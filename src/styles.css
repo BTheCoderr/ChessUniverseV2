@@ -6726,6 +6726,11 @@ body.native-app {
   }
 }
 
+/* Temporary treatment for the old lime knight bitmaps until the supplied
+   original gold artwork replaces them. Remove this filter at asset handoff. */
+.brand-mark,
+.hero-knight { filter: hue-rotate(-36deg) saturate(.82) brightness(.97); }
+
 /* Chess Universe gold knight / midnight-cosmos interface polish. */
 :focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
 .brand-mark { box-shadow: 0 0 0 1px rgba(242,192,100,.35), 0 6px 22px rgba(242,192,100,.13); }
