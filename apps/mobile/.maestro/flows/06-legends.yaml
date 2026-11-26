@@ -6,8 +6,8 @@ name: 06-legends
     element:
       id: "home-legends"
     direction: DOWN
-    visibilityPercentage: 100
-    centerElement: true
+    visibilityPercentage: 50
+    timeout: 10000
 - tapOn:
     id: "home-legends"
 - assertVisible: "Replay greatness."

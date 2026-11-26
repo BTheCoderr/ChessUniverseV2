@@ -144,6 +144,13 @@ Source: `.github/workflows/ios-simulator-qa.yml` → `qa-captures` branch,
 bar fixed at 9:41. Website captures live separately under `website-captures/`
 and are named `website-*.png`; **never upload those as iOS screenshots.**
 
+Verified captures from run `3ae4a50` (all 8 Maestro flows passed on iPhone 16 Pro Max, iOS 26.2):
+`iphone-6.9-native-02-practice-vs-computer.png`, `-04b-puzzle-solved.png`, `-06-legends-replay.png`,
+`-05-academy-lesson.png`, `-01-home.png` (and the `ipad-13-native-*` equivalents at 2064 × 2752).
+The QA build had no Supabase secrets, so Account shows "Online services unavailable" and Online is
+signed-out — add repository secrets `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` and run
+`apps/mobile/.maestro/optional/09-online-signed-in.yaml` with a disposable account for signed-in shots.
+
 Suggested order (5–6 per device): Practice vs computer, Puzzle solved,
 Legends replay, Academy lesson, Online lobby (signed in — needs QA secrets),
 Home. Captions may be added on top of the real screens but must not show

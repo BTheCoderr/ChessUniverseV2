@@ -26,8 +26,8 @@ name: 09-online-signed-in
     element:
       id: "home-online"
     direction: DOWN
-    visibilityPercentage: 100
-    centerElement: true
+    visibilityPercentage: 50
+    timeout: 10000
 - tapOn:
     id: "home-online"
 - extendedWaitUntil:
