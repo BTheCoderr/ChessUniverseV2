@@ -36,9 +36,18 @@ xcrun simctl io "$UDID" recordVideo --codec=h264 --force "$OUT/$LABEL-native-gam
 REC=$!
 sleep 3
 STATUS=0
-(cd "$OUT" && maestro --device "$UDID" test "$ROOT/apps/mobile/.maestro" \
-  --format junit --output "$OUT/maestro-report.xml" --debug-output "$OUT/maestro-debug" \
-  --test-output-dir "$OUT/maestro-output") || STATUS=$?
+for ATTEMPT in 1 2; do
+  STATUS=0
+  (cd "$OUT" && maestro --device "$UDID" test "$ROOT/apps/mobile/.maestro" \
+    --format junit --output "$OUT/maestro-report.xml" --debug-output "$OUT/maestro-debug" \
+    --test-output-dir "$OUT/maestro-output") || STATUS=$?
+  # Retry only when Maestro never produced a report (XCTest driver failed to start);
+  # real flow failures are reported, not retried.
+  if [ -s "$OUT/maestro-report.xml" ]; then break; fi
+  echo "Maestro driver did not start (attempt $ATTEMPT); retrying after a simulator app relaunch."
+  xcrun simctl terminate "$UDID" com.bthecoderr.chessuniverse || true
+  sleep 15
+done
 kill -INT "$REC" || true
 wait "$REC" || true
 # Collect named takeScreenshot captures (Maestro 1.x writes to cwd, 2.x to --test-output-dir).
