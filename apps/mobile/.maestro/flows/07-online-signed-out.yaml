@@ -6,8 +6,7 @@ name: 07-online-signed-out
     element:
       id: "home-online"
     direction: DOWN
-    visibilityPercentage: 50
-    timeout: 10000
+    timeout: 15000
 - tapOn:
     id: "home-online"
 - assertVisible: "Find your table"
@@ -18,8 +17,7 @@ name: 07-online-signed-out
     element:
       id: "home-games"
     direction: DOWN
-    visibilityPercentage: 50
-    timeout: 10000
+    timeout: 15000
 - tapOn:
     id: "home-games"
 - assertVisible: "My Games"

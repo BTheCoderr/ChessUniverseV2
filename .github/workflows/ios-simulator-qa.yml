@@ -54,6 +54,8 @@ jobs:
     env:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
+      # Second simulator on the same runner can be slow to accept the XCTest driver.
+      MAESTRO_DRIVER_STARTUP_TIMEOUT: "240000"
       # Optional repository secrets. Without them the app runs in offline mode
       # (Practice, Puzzles, Academy and Legends still work).
       EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}

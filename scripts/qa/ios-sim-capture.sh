@@ -19,6 +19,8 @@ xcrun simctl ui "$UDID" appearance dark || true
 xcrun simctl status_bar "$UDID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 \
   --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100 || true
 xcrun simctl install "$UDID" "$APP"
+# Let SpringBoard settle before Maestro installs its XCTest driver.
+sleep 20
 
 {
   echo "device=$DEVICE_NAME"; echo "runtime=$RUNTIME"; echo "udid=$UDID"
