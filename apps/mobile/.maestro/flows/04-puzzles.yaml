@@ -1,0 +1,27 @@
+appId: com.bthecoderr.chessuniverse
+name: 04-puzzles
+---
+- launchApp
+- tapOn:
+    id: "home-puzzles"
+- assertVisible: "Close the Net"
+- takeScreenshot: 04-puzzles
+# Wrong move first: feedback must explain the mistake.
+- tapOn:
+    id: "square-h6"
+- tapOn:
+    id: "square-h7"
+- assertVisible: "WHY NOT"
+- tapOn:
+    id: "puzzle-hint"
+- assertVisible: "HINT"
+# Correct: Qg7#
+- tapOn:
+    id: "square-h6"
+- tapOn:
+    id: "square-g7"
+- assertVisible: "WHY IT WORKS"
+- takeScreenshot: 04b-puzzle-solved
+- tapOn:
+    id: "puzzle-next"
+- assertVisible: "Black Strikes"

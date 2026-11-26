@@ -80,7 +80,7 @@ an EAS build until the branch checks and build environment are verified.
 | Timed practice and move undo | Yes | Present | Device QA needed |
 | Stockfish opponent and analysis | Yes | No; native lightweight AI | Not at parity |
 | Academy placement, adaptive review, endgames | Yes | Native lessons/progress only | Not at parity |
-| Puzzles with move feedback | Yes | Present, smaller curated set | Partial |
+| Puzzles with move feedback | Yes | Same 19 curated web puzzles (+1 native), hints, skip; synced via `scripts/sync-mobile-puzzles.mjs` | Single-move puzzles at parity; multi-move puzzles web-only |
 | Legends with replay | Yes | Present | Partial (no Rewrite History) |
 | Online Classic and Battle | Yes | Present | Two-device QA needed |
 | Profile and account sync | Yes | Present | QA needed |

@@ -1,0 +1,48 @@
+appId: com.bthecoderr.chessuniverse
+name: 02-practice-vs-computer
+---
+- launchApp
+- tapOn:
+    id: "home-practice"
+- assertVisible: "Practice"
+# Chess Universe rule: Black moves first. The player is Black vs the computer.
+- assertVisible:
+    id: "practice-status"
+- assertVisible: "Black to move"
+- tapOn:
+    id: "square-e7"
+- tapOn:
+    id: "square-e5"
+- extendedWaitUntil:
+    visible: "Black to move"
+    timeout: 8000
+- tapOn:
+    id: "square-g8"
+- tapOn:
+    id: "square-f6"
+- extendedWaitUntil:
+    visible: "Black to move"
+    timeout: 8000
+- tapOn:
+    id: "square-b8"
+- tapOn:
+    id: "square-c6"
+- extendedWaitUntil:
+    visible: "Black to move"
+    timeout: 8000
+- takeScreenshot: 02-practice-vs-computer
+# Timed game: select the 10 minute clock and confirm both clocks render.
+- tapOn:
+    id: "clock-preset-1"
+- assertVisible:
+    id: "clock-black"
+- assertVisible:
+    id: "clock-white"
+- tapOn:
+    id: "square-d7"
+- tapOn:
+    id: "square-d5"
+- extendedWaitUntil:
+    visible: "Black to move"
+    timeout: 8000
+- takeScreenshot: 02b-practice-timed

@@ -1,0 +1,24 @@
+appId: com.bthecoderr.chessuniverse
+name: 07-online-signed-out
+---
+- launchApp
+- scrollUntilVisible:
+    element:
+      id: "home-online"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "home-online"
+- assertVisible: "Find your table"
+- takeScreenshot: 07-online
+- tapOn:
+    id: "back"
+- scrollUntilVisible:
+    element:
+      id: "home-games"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "home-games"
+- assertVisible: "My Games"
+- takeScreenshot: 07b-my-games-signed-out

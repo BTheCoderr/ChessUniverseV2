@@ -1,0 +1,23 @@
+appId: com.bthecoderr.chessuniverse
+name: 08-account-validation
+---
+- launchApp
+- tapOn:
+    id: "home-account"
+- takeScreenshot: 08-account
+- runFlow:
+    when:
+      visible:
+        id: "account-email"
+    commands:
+      - tapOn:
+          id: "account-email"
+      - inputText: "not-an-email"
+      - tapOn:
+          id: "account-password"
+      - inputText: "x"
+      - hideKeyboard
+      - tapOn:
+          id: "account-submit"
+      - assertVisible: "Enter a valid email address."
+      - takeScreenshot: 08b-account-validation
