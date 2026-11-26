@@ -2,6 +2,12 @@ appId: com.bthecoderr.chessuniverse
 name: 06-legends
 ---
 - launchApp
+- scrollUntilVisible:
+    element:
+      id: "home-legends"
+    direction: DOWN
+    visibilityPercentage: 100
+    centerElement: true
 - tapOn:
     id: "home-legends"
 - assertVisible: "Replay greatness."

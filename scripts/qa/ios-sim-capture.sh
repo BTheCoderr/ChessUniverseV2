@@ -35,9 +35,17 @@ REC=$!
 sleep 3
 STATUS=0
 (cd "$OUT" && maestro --device "$UDID" test "$ROOT/apps/mobile/.maestro" \
-  --format junit --output "$OUT/maestro-report.xml" --debug-output "$OUT/maestro-debug") || STATUS=$?
+  --format junit --output "$OUT/maestro-report.xml" --debug-output "$OUT/maestro-debug" \
+  --test-output-dir "$OUT/maestro-output") || STATUS=$?
 kill -INT "$REC" || true
 wait "$REC" || true
+# Collect named takeScreenshot captures (Maestro 1.x writes to cwd, 2.x to --test-output-dir).
+mkdir -p "$OUT/screens"
+find "$OUT" -path "$OUT/screens" -prune -o -name '[0-9][0-9]*.png' -print | while read -r f; do
+  cp "$f" "$OUT/screens/$LABEL-native-$(basename "$f")"
+done
+# Failure screenshots, if any, stay under maestro-debug/ and maestro-output/.
+ls -1 "$OUT/screens" || true
 xcrun simctl spawn "$UDID" log show --last 15m --predicate 'process == "ChessUniverse"' --style compact > "$OUT/app-log.txt" 2>/dev/null || true
 xcrun simctl shutdown "$UDID" || true
 echo "maestro_exit=$STATUS" >> "$OUT/capture-info.txt"

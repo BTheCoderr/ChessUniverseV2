@@ -22,6 +22,12 @@ name: 09-online-signed-in
 - takeScreenshot: 09-account-signed-in
 - tapOn:
     id: "back"
+- scrollUntilVisible:
+    element:
+      id: "home-online"
+    direction: DOWN
+    visibilityPercentage: 100
+    centerElement: true
 - tapOn:
     id: "home-online"
 - extendedWaitUntil:

@@ -10,7 +10,8 @@ name: 01-home
 - assertVisible:
     id: "home-practice"
 - takeScreenshot: 01-home
-- scroll
-- assertVisible:
-    id: "home-games"
+- scrollUntilVisible:
+    element:
+      id: "home-games"
+    direction: DOWN
 - takeScreenshot: 01b-home-modes

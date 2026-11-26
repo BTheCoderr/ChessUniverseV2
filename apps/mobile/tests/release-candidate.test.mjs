@@ -80,3 +80,17 @@ test("EAS production builds fail fast without the public Supabase environment", 
   assert.match(config, /EXPO_PUBLIC_SUPABASE_URL/);
   assert.match(config, /EXPO_PUBLIC_SUPABASE_ANON_KEY/);
 });
+
+test("solving a puzzle keeps the explanation and the solved position on screen", () => {
+  // Found by the Maestro simulator run: saving progress re-ran an effect that
+  // cleared the feedback, and a solved-keyed remount reset the board.
+  const code = read("app/puzzles.tsx");
+  assert.doesNotMatch(code, /\[index,puzzle\.id,progress\]/);
+  assert.match(code, /setFeedback\(null\);setShowHint\(false\)\},\[index\]\)/);
+  assert.match(code, /<PositionBoard key=\{puzzle\.id\}/);
+});
+
+test("practice status is rendered above the board so it is visible with clocks on", () => {
+  const code = read("components/PracticeGame.tsx");
+  assert.ok(code.indexOf('testID="practice-status"') < code.indexOf("styles.board,{width:size"), "status must precede the board");
+});

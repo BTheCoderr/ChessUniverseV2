@@ -2,13 +2,24 @@ appId: com.bthecoderr.chessuniverse
 name: 07-online-signed-out
 ---
 - launchApp
+- scrollUntilVisible:
+    element:
+      id: "home-online"
+    direction: DOWN
+    visibilityPercentage: 100
+    centerElement: true
 - tapOn:
     id: "home-online"
 - assertVisible: "Find your table"
 - takeScreenshot: 07-online
 - tapOn:
     id: "back"
-- scroll
+- scrollUntilVisible:
+    element:
+      id: "home-games"
+    direction: DOWN
+    visibilityPercentage: 100
+    centerElement: true
 - tapOn:
     id: "home-games"
 - assertVisible: "My Games"
