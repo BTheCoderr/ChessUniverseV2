@@ -1,5 +1,7 @@
 # Chess Universe — iOS Store Metadata Draft
 
+> Final, character-counted App Store text, privacy answers, review notes and release steps for 1.0 are in `apps/mobile/APP_STORE_SUBMISSION.md`.
+
 ## Name
 Chess Universe
 

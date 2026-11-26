@@ -108,7 +108,8 @@ jobs:
           if-no-files-found: warn
 
   website:
-    runs-on: ubuntu-latest
+    # Pinned: Playwright browsers are not published for ubuntu-latest (26.04) yet.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -120,7 +121,7 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npm run build
-      - run: npm install --no-save playwright@1.56.0 && npx playwright install --with-deps chromium
+      - run: npm install --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
       - name: Capture website screens and gameplay video (Playwright)
         run: |
           npx vite preview --host 127.0.0.1 --port 4173 --strictPort &
