@@ -23,6 +23,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checks:
+    # Same gates as CI + Mobile CI, so a release branch is verified before a PR
+    # (and its Netlify deploy preview) is opened.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: python3 -m pip install --break-system-packages Pillow==11.3.0
+      - run: python3 scripts/sync-brand-icons.py --check
+      - run: node scripts/sync-mobile-chess-pieces.mjs --check
+      - run: node scripts/sync-mobile-puzzles.mjs --check
+      - run: npm install
+      - run: npm test
+      - run: npm run typecheck
+      - name: Mobile install, typecheck, tests and iOS JS bundle
+        working-directory: apps/mobile
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npx expo export --platform ios --output-dir /tmp/expo-export-ios
+
   ios-simulator:
     runs-on: macos-15
     timeout-minutes: 90
