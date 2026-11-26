@@ -1,0 +1,32 @@
+12:17:02.419 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+12:17:02.425 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+12:17:02.426 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+12:17:02.427 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+12:17:02.427 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.bthecoderr.chessuniverse" with clear state RUNNING
+12:17:02.429 [ INFO] maestro.Maestro.clearAppState$lambda$9: Clearing app state com.bthecoderr.chessuniverse
+12:17:51.556 [ INFO] maestro.Maestro.launchApp$lambda$6: Launching app com.bthecoderr.chessuniverse
+12:17:51.564 [ INFO] maestro.Maestro.launchApp$lambda$6: Stopping com.bthecoderr.chessuniverse app during launch
+12:18:18.976 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "com.bthecoderr.chessuniverse" with clear state COMPLETED
+12:18:19.230 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Classic strategy." is visible RUNNING
+12:18:44.686 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Classic strategy." is visible COMPLETED
+12:18:44.690 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "New worlds." is visible RUNNING
+12:18:45.004 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "New worlds." is visible COMPLETED
+12:18:45.004 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that id: home-practice is visible RUNNING
+12:18:45.394 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that id: home-practice is visible COMPLETED
+12:18:45.394 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 01-home RUNNING
+12:18:45.412 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+12:18:45.424 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:18:45.830 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 01-home COMPLETED
+12:18:45.832 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Scrolling DOWN until id: home-games is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled RUNNING
+12:18:46.918 [ WARN] maestro.orchestra.Orchestra.scrollUntilVisible: Error: maestro.MaestroException$ElementNotFound: Element not found: Id matching regex: home-games
+12:18:46.940 [ INFO] maestro.Maestro.swipeFromCenter: Swiping UP from center
+12:18:50.185 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Scrolling try count: 0, DeviceWidth: 440, DeviceWidth: 956
+12:18:50.190 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Element bounds: Bounds(x=22, y=796, width=396, height=84)
+12:18:50.191 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Visibility Percent: 1.0
+12:18:50.200 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Command centerElement: ScrollUntilVisibleCommand(selector=ElementSelector(textRegex=null, idRegex=home-games, size=null, below=null, above=null, leftOf=null, rightOf=null, containsChild=null, containsDescendants=null, traits=null, index=null, enabled=null, optional=false, selected=null, checked=null, focused=null, childOf=null, css=null), direction=DOWN, scrollDuration=601, visibilityPercentage=100, timeout=20000, waitToSettleTimeoutMs=null, centerElement=false, originalSpeedValue=40, label=null, optional=false).centerElement
+12:18:50.200 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: visibilityPercentageNormalized: 1.0
+12:18:50.201 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Scrolling DOWN until id: home-games is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled COMPLETED
+12:18:50.201 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 01b-home-modes RUNNING
+12:18:50.203 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+12:18:50.204 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:18:50.379 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 01b-home-modes COMPLETED

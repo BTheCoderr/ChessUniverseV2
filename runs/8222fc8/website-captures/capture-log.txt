@@ -1,0 +1,14 @@
+source=WEBSITE (vite preview of this commit), NOT native iOS
+base=http://127.0.0.1:4173
+captured website-01-home.png
+captured website-02-practice-start.png
+captured website-02b-practice-midgame.png
+captured website-03-academy.png
+captured website-04-puzzles.png
+captured website-05-legends.png
+captured website-06-online.png
+captured website-07-privacy.png
+captured website-08-support.png
+video /home/runner/work/ChessUniverseV2/ChessUniverseV2/qa-captures/website/page@702558a599668efe8a82531e98183379.webm
+
+page errors:

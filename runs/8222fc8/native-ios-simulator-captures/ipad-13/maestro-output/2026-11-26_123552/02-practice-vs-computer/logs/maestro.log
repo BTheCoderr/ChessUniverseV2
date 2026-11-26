@@ -1,0 +1,5 @@
+12:38:07.684 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+12:38:07.685 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+12:38:07.687 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+12:38:07.687 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+12:38:07.688 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.bthecoderr.chessuniverse" RUNNING

@@ -1,0 +1,82 @@
+12:20:26.694 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+12:20:26.697 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+12:20:26.701 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+12:20:26.701 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+12:20:26.701 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.bthecoderr.chessuniverse" RUNNING
+12:20:31.790 [ INFO] maestro.Maestro.launchApp$lambda$6: Launching app com.bthecoderr.chessuniverse
+12:20:31.790 [ INFO] maestro.Maestro.launchApp$lambda$6: Stopping com.bthecoderr.chessuniverse app during launch
+12:20:43.889 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "com.bthecoderr.chessuniverse" COMPLETED
+12:20:43.910 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: home-puzzles RUNNING
+12:20:44.898 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Puzzles. Calculate, defend, and understand every move, title=, value=, text=, hintText=, resource-id=home-puzzles, bounds=[22,522][418,670], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=22, y=522, width=396, height=148))
+12:20:45.328 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:20:45.329 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (220, 596) using hierarchy based logic for wait
+12:20:45.330 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:20:45.330 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:20:47.975 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:20:47.976 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: home-puzzles COMPLETED
+12:20:47.976 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Close the Net" is visible RUNNING
+12:20:48.713 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Close the Net" is visible COMPLETED
+12:20:48.714 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 04-puzzles RUNNING
+12:20:48.715 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+12:20:48.716 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:20:48.926 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 04-puzzles COMPLETED
+12:20:48.927 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: square-h6 RUNNING
+12:20:49.531 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=h6, White queen, title=, value=, text=, hintText=, resource-id=square-h6, bounds=[368,398][418,447], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=368, y=398, width=50, height=49))
+12:20:49.914 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:20:49.924 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (393, 422) using hierarchy based logic for wait
+12:20:49.925 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:20:49.925 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:20:51.035 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:20:51.036 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: square-h6 COMPLETED
+12:20:51.036 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: square-h7 RUNNING
+12:20:51.560 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=h7, empty, legal move, title=, value=, text=, hintText=, resource-id=square-h7, bounds=[368,349][418,398], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=368, y=349, width=50, height=49))
+12:20:51.976 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:20:52.018 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (393, 373) using hierarchy based logic for wait
+12:20:52.024 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:20:52.024 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:20:53.099 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:20:53.100 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: square-h7 COMPLETED
+12:20:53.100 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "WHY NOT" is visible RUNNING
+12:20:53.491 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "WHY NOT" is visible COMPLETED
+12:20:53.491 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: puzzle-hint RUNNING
+12:20:53.853 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Show hint, title=, value=, text=, hintText=, resource-id=puzzle-hint, bounds=[22,872][215,916], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=22, y=872, width=193, height=44))
+12:20:54.161 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:20:54.168 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (118, 894) using hierarchy based logic for wait
+12:20:54.169 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:20:54.169 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:20:55.257 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:20:55.257 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: puzzle-hint COMPLETED
+12:20:55.257 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "HINT" is visible RUNNING
+12:20:55.726 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "HINT" is visible COMPLETED
+12:20:55.727 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: square-h6 RUNNING
+12:20:56.134 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=h6, White queen, title=, value=, text=, hintText=, resource-id=square-h6, bounds=[368,398][418,447], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=368, y=398, width=50, height=49))
+12:20:56.510 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:20:56.537 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (393, 422) using hierarchy based logic for wait
+12:20:56.541 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:20:56.541 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:20:57.532 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:20:57.533 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: square-h6 COMPLETED
+12:20:57.533 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: square-g7 RUNNING
+12:20:57.908 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=g7, empty, legal move, title=, value=, text=, hintText=, resource-id=square-g7, bounds=[319,349][368,398], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=319, y=349, width=49, height=49))
+12:20:58.296 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:20:58.298 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (343, 373) using hierarchy based logic for wait
+12:20:58.300 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:20:58.300 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:20:59.373 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:20:59.373 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: square-g7 COMPLETED
+12:20:59.373 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "WHY IT WORKS" is visible RUNNING
+12:20:59.891 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "WHY IT WORKS" is visible COMPLETED
+12:20:59.892 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 04b-puzzle-solved RUNNING
+12:20:59.901 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+12:20:59.903 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:21:00.157 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 04b-puzzle-solved COMPLETED
+12:21:00.181 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: puzzle-next RUNNING
+12:21:00.601 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Next puzzle →, title=, value=, text=, hintText=, resource-id=puzzle-next, bounds=[22,893][418,943], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=22, y=893, width=396, height=50))
+12:21:00.966 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:21:00.967 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (220, 918) using hierarchy based logic for wait
+12:21:00.968 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:21:00.968 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:21:01.986 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:21:01.986 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: puzzle-next COMPLETED
+12:21:01.986 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Black Strikes" is visible RUNNING
+12:21:02.320 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Black Strikes" is visible COMPLETED

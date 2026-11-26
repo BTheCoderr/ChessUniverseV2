@@ -1,0 +1,42 @@
+12:21:06.593 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+12:21:06.594 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+12:21:06.598 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+12:21:06.598 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+12:21:06.598 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.bthecoderr.chessuniverse" RUNNING
+12:21:09.761 [ INFO] maestro.Maestro.launchApp$lambda$6: Launching app com.bthecoderr.chessuniverse
+12:21:09.761 [ INFO] maestro.Maestro.launchApp$lambda$6: Stopping com.bthecoderr.chessuniverse app during launch
+12:21:16.420 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "com.bthecoderr.chessuniverse" COMPLETED
+12:21:16.422 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: home-academy RUNNING
+12:21:17.475 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Academy. Learn openings, tactics, strategy, and endgames, title=, value=, text=, hintText=, resource-id=home-academy, bounds=[22,682][418,830], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=22, y=682, width=396, height=148))
+12:21:17.910 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:21:17.918 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (220, 756) using hierarchy based logic for wait
+12:21:17.920 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:21:17.920 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:21:19.694 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:21:19.695 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: home-academy COMPLETED
+12:21:19.696 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Academy" is visible RUNNING
+12:21:19.980 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Academy" is visible COMPLETED
+12:21:19.980 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: lesson-board-basics RUNNING
+12:21:20.352 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=START HERE · 1, ⌄, Control the center, Why the middle of the board matters., title=, value=, text=, hintText=, resource-id=lesson-board-basics, bounds=[41,318][399,396], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=41, y=318, width=358, height=78))
+12:21:20.738 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:21:20.741 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (220, 357) using hierarchy based logic for wait
+12:21:20.742 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:21:20.742 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:21:21.917 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:21:21.918 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: lesson-board-basics COMPLETED
+12:21:21.918 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "BOARD CHECK" is visible RUNNING
+12:21:22.209 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "BOARD CHECK" is visible COMPLETED
+12:21:22.210 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 05-academy-lesson RUNNING
+12:21:22.210 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+12:21:22.211 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:21:22.382 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 05-academy-lesson COMPLETED
+12:21:22.382 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: lesson-complete-board-basics RUNNING
+12:21:22.683 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Mark lesson complete, title=, value=, text=, hintText=, resource-id=lesson-complete-board-basics, bounds=[41,605][399,646], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=41, y=605, width=358, height=41))
+12:21:23.045 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:21:23.046 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (220, 625) using hierarchy based logic for wait
+12:21:23.047 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:21:23.047 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:21:24.087 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:21:24.094 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: lesson-complete-board-basics COMPLETED
+12:21:24.095 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Completed ✓" is visible RUNNING
+12:21:24.449 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Completed ✓" is visible COMPLETED

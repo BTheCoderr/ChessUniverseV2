@@ -1,0 +1,23 @@
+12:23:07.474 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+12:23:07.475 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+12:23:07.476 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+12:23:07.476 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+12:23:07.476 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.bthecoderr.chessuniverse" RUNNING
+12:23:15.073 [ INFO] maestro.Maestro.launchApp$lambda$6: Launching app com.bthecoderr.chessuniverse
+12:23:15.074 [ INFO] maestro.Maestro.launchApp$lambda$6: Stopping com.bthecoderr.chessuniverse app during launch
+12:23:20.348 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "com.bthecoderr.chessuniverse" COMPLETED
+12:23:20.364 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: home-account RUNNING
+12:23:26.504 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Sign in, title=, value=, text=, hintText=, resource-id=home-account, bounds=[346,98][418,125], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=346, y=98, width=72, height=27))
+12:23:26.919 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:23:26.923 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (382, 111) using hierarchy based logic for wait
+12:23:26.924 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:23:26.929 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:23:28.843 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:23:28.875 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: home-account COMPLETED
+12:23:28.877 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 08-account RUNNING
+12:23:28.891 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+12:23:28.893 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:23:29.123 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 08-account COMPLETED
+12:23:29.127 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Run flow when id: account-email is visible RUNNING
+12:23:36.164 [ INFO] maestro.orchestra.Orchestra.executeCommands: [Command execution] CommandSkipped: null
+12:23:36.165 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Run flow when id: account-email is visible SKIPPED

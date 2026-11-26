@@ -1,0 +1,10 @@
+device=iPhone 16 Pro Max
+runtime=com.apple.CoreSimulator.SimRuntime.iOS-26-2
+udid=A5DAF92C-34DC-4535-A074-8F88416D9A77
+app=ChessUniverse.app
+bundle_version=1.0
+bundle_build=1
+bundle_id=com.bthecoderr.chessuniverse
+captured_at=2026-11-26T12:15:27Z
+source=NATIVE iOS SIMULATOR (Expo Release build, not the website)
+maestro_exit=0

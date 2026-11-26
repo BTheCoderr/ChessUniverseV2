@@ -1,0 +1,6 @@
+12:37:05.554 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+12:37:05.598 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+12:37:05.601 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+12:37:05.602 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+12:37:05.603 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.bthecoderr.chessuniverse" with clear state RUNNING
+12:37:05.606 [ INFO] maestro.Maestro.clearAppState$lambda$9: Clearing app state com.bthecoderr.chessuniverse

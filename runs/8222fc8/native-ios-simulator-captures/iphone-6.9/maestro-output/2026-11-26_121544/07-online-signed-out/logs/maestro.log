@@ -1,0 +1,61 @@
+12:22:26.804 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+12:22:26.804 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+12:22:26.807 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+12:22:26.808 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+12:22:26.808 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.bthecoderr.chessuniverse" RUNNING
+12:22:30.121 [ INFO] maestro.Maestro.launchApp$lambda$6: Launching app com.bthecoderr.chessuniverse
+12:22:30.122 [ INFO] maestro.Maestro.launchApp$lambda$6: Stopping com.bthecoderr.chessuniverse app during launch
+12:22:33.892 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "com.bthecoderr.chessuniverse" COMPLETED
+12:22:33.897 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Scrolling DOWN until id: home-online is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled RUNNING
+12:22:42.033 [ WARN] maestro.orchestra.Orchestra.scrollUntilVisible: Error: maestro.MaestroException$ElementNotFound: Element not found: Id matching regex: home-online
+12:22:42.055 [ INFO] maestro.Maestro.swipeFromCenter: Swiping UP from center
+12:22:47.371 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Scrolling try count: 0, DeviceWidth: 440, DeviceWidth: 956
+12:22:47.375 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Element bounds: Bounds(x=22, y=632, width=396, height=148)
+12:22:47.375 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Visibility Percent: 1.0
+12:22:47.384 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Command centerElement: ScrollUntilVisibleCommand(selector=ElementSelector(textRegex=null, idRegex=home-online, size=null, below=null, above=null, leftOf=null, rightOf=null, containsChild=null, containsDescendants=null, traits=null, index=null, enabled=null, optional=false, selected=null, checked=null, focused=null, childOf=null, css=null), direction=DOWN, scrollDuration=601, visibilityPercentage=100, timeout=15000, waitToSettleTimeoutMs=null, centerElement=false, originalSpeedValue=40, label=null, optional=false).centerElement
+12:22:47.385 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: visibilityPercentageNormalized: 1.0
+12:22:47.387 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Scrolling DOWN until id: home-online is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled COMPLETED
+12:22:47.612 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: home-online RUNNING
+12:22:49.451 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Online. Classic games, challenges, and Battle Chess, title=, value=, text=, hintText=, resource-id=home-online, bounds=[22,632][418,780], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=22, y=632, width=396, height=148))
+12:22:50.513 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via stabilised hierarchy (null settle after a scroll)
+12:22:51.443 [ INFO] maestro.Maestro.refreshElementUntilStable-Hkttul8: Element is still moving (null -> Bounds(x=22, y=632, width=396, height=148)). Waiting for its position to settle.
+12:22:52.030 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (220, 706) using hierarchy based logic for wait
+12:22:52.033 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:22:52.035 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:22:53.674 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:22:53.675 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: home-online COMPLETED
+12:22:53.675 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Find your table" is visible RUNNING
+12:22:54.019 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Find your table" is visible COMPLETED
+12:22:54.020 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 07-online RUNNING
+12:22:54.021 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+12:22:54.022 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:22:54.214 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 07-online COMPLETED
+12:22:54.214 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: back RUNNING
+12:22:54.511 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Back, title=, value=, text=, hintText=, resource-id=back, bounds=[22,84][418,110], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=22, y=84, width=396, height=26))
+12:22:54.896 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:22:54.897 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (220, 97) using hierarchy based logic for wait
+12:22:54.898 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:22:54.898 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:22:56.502 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:22:56.503 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: back COMPLETED
+12:22:56.505 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Scrolling DOWN until id: home-games is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled RUNNING
+12:22:56.848 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Scrolling try count: 0, DeviceWidth: 440, DeviceWidth: 956
+12:22:56.849 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Element bounds: Bounds(x=22, y=796, width=396, height=84)
+12:22:56.849 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Visibility Percent: 1.0
+12:22:56.851 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Command centerElement: ScrollUntilVisibleCommand(selector=ElementSelector(textRegex=null, idRegex=home-games, size=null, below=null, above=null, leftOf=null, rightOf=null, containsChild=null, containsDescendants=null, traits=null, index=null, enabled=null, optional=false, selected=null, checked=null, focused=null, childOf=null, css=null), direction=DOWN, scrollDuration=601, visibilityPercentage=100, timeout=15000, waitToSettleTimeoutMs=null, centerElement=false, originalSpeedValue=40, label=null, optional=false).centerElement
+12:22:56.851 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: visibilityPercentageNormalized: 1.0
+12:22:56.851 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Scrolling DOWN until id: home-games is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled COMPLETED
+12:22:56.851 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: home-games RUNNING
+12:22:57.168 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=My Games. Replay games, review positions, and keep improving., title=, value=, text=, hintText=, resource-id=home-games, bounds=[22,796][418,880], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=22, y=796, width=396, height=84))
+12:22:57.585 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+12:22:57.589 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (220, 838) using hierarchy based logic for wait
+12:22:57.590 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+12:22:57.590 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:22:59.440 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+12:22:59.441 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: home-games COMPLETED
+12:22:59.441 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "My Games" is visible RUNNING
+12:22:59.893 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "My Games" is visible COMPLETED
+12:22:59.894 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 07b-my-games-signed-out RUNNING
+12:22:59.898 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+12:22:59.903 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+12:23:00.183 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 07b-my-games-signed-out COMPLETED

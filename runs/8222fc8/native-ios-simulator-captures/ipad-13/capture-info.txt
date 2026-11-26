@@ -1,0 +1,10 @@
+device=iPad Pro 13-inch (M4)
+runtime=com.apple.CoreSimulator.SimRuntime.iOS-26-2
+udid=AE2F27BF-D52B-4443-B125-6CC075048088
+app=ChessUniverse.app
+bundle_version=1.0
+bundle_build=1
+bundle_id=com.bthecoderr.chessuniverse
+captured_at=2026-11-26T12:27:55Z
+source=NATIVE iOS SIMULATOR (Expo Release build, not the website)
+maestro_exit=1

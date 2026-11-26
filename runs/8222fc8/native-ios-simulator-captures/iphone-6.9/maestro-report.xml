@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="QA iphone-6.9 - iOS 26.2 - A5DAF92C-34DC-4535-A074-8F88416D9A77" tests="8" failures="0" time="399.329" timestamp="2026-11-26T12:17:01">
+    <testcase id="01-home" name="01-home" classname="01-home" file="/Users/runner/work/ChessUniverseV2/ChessUniverseV2/apps/mobile/.maestro/flows/01-home.yaml" time="116.996" timestamp="2026-11-26T12:17:01" status="SUCCESS"/>
+    <testcase id="02-practice-vs-computer" name="02-practice-vs-computer" classname="02-practice-vs-computer" file="/Users/runner/work/ChessUniverseV2/ChessUniverseV2/apps/mobile/.maestro/flows/02-practice-vs-computer.yaml" time="46.473" timestamp="2026-11-26T12:18:58" status="SUCCESS"/>
+    <testcase id="03-practice-two-player-undo" name="03-practice-two-player-undo" classname="03-practice-two-player-undo" file="/Users/runner/work/ChessUniverseV2/ChessUniverseV2/apps/mobile/.maestro/flows/03-practice-two-player-undo.yaml" time="41.7" timestamp="2026-11-26T12:19:44" status="SUCCESS"/>
+    <testcase id="04-puzzles" name="04-puzzles" classname="04-puzzles" file="/Users/runner/work/ChessUniverseV2/ChessUniverseV2/apps/mobile/.maestro/flows/04-puzzles.yaml" time="39.993" timestamp="2026-11-26T12:20:26" status="SUCCESS"/>
+    <testcase id="05-academy" name="05-academy" classname="05-academy" file="/Users/runner/work/ChessUniverseV2/ChessUniverseV2/apps/mobile/.maestro/flows/05-academy.yaml" time="22.673" timestamp="2026-11-26T12:21:06" status="SUCCESS"/>
+    <testcase id="06-legends" name="06-legends" classname="06-legends" file="/Users/runner/work/ChessUniverseV2/ChessUniverseV2/apps/mobile/.maestro/flows/06-legends.yaml" time="57.473" timestamp="2026-11-26T12:21:29" status="SUCCESS"/>
+    <testcase id="07-online-signed-out" name="07-online-signed-out" classname="07-online-signed-out" file="/Users/runner/work/ChessUniverseV2/ChessUniverseV2/apps/mobile/.maestro/flows/07-online-signed-out.yaml" time="40.575" timestamp="2026-11-26T12:22:26" status="SUCCESS"/>
+    <testcase id="08-account-validation" name="08-account-validation" classname="08-account-validation" file="/Users/runner/work/ChessUniverseV2/ChessUniverseV2/apps/mobile/.maestro/flows/08-account-validation.yaml" time="33.039" timestamp="2026-11-26T12:23:07" status="SUCCESS"/>
+  </testsuite>
+</testsuites>
