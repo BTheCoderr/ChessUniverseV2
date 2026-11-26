@@ -1,0 +1,147 @@
+name: iOS Simulator QA (free — no EAS credits)
+
+# Builds the Expo app as a Release *simulator* binary on a GitHub-hosted macOS
+# runner (free for public repositories), runs the Maestro suite on an iPhone 6.9"
+# and an iPad 13" simulator, records video, and captures the built website with
+# Playwright. Nothing here signs, uploads to EAS, or submits to Apple.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["qa/**", "release/**"]
+    paths:
+      - "apps/mobile/**"
+      - "scripts/qa/**"
+      - "src/**"
+      - "public/**"
+      - ".github/workflows/ios-simulator-qa.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-simulator-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-simulator:
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      # Optional repository secrets. Without them the app runs in offline mode
+      # (Practice, Puzzles, Academy and Legends still work).
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci
+      - name: Record resolved Expo config
+        run: |
+          mkdir -p ../../qa-captures/native-ios
+          npx expo config --type public --json > ../../qa-captures/native-ios/expo-config.json
+          node -e 'const c=require("../../qa-captures/native-ios/expo-config.json");console.log(c.name,c.version,c.ios.bundleIdentifier)'
+      - name: Expo Doctor
+        run: npx expo-doctor 2>&1 | tee ../../qa-captures/native-ios/expo-doctor.txt || true
+      - name: Prebuild native iOS project
+        run: npx expo prebuild --platform ios --clean
+      - name: Build Release app for the iOS Simulator (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild -version | tee ../../qa-captures/native-ios/xcode-version.txt
+          WS=$(ls -d ios/*.xcworkspace | head -1)
+          SCHEME=$(basename "$WS" .xcworkspace)
+          xcodebuild -workspace "$WS" -scheme "$SCHEME" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO \
+            | tail -n 80
+          APP=$(find "$PWD/build/Build/Products/Release-iphonesimulator" -maxdepth 1 -name "*.app" | head -1)
+          test -n "$APP"
+          echo "APP=$APP" >> "$GITHUB_ENV"
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Maestro suite + recording — iPhone 6.9"
+        run: bash ../../scripts/qa/ios-sim-capture.sh "iPhone 16 Pro Max" iphone-6.9
+      - name: Maestro suite + recording — iPad 13"
+        if: always() && env.APP != ''
+        run: bash ../../scripts/qa/ios-sim-capture.sh "iPad Pro 13-inch (M4)" ipad-13
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-ios-simulator-captures
+          path: qa-captures/native-ios
+          if-no-files-found: warn
+
+  website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+      - run: npm install --no-save playwright@1.56.0 && npx playwright install --with-deps chromium
+      - name: Capture website screens and gameplay video (Playwright)
+        run: |
+          npx vite preview --host 127.0.0.1 --port 4173 --strictPort &
+          npx --yes wait-on@8 http://127.0.0.1:4173 -t 60000
+          OUT_DIR=qa-captures/website node scripts/qa/web-captures.mjs
+          for f in qa-captures/website/*.webm; do [ -e "$f" ] && mv "$f" qa-captures/website/website-gameplay.webm; done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: website-captures
+          path: qa-captures/website
+          if-no-files-found: warn
+
+  publish:
+    # Commit captures to the orphan `qa-captures` branch so they can be reviewed
+    # (and fetched with git) without downloading artifacts.
+    needs: [ios-simulator, website]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: captures
+      - name: Push captures to qa-captures branch
+        env:
+          SRC_SHA: ${{ github.sha }}
+          SRC_REF: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git init -q site && cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q --orphan qa-captures
+          DEST="runs/${SRC_SHA:0:7}"
+          mkdir -p "$DEST"
+          cp -R ../captures/. "$DEST/" || true
+          printf '[build]\n  ignore = "exit 0"\n' > netlify.toml
+          {
+            echo "# Chess Universe QA captures"
+            echo
+            echo "Latest: \`$DEST\` from \`$SRC_REF\` @ $SRC_SHA — $RUN_URL"
+            echo
+            echo "- \`native-ios-simulator-captures/\`: NATIVE iOS app (Expo Release build) on iOS Simulator."
+            echo "- \`website-captures/\`: the WEBSITE (vite preview) in Chromium. Not native iOS."
+          } > README.md
+          git add -A
+          git commit -qm "QA captures for $SRC_REF @ ${SRC_SHA:0:7}"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" qa-captures

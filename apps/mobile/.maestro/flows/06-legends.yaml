@@ -1,0 +1,20 @@
+appId: com.bthecoderr.chessuniverse
+name: 06-legends
+---
+- launchApp
+- tapOn:
+    id: "home-legends"
+- assertVisible: "Replay greatness."
+- repeat:
+    times: 12
+    commands:
+      - tapOn:
+          id: "step-next"
+- assertVisible: "12/.*"
+- takeScreenshot: 06-legends-replay
+- tapOn:
+    id: "step-last"
+- takeScreenshot: 06b-legends-final
+- tapOn:
+    id: "step-first"
+- assertVisible: "0/.*"

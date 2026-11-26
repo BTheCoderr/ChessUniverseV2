@@ -42,3 +42,10 @@ test("website does not still use lime and olive styling", () => {
   assert.match(stylesheet,/\.square\.dark\s*\{\s*background:\s*var\(--board-dark\)/);
   assert.match(stylesheet,/\.square\.selected\s*\{\s*box-shadow:\s*inset .*var\(--accent\)/);
 });
+
+test("native asset generation script uses the midnight-navy brand, not legacy lime", async () => {
+  const { readFileSync } = await import("node:fs");
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.doesNotMatch(pkg.scripts["mobile:assets"], /#(?:d7ff4a|0b0e0f|101314)/i);
+  assert.match(pkg.scripts["mobile:assets"], /#08152D/);
+});

@@ -1,0 +1,15 @@
+# Maestro suite for Chess Universe (iOS simulator). Run from a captures dir:
+#   maestro test apps/mobile/.maestro
+flows:
+  - "flows/*"
+executionOrder:
+  continueOnFailure: true
+  flowsOrder:
+    - 01-home
+    - 02-practice-vs-computer
+    - 03-practice-two-player-undo
+    - 04-puzzles
+    - 05-academy
+    - 06-legends
+    - 07-online-signed-out
+    - 08-account-validation

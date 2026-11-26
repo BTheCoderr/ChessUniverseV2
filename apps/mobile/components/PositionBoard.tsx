@@ -3,6 +3,8 @@ import { ChessPiece, NATIVE_CHESS_PIECE_RATIO } from "@/components/ChessPiece";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Chess, type Square } from "chess.js";
+import { squareAccessibilityLabel, squareTestId } from "@/lib/boardA11y";
+import { matchExpectedMove } from "@/lib/puzzleMove";
 
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
 
@@ -25,10 +27,11 @@ export function PositionBoard({ fen, expectedMove, onCorrect, onWrong, locked = 
     }
     if (piece?.color === game.turn()) { setSelected(square); return; }
     if (!targets.has(square)) { setSelected(null); onWrong(); return; }
-    const uci = `${selected}${square}`;
-    if (uci !== expectedMove) { setSelected(null); onWrong(); return; }
+    // Compare squares only: promotion solutions such as "a7a8q" carry a piece suffix.
+    const match = matchExpectedMove(selected, square, expectedMove);
+    if (!match.ok) { setSelected(null); onWrong(); return; }
     const next = new Chess(fen);
-    next.move({ from: selected, to: square, promotion: "q" });
+    next.move({ from: selected, to: square, promotion: match.promotion });
     setGame(next); setSelected(null); onCorrect();
   };
 
@@ -37,7 +40,7 @@ export function PositionBoard({ fen, expectedMove, onCorrect, onWrong, locked = 
     const piece = game.get(square);
     const dark = (row + col) % 2 === 1;
     const target = targets.has(square);
-    return <Pressable key={square} onPress={() => tap(square)} style={[styles.square, { width: size / 8, height: size / 8 }, dark ? styles.dark : styles.light, selected === square && styles.active]}>
+    return <Pressable key={square} testID={squareTestId(square)} accessibilityRole="button" accessibilityLabel={squareAccessibilityLabel(square, piece, { selected: selected === square, target })} accessibilityState={{ selected: selected === square, disabled: locked }} onPress={() => tap(square)} style={[styles.square, { width: size / 8, height: size / 8 }, dark ? styles.dark : styles.light, selected === square && styles.active]}>
       {target && <View style={styles.target} />}
       {piece && <ChessPiece piece={piece} size={(size / 8) * NATIVE_CHESS_PIECE_RATIO} />}
     </Pressable>;

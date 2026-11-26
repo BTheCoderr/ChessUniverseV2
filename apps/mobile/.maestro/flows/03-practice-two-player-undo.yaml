@@ -1,0 +1,29 @@
+appId: com.bthecoderr.chessuniverse
+name: 03-practice-two-player-undo
+---
+- launchApp
+- tapOn:
+    id: "home-practice"
+- tapOn:
+    id: "practice-mode-local"
+- assertVisible: "Black to move"
+- tapOn:
+    id: "square-e7"
+- tapOn:
+    id: "square-e5"
+- assertVisible: "White to move"
+# Two-player mode keeps the board oriented for Black first; flip for White.
+- tapOn:
+    id: "practice-flip"
+- tapOn:
+    id: "square-e2"
+- tapOn:
+    id: "square-e4"
+- assertVisible: "Black to move"
+- takeScreenshot: 03-practice-two-player
+- tapOn:
+    id: "practice-undo"
+- assertVisible: "White to move"
+- tapOn:
+    id: "practice-new"
+- assertVisible: "Black to move"

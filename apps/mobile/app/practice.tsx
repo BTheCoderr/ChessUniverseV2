@@ -5,7 +5,7 @@ import { PracticeGame } from "@/components/PracticeGame";
 
 export default function Practice() {
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.content}>
-    <Pressable onPress={()=>router.back()} hitSlop={16}><Text style={styles.back}>← Universe</Text></Pressable>
+    <Pressable testID="back" accessibilityRole="button" accessibilityLabel="Back" onPress={()=>router.back()} hitSlop={16}><Text style={styles.back}>← Universe</Text></Pressable>
     <Text style={styles.eyebrow}>PLAY</Text><Text style={styles.title}>Practice</Text>
     <Text style={styles.description}>Chess Universe begins with Black moving first. Play the computer or pass the phone between two local players. Choose your difficulty and time control.</Text>
     <PracticeGame />

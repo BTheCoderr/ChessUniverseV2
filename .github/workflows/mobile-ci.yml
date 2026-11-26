@@ -5,11 +5,17 @@ on:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "src/lib/puzzles.ts"
+      - "scripts/sync-mobile-*.mjs"
+      - "supabase/functions/online-game/rules.mjs"
       - ".github/workflows/mobile-ci.yml"
   pull_request:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "src/lib/puzzles.ts"
+      - "scripts/sync-mobile-*.mjs"
+      - "supabase/functions/online-game/rules.mjs"
       - ".github/workflows/mobile-ci.yml"
 
 jobs:
@@ -32,6 +38,10 @@ jobs:
         working-directory: .
       - run: node scripts/sync-mobile-chess-pieces.mjs --check
         working-directory: .
+      - run: node scripts/sync-mobile-puzzles.mjs --check
+        working-directory: .
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - name: Bundle the iOS JavaScript (catches import/runtime-resolution errors without EAS)
+        run: npx expo export --platform ios --output-dir /tmp/expo-export-ios

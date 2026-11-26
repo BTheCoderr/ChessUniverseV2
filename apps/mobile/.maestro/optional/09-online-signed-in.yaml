@@ -1,0 +1,35 @@
+appId: com.bthecoderr.chessuniverse
+name: 09-online-signed-in
+# Optional: runs only when QA_EMAIL / QA_PASSWORD (disposable test account) are provided:
+#   maestro test -e QA_EMAIL=... -e QA_PASSWORD=... optional/09-online-signed-in.yaml
+---
+- launchApp
+- tapOn:
+    id: "home-account"
+- tapOn:
+    id: "account-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "account-password"
+- inputText: ${QA_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "account-submit"
+- extendedWaitUntil:
+    visible:
+      id: "account-signout"
+    timeout: 20000
+- takeScreenshot: 09-account-signed-in
+- tapOn:
+    id: "back"
+- tapOn:
+    id: "home-online"
+- extendedWaitUntil:
+    visible: "NEW GAME"
+    timeout: 20000
+- takeScreenshot: 09b-online-lobby
+- tapOn: "Create Classic"
+- extendedWaitUntil:
+    visible: "Waiting for an opponent…"
+    timeout: 20000
+- takeScreenshot: 09c-online-waiting

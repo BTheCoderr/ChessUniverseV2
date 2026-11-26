@@ -1,0 +1,16 @@
+appId: com.bthecoderr.chessuniverse
+name: 01-home
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Classic strategy."
+    timeout: 30000
+- assertVisible: "New worlds."
+- assertVisible:
+    id: "home-practice"
+- takeScreenshot: 01-home
+- scroll
+- assertVisible:
+    id: "home-games"
+- takeScreenshot: 01b-home-modes

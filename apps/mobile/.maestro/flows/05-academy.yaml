@@ -1,0 +1,14 @@
+appId: com.bthecoderr.chessuniverse
+name: 05-academy
+---
+- launchApp
+- tapOn:
+    id: "home-academy"
+- assertVisible: "Academy"
+- tapOn:
+    id: "lesson-board-basics"
+- assertVisible: "BOARD CHECK"
+- takeScreenshot: 05-academy-lesson
+- tapOn:
+    id: "lesson-complete-board-basics"
+- assertVisible: "Completed ✓"

@@ -23,7 +23,7 @@ test("The native theme reflects the gold knight's midnight-navy palette", () => 
 });
 
 test("No native screen reintroduces the old lime and charcoal colors", () => {
-  const legacy = /#(?:d7ff4a|0b0e0f|151a1b|f5f7f0|9ca7a3)(?:[\da-f]{2})?\b/i;
+  const legacy = /#(?:d7ff4a|0b0e0f|151a1b|f5f7f0|9ca7a3|89938f|36403c|59635f|8c9793|202927)(?:[\da-f]{2})?\b/i;
   const files = [...sourceFiles(path.join(root, "app")), ...sourceFiles(path.join(root, "components")),path.join(root, "app.config.ts")];
   for (const file of files) {
     const code = readFileSync(file, "utf8");
